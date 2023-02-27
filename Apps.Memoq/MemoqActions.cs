@@ -1,18 +1,11 @@
-﻿using System.Net;
-using System.Text;
-using Apps.Memoq.Contracts;
+﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Requests;
 using Apps.Memoq.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.Blob;
 using MQS.FileManager;
 using MQS.ServerProject;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Apps.Memoq;
 
@@ -105,32 +98,12 @@ public class MemoqActions
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
         var uploadFileResult =
-            FileUploadFromAzureToMemoq(url, authenticationCredentialsProvider.Value, request.FilePath);
+            FileUpload(url, authenticationCredentialsProvider.Value, request.FilePath);
         return ImportFileToProject(url, authenticationCredentialsProvider, new ImportDocumentRequest
         {
             ProjectGuid = request.ProjectGuid,
             FileGuid = uploadFileResult.ToString()
         });
-    }
-
-
-    public GenerateFileResponse GenerateFilesFromHubspotPosts(string url, string apiKey,
-        [ActionParameter] GenerateFileRequest request)
-    {
-        var json = JObject.Parse(request.FileContent.ToString()).SelectToken("results");
-        var files = new List<string>();
-        foreach (var jToken in json)
-        {
-            var path = UploadFileToBlob(JsonConvert.SerializeObject(jToken));
-            files.Add(path);
-        }
-
-        return new GenerateFileResponse
-        {
-            StatusCode = HttpStatusCode.OK,
-            Files = files.ToArray(),
-            Total = files.Count
-        };
     }
 
     private UploadFileResponse ImportFileToProject(string url,
@@ -147,32 +120,12 @@ public class MemoqActions
         };
     }
 
-    private Guid FileUploadFromAzureToMemoq(string baseServiceUrl, string apiKey, string sourceFilePath)
+    private Guid FileUpload(string baseServiceUrl, string apiKey, string sourceFilePath)
     {
-        var storageAccount = CloudStorageAccount.Parse(ApplicationConstants.AzureBlobConnectionString);
-        CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-        CloudBlobContainer container = blobClient.GetContainerReference(ApplicationConstants.AzureBlobContainer);
-        CloudBlockBlob blockBlob = container.GetBlockBlobReference(sourceFilePath);
-        blockBlob.FetchAttributes();
-        var contentType = blockBlob.Properties.ContentType;
-        var provider = new FileExtensionContentTypeProvider();
-        var fileExt = provider.Mappings.FirstOrDefault(x => x.Value == contentType).Key;
-        using var stream = blockBlob.OpenRead();
-        var result = UploadFileToMemoq(stream, $"{sourceFilePath}{fileExt}", baseServiceUrl, apiKey);
+        var fileName = new FileInfo(sourceFilePath).Name;
+        using var stream = File.OpenRead(sourceFilePath);
+        var result = UploadFileToMemoq(stream, fileName, baseServiceUrl, apiKey);
         return result;
-    }
-
-    private string UploadFileToBlob(string fileContent)
-    {
-        var storageAccount = CloudStorageAccount.Parse(ApplicationConstants.AzureBlobConnectionString);
-        CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-        CloudBlobContainer container = blobClient.GetContainerReference(ApplicationConstants.AzureBlobContainer);
-        string fsName = $"storage/{Guid.NewGuid()}";
-        CloudBlockBlob blockBlob = container.GetBlockBlobReference(fsName);
-        blockBlob.Properties.ContentType = "application/json";
-        using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(fileContent));
-        blockBlob.UploadFromStream(ms);
-        return fsName;
     }
 
     private Guid UploadFileToMemoq(Stream fileStream, string filePath, string baseServiceUrl, string apiKey)
