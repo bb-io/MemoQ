@@ -2,7 +2,7 @@
 
 public class CreateProjectRequest
 {
-    public string SourseLangCode { get; set; }
+    public string SourceLangCode { get; set; }
     
     public IEnumerable<string> TargetLangCodes { get; set; }
 

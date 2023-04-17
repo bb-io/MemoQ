@@ -12,7 +12,7 @@ namespace Apps.Memoq;
 [ActionList]
 public class MemoqActions
 {
-    [Action]
+    [Action("Create project", Description = "Create a new project in memoQ")]
     public CreateProjectResponse CreateProject(string url,
         AuthenticationCredentialsProvider authenticationCredentialsProvider,
         [ActionParameter] CreateProjectRequest request)
@@ -32,7 +32,7 @@ public class MemoqActions
             CreatorUser = ApplicationConstants.AdminGuid,
             Deadline = DateTime.Now,
             Name = request.ProjectName,
-            SourceLanguageCode = request.SourseLangCode,
+            SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = request.TargetLangCodes.ToArray(),
         };
         MemoqServiceFactory<IServerProjectService>? projectService = null;
@@ -58,30 +58,29 @@ public class MemoqActions
         }
     }
 
-    [Action]
-    public CreateProjectResponse CreateProjectBasedOnTemplate(string url,
-        AuthenticationCredentialsProvider authenticationCredentialsProvider,
-        [ActionParameter] CreateProjectTemplateRequest request)
+    [Action("Create project from template", Description = "Create a new project based on an existing memoQ project template")]
+    public CreateProjectResponse CreateProjectBasedOnTemplate(string url, AuthenticationCredentialsProvider authenticationCredentialsProvider, [ActionParameter] CreateProjectTemplateRequest request)
     {
-        const string clientMeta = "blackbird";
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
             $"{url}{ApplicationConstants.ProjectServiceUrl}", authenticationCredentialsProvider.Value);
+
         var newProject = new TemplateBasedProjectCreateInfo
         {
-            Client = clientMeta,
-            Domain = clientMeta,
-            Project = clientMeta,
-            Subject = clientMeta,
+            Client = "blackbird",
+            Domain = "blackbird",
+            Project = "blackbird",
+            Subject = "blackbird",
             CreatorUser = ApplicationConstants.AdminGuid,
             Description = request.ProjectName,
             Name = request.ProjectName,
-            SourceLanguageCode = request.SourseLangCode,
+            SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = request.TargetLangCodes.ToArray(),
             TemplateGuid = Guid.Parse(request.TemplateGuid)
         };
 
         var result = projectService.Service.CreateProjectFromTemplate(newProject);
         var projectInfo = projectService.Service.GetProject(result.ProjectGuid);
+
         return new CreateProjectResponse
         {
             ProjectGuid = result.ProjectGuid.ToString(),
@@ -92,7 +91,7 @@ public class MemoqActions
     }
 
 
-    [Action]
+    [Action("Upload file to project", Description = "Uploads and imports a file to a project")]
     public UploadFileResponse UploadAndImportFileToProject(string url,
         AuthenticationCredentialsProvider authenticationCredentialsProvider,
         [ActionParameter] UploadDocumentToProjectRequest request)
