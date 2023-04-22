@@ -2,7 +2,8 @@
 
 public class UploadDocumentToProjectRequest
 {
-    public string FilePath { get; set; }
+    public byte[] File { get; set; }
+    public string FileName { get; set; }
 
     public string ProjectGuid { get; set; }
 }

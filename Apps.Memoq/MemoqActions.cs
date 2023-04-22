@@ -3,6 +3,7 @@ using Apps.Memoq.Models;
 using Apps.Memoq.Models.Requests;
 using Apps.Memoq.Models.Responses;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using MQS.FileManager;
 using MQS.ServerProject;
@@ -13,8 +14,7 @@ namespace Apps.Memoq;
 public class MemoqActions
 {
     [Action("Create project", Description = "Create a new project in memoQ")]
-    public CreateProjectResponse CreateProject(string url,
-        AuthenticationCredentialsProvider authenticationCredentialsProvider,
+    public CreateProjectResponse CreateProject(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         [ActionParameter] CreateProjectRequest request)
     {
         var newProject = new ServerProjectDesktopDocsCreateInfo
@@ -38,9 +38,7 @@ public class MemoqActions
         MemoqServiceFactory<IServerProjectService>? projectService = null;
         try
         {
-            projectService = new MemoqServiceFactory<IServerProjectService>(
-                $"{url}{ApplicationConstants.ProjectServiceUrl}",
-                authenticationCredentialsProvider.Value);
+            projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
             var guid = projectService.Service.CreateProject(newProject);
             var projectInfo = projectService.Service.GetProject(guid);
             return new CreateProjectResponse()
@@ -59,10 +57,9 @@ public class MemoqActions
     }
 
     [Action("Create project from template", Description = "Create a new project based on an existing memoQ project template")]
-    public CreateProjectResponse CreateProjectBasedOnTemplate(string url, AuthenticationCredentialsProvider authenticationCredentialsProvider, [ActionParameter] CreateProjectTemplateRequest request)
+    public CreateProjectResponse CreateProjectBasedOnTemplate(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, [ActionParameter] CreateProjectTemplateRequest request)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            $"{url}{ApplicationConstants.ProjectServiceUrl}", authenticationCredentialsProvider.Value);
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
 
         var newProject = new TemplateBasedProjectCreateInfo
         {
@@ -92,53 +89,31 @@ public class MemoqActions
 
 
     [Action("Upload file to project", Description = "Uploads and imports a file to a project")]
-    public UploadFileResponse UploadAndImportFileToProject(string url,
-        AuthenticationCredentialsProvider authenticationCredentialsProvider,
+    public UploadFileResponse UploadAndImportFileToProject(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
-        var uploadFileResult =
-            FileUpload(url, authenticationCredentialsProvider.Value, request.FilePath);
-        return ImportFileToProject(url, authenticationCredentialsProvider, new ImportDocumentRequest
-        {
-            ProjectGuid = request.ProjectGuid,
-            FileGuid = uploadFileResult.ToString()
-        });
-    }
+        using var fileService = new MemoqServiceFactory<IFileManagerService>(ApplicationConstants.FileServiceUrl, authenticationCredentialsProviders);
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
 
-    private UploadFileResponse ImportFileToProject(string url,
-        AuthenticationCredentialsProvider authenticationCredentialsProvider, ImportDocumentRequest request)
-    {
-        using var memoqFileService =
-            new MemoqServiceFactory<IServerProjectService>($"{url}{ApplicationConstants.ProjectServiceUrl}",
-                authenticationCredentialsProvider.Value);
-        var result = memoqFileService.Service.ImportTranslationDocument(Guid.Parse(request.ProjectGuid),
-            Guid.Parse(request.FileGuid), null, null);
+        var uploadFileResult = UploadFile(request.File, request.FileName, fileService.Service);
+
+        var result = projectService.Service.ImportTranslationDocument(Guid.Parse(request.ProjectGuid), uploadFileResult, null, null);
         return new UploadFileResponse
         {
             DocumentGuids = result.DocumentGuids.Select(x => x.ToString()).ToArray()
         };
     }
 
-    private Guid FileUpload(string baseServiceUrl, string apiKey, string sourceFilePath)
-    {
-        var fileName = new FileInfo(sourceFilePath).Name;
-        using var stream = File.OpenRead(sourceFilePath);
-        var result = UploadFileToMemoq(stream, fileName, baseServiceUrl, apiKey);
-        return result;
-    }
-
-    private Guid UploadFileToMemoq(Stream fileStream, string filePath, string baseServiceUrl, string apiKey)
+    private Guid UploadFile(byte[] file, string fileName, IFileManagerService service)
     {
         Guid fileGuid = Guid.Empty;
-        using var memoqFileService =
-            new MemoqServiceFactory<IFileManagerService>($"{baseServiceUrl}{ApplicationConstants.FileServiceUrl}",
-                apiKey);
+        var fileStream = new MemoryStream(file);
         try
         {
             const int chunkSize = 500000;
             byte[] chunkBytes = new byte[chunkSize];
             int bytesRead;
-            fileGuid = memoqFileService.Service.BeginChunkedFileUpload(filePath, false);
+            fileGuid = service.BeginChunkedFileUpload(fileName, false);            
             while ((bytesRead = fileStream.Read(chunkBytes, 0, chunkSize)) != 0)
             {
                 byte[] dataToUpload;
@@ -150,7 +125,7 @@ public class MemoqActions
                     Array.Copy(chunkBytes, dataToUpload, bytesRead);
                 }
 
-                memoqFileService.Service.AddNextFileChunk(fileGuid, dataToUpload);
+                service.AddNextFileChunk(fileGuid, dataToUpload);
             }
 
             return fileGuid;
@@ -159,7 +134,7 @@ public class MemoqActions
         {
             fileStream.Close();
             if (fileGuid != Guid.Empty)
-                memoqFileService.Service.EndChunkedFileUpload(fileGuid);
+                service.EndChunkedFileUpload(fileGuid);
         }
     }
 }
