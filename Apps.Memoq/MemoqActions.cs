@@ -45,7 +45,7 @@ public class MemoqActions
             {
                 ProjectGuid = guid.ToString(),
                 ProjectDeadline = projectInfo.Deadline.ToString("yyyy-MM-dd"),
-                TargetLanguages = projectInfo.TargetLanguageCodes,
+                TargetLanguages = projectInfo.TargetLanguageCodes.Select(x => new Language(x)),
                 SourceLanguage = projectInfo.SourceLanguageCode
             };
         }
@@ -82,7 +82,7 @@ public class MemoqActions
         {
             ProjectGuid = result.ProjectGuid.ToString(),
             ProjectDeadline = projectInfo.Deadline.ToString("yyyy-MM-dd"),
-            TargetLanguages = projectInfo.TargetLanguageCodes,
+            TargetLanguages = projectInfo.TargetLanguageCodes.Select(x => new Language(x)),
             SourceLanguage = projectInfo.SourceLanguageCode
         };
     }
