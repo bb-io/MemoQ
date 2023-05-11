@@ -5,11 +5,6 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using MQS.FileManager;
 using MQS.ServerProject;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.Files.Requests;
 using Apps.Memoq.Models.Files.Responses;
@@ -21,7 +16,7 @@ namespace Apps.Memoq.Actions
     {
         [Action("List all project files", Description = "List all project files")]
         public ListAllProjectFilesResponse ListAllProjectFiles(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-        [ActionParameter] string projectGuid)
+            [ActionParameter] string projectGuid)
         {
             using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
             var result = projectService.Service.ListProjectTranslationDocuments(Guid.Parse(projectGuid));
@@ -32,9 +27,17 @@ namespace Apps.Memoq.Actions
             };
         }
 
+        [Action("Get file info", Description = "Get project file info by guid")]
+        public ServerProjectTranslationDocInfo? GetFile(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] string projectGuid, [ActionParameter] string fileGuid)
+        {
+            var files = ListAllProjectFiles(authenticationCredentialsProviders, projectGuid);
+            return files.Files.FirstOrDefault(f => f.DocumentGuid == Guid.Parse(fileGuid));
+        }
+
         [Action("Upload file to project", Description = "Uploads and imports a file to a project")]
         public UploadFileResponse UploadAndImportFileToProject(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-        [ActionParameter] UploadDocumentToProjectRequest request)
+            [ActionParameter] UploadDocumentToProjectRequest request)
         {
             using var fileService = new MemoqServiceFactory<IFileManagerService>(ApplicationConstants.FileServiceUrl, authenticationCredentialsProviders);
             using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
@@ -49,7 +52,7 @@ namespace Apps.Memoq.Actions
 
         [Action("Download file by guid", Description = "Download file by guid")]
         public DownloadFileResponse DownloadFileByGuid(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-        [ActionParameter] DownloadFileRequest request)
+            [ActionParameter] DownloadFileRequest request)
         {
             using var fileService = new MemoqServiceFactory<IFileManagerService>(ApplicationConstants.FileServiceUrl, authenticationCredentialsProviders);
             using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
@@ -66,12 +69,11 @@ namespace Apps.Memoq.Actions
 
         private Guid UploadFile(byte[] file, string fileName, IFileManagerService service)
         {
-            Guid fileGuid = Guid.Empty;
             using var fileStream = new MemoryStream(file);
             const int chunkSize = 500000;
             byte[] chunkBytes = new byte[chunkSize];
             int bytesRead;
-            fileGuid = service.BeginChunkedFileUpload(fileName, false);
+            Guid fileGuid = service.BeginChunkedFileUpload(fileName, false);
             while ((bytesRead = fileStream.Read(chunkBytes, 0, chunkSize)) != 0)
             {
                 byte[] dataToUpload;

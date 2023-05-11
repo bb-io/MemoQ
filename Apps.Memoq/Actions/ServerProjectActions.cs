@@ -5,13 +5,7 @@ using Apps.Memoq.Models.ServerProjects.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using MQS.FileManager;
 using MQS.ServerProject;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Apps.Memoq.Actions
 {
