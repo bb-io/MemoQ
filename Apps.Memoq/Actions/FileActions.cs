@@ -42,7 +42,6 @@ namespace Apps.Memoq.Actions
             using var fileService = new MemoqServiceFactory<IFileManagerService>(ApplicationConstants.FileServiceUrl, authenticationCredentialsProviders);
             using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
             var uploadFileResult = UploadFile(request.File, request.FileName, fileService.Service);
-
             var result = projectService.Service.ImportTranslationDocument(Guid.Parse(request.ProjectGuid), uploadFileResult, null, null);
             return new UploadFileResponse
             {
@@ -106,9 +105,10 @@ namespace Apps.Memoq.Actions
                 chunkBytes = fmService.GetNextFileChunk(downloadResponse.BeginChunkedFileDownloadResult, chunkSize);
                 Array.Copy(chunkBytes, 0, result, downloadResponse.fileSize - fileBytesLeft, chunkBytes.Length);
                 fileBytesLeft -= chunkBytes.Length;
-            }
+            }         
             if (downloadResponse.BeginChunkedFileDownloadResult != Guid.Empty)
                 fmService.EndChunkedFileDownload(downloadResponse.BeginChunkedFileDownloadResult);
+            fmService.DeleteFile(fileGuid);
             return result;
         }
     }
