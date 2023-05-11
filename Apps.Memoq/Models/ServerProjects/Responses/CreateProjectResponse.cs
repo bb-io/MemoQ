@@ -1,4 +1,4 @@
-﻿namespace Apps.Memoq.Models.Responses;
+﻿namespace Apps.Memoq.Models.ServerProjects.Responses;
 
 public class CreateProjectResponse
 {

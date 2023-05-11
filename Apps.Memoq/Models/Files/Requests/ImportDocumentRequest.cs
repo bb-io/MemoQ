@@ -1,4 +1,4 @@
-﻿namespace Apps.Memoq.Models.Requests;
+﻿namespace Apps.Memoq.Models.Files.Requests;
 
 public class ImportDocumentRequest
 {

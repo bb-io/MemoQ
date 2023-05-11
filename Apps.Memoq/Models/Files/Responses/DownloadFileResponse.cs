@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Apps.Memoq.Models.Responses
+namespace Apps.Memoq.Models.Files.Responses
 {
     public class DownloadFileResponse
     {
