@@ -7,4 +7,6 @@ public class CreateProjectRequest
     public string TargetLangCodes { get; set; }
 
     public string ProjectName { get; set; }
+
+    public string Deadline { get; set; }
 }

@@ -2,5 +2,5 @@
 
 public class UploadFileResponse
 {
-    public string[] DocumentGuids { get; set; }
+    public IEnumerable<string> DocumentGuids { get; set; }
 }
