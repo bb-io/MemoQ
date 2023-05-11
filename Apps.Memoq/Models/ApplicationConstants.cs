@@ -8,5 +8,7 @@ public static class ApplicationConstants
 
     public const string SecurityServiceUrl = "/security/securityservice";
 
+    public const string TranslationMemoryServiceUrl = "/memoqservices/tm/tmservice"; //Unavailable endpoint
+
     public static readonly Guid AdminGuid = new Guid("00000000-0000-0000-0001-000000000001");
 }
