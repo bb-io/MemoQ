@@ -8,6 +8,7 @@ using MQS.ServerProject;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.Files.Requests;
 using Apps.Memoq.Models.Files.Responses;
+using MQS.TasksService;
 
 namespace Apps.Memoq.Actions
 {
@@ -33,6 +34,26 @@ namespace Apps.Memoq.Actions
         {
             var files = ListAllProjectFiles(authenticationCredentialsProviders, projectGuid);
             return files.Files.FirstOrDefault(f => f.DocumentGuid == Guid.Parse(fileGuid));
+        }
+
+        [Action("Assign file to user", Description = "Assign file to user")]
+        public void AssignFileToUser(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] AssignFileToUserRequest input)
+        {
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
+            var assignments = new ServerProjectTranslationDocumentUserAssignments[] { 
+                new ServerProjectTranslationDocumentUserAssignments()
+                {
+                    DocumentGuid = Guid.Parse(input.FileGuid),
+                    UserRoleAssignments = new TranslationDocumentUserRoleAssignment[] { 
+                        new TranslationDocumentUserRoleAssignment() { 
+                            UserGuid = Guid.Parse(input.UserGuid),
+                            DeadLine = DateTime.Parse(input.Deadline)
+                        } 
+                    }
+                }
+            };
+            projectService.Service.SetProjectTranslationDocumentUserAssignments(Guid.Parse(input.ProjectGuid), assignments);
         }
 
         [Action("Upload file to project", Description = "Uploads and imports a file to a project")]
@@ -63,6 +84,24 @@ namespace Apps.Memoq.Actions
             {
                 FileName = filename,
                 File = data
+            };
+        }
+
+        [Action("Get analysis for a file", Description = "Get analysis for a file")]
+        public GetAnalysisForFileResponse GetAnalysisForFile(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] GetAnalysisForFileRequest input)
+        {
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
+            var task = projectService.Service.StartStatisticsOnTranslationDocumentsTask2(new CreateStatisticsOnDocumentsRequest()
+            {
+                ProjectGuid = Guid.Parse(input.ProjectGuid),
+                DocumentOrSliceGuids = new Guid[] { Guid.Parse(input.DocumentGuid) }
+            });
+            var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(authenticationCredentialsProviders, task.TaskId);
+            var result = projectService.Service.GetAnalysisReportAsCSV(Guid.Parse(input.ProjectGuid), taskResult.AnalysisReportId ?? Guid.Empty);
+            return new GetAnalysisForFileResponse
+            {
+                Analyses = result.DataForTargetLangs.ToList()
             };
         }
 
@@ -110,6 +149,26 @@ namespace Apps.Memoq.Actions
                 fmService.EndChunkedFileDownload(downloadResponse.BeginChunkedFileDownloadResult);
             fmService.DeleteFile(fileGuid);
             return result;
+        }
+
+        private TaskResult WaitForAsyncTaskToFinishAndGetResult(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, Guid TaskId)
+        {
+            using var taskService = new MemoqServiceFactory<ITasksService>(ApplicationConstants.TaskServiceUrl, authenticationCredentialsProviders);
+            var taskStatus = taskService.Service.GetTaskStatus(TaskId).Status;
+            int i = 1;
+            while (taskStatus != MQS.TasksService.TaskStatus.Cancelled
+                        && taskStatus != MQS.TasksService.TaskStatus.Completed
+                        && taskStatus != MQS.TasksService.TaskStatus.Failed
+                        && taskStatus != MQS.TasksService.TaskStatus.InvalidTask)
+            {
+                if (i < 16)
+                    i = 2 * i;
+                Thread.Sleep(i * 1000);
+                taskStatus = taskService.Service.GetTaskStatus(TaskId).Status;
+            }
+            if (taskStatus != MQS.TasksService.TaskStatus.Completed)
+                throw new Exception($"Task has status {taskStatus.ToString()}.");
+            return taskService.Service.GetTaskResult(TaskId);
         }
     }
 }

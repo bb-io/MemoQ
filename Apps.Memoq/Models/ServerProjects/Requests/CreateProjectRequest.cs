@@ -9,4 +9,6 @@ public class CreateProjectRequest
     public string ProjectName { get; set; }
 
     public string Deadline { get; set; }
+
+    public string CallbackUrl { get; set; }
 }

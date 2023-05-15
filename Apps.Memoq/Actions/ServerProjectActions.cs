@@ -41,9 +41,10 @@ namespace Apps.Memoq.Actions
                 CreatorUser = ApplicationConstants.AdminGuid,
                 SourceLanguageCode = request.SourceLangCode,
                 TargetLanguageCodes = request.TargetLangCodes.ToArray(),
+                CallbackWebServiceUrl = request.CallbackUrl
             };
             var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProvider);
-            var guid = projectService.Service.CreateProject(newProject);
+            var guid = projectService.Service.CreateProject2(newProject);
             return projectService.Service.GetProject(guid);
         }
 
