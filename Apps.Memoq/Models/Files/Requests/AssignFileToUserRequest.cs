@@ -12,5 +12,6 @@ namespace Apps.Memoq.Models.Files.Requests
         public string FileGuid { get; set; }
         public string UserGuid { get; set; }
         public string Deadline { get; set; }
+        public int Role { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using MQS.ServerProject;
+﻿using MQS.TasksService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +7,13 @@ using System.Threading.Tasks;
 
 namespace Apps.Memoq.Models.Files.Responses
 {
-    public class GetAnalysisForFileResponse
+    public class GetAnalysisForFileResponse : StatisticsResultForLang
     {
-        public List<AnalysisAsCSVResultForLang> Analyses { get; set; }
+        public GetAnalysisForFileResponse(StatisticsResultForLang statistics) 
+        { 
+            ResultData = statistics.ResultData;
+            TargetLangCode = statistics.TargetLangCode;
+        }
+        public string Filename { get; set; }
     }
 }

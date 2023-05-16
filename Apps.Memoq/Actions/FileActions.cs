@@ -9,6 +9,7 @@ using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.Files.Requests;
 using Apps.Memoq.Models.Files.Responses;
 using MQS.TasksService;
+using StatisticsResultForLang = MQS.TasksService.StatisticsResultForLang;
 
 namespace Apps.Memoq.Actions
 {
@@ -48,7 +49,8 @@ namespace Apps.Memoq.Actions
                     UserRoleAssignments = new TranslationDocumentUserRoleAssignment[] { 
                         new TranslationDocumentUserRoleAssignment() { 
                             UserGuid = Guid.Parse(input.UserGuid),
-                            DeadLine = DateTime.Parse(input.Deadline)
+                            DeadLine = DateTime.Parse(input.Deadline),
+                            DocumentAssignmentRole = input.Role
                         } 
                     }
                 }
@@ -95,13 +97,18 @@ namespace Apps.Memoq.Actions
             var task = projectService.Service.StartStatisticsOnTranslationDocumentsTask2(new CreateStatisticsOnDocumentsRequest()
             {
                 ProjectGuid = Guid.Parse(input.ProjectGuid),
-                DocumentOrSliceGuids = new Guid[] { Guid.Parse(input.DocumentGuid) }
+                DocumentOrSliceGuids = new Guid[] { Guid.Parse(input.DocumentGuid) },
+                Options = new StatisticsOptions()
+                {
+                    Algorithm = StatisticsAlgorithm.MemoQ
+                }
             });
             var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(authenticationCredentialsProviders, task.TaskId);
-            var result = projectService.Service.GetAnalysisReportAsCSV(Guid.Parse(input.ProjectGuid), taskResult.AnalysisReportId ?? Guid.Empty);
-            return new GetAnalysisForFileResponse
+            var document = GetFile(authenticationCredentialsProviders, input.ProjectGuid, input.DocumentGuid);
+            var statistics = taskResult.ResultsForTargetLangs.First();
+            return new GetAnalysisForFileResponse(statistics)
             {
-                Analyses = result.DataForTargetLangs.ToList()
+                Filename = $"{Path.GetFileNameWithoutExtension(document.DocumentName)}_{statistics.TargetLangCode}.html"
             };
         }
 
