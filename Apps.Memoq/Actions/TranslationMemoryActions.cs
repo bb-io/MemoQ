@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Apps.Memoq.Actions
 {
-    //[ActionList] //Unavailable endpoint
+    [ActionList]
     public class TranslationMemoryActions
     {
         [Action("Create translation memory", Description = "Create translation memory")]

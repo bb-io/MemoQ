@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Apps.Memoq.Models.Files.Responses
 {
-    public class GetAnalysisForFileResponse : StatisticsResultForLang
+    public class GetAnalysisResponse : StatisticsResultForLang
     {
-        public GetAnalysisForFileResponse(StatisticsResultForLang statistics) 
+        public GetAnalysisResponse(StatisticsResultForLang statistics) 
         { 
             ResultData = statistics.ResultData;
             TargetLangCode = statistics.TargetLangCode;

@@ -10,6 +10,7 @@ using Apps.Memoq.Models.Files.Requests;
 using Apps.Memoq.Models.Files.Responses;
 using MQS.TasksService;
 using StatisticsResultForLang = MQS.TasksService.StatisticsResultForLang;
+using System.Reflection.Metadata;
 
 namespace Apps.Memoq.Actions
 {
@@ -89,8 +90,8 @@ namespace Apps.Memoq.Actions
             };
         }
 
-        [Action("Get analysis for a file", Description = "Get analysis for a file")]
-        public GetAnalysisForFileResponse GetAnalysisForFile(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+        [Action("Get analysis for a document", Description = "Get analysis for a document")]
+        public GetAnalysisResponse GetAnalysisForFile(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] GetAnalysisForFileRequest input)
         {
             using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
@@ -106,10 +107,75 @@ namespace Apps.Memoq.Actions
             var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(authenticationCredentialsProviders, task.TaskId);
             var document = GetFile(authenticationCredentialsProviders, input.ProjectGuid, input.DocumentGuid);
             var statistics = taskResult.ResultsForTargetLangs.First();
-            return new GetAnalysisForFileResponse(statistics)
+            return new GetAnalysisResponse(statistics)
             {
                 Filename = $"{Path.GetFileNameWithoutExtension(document.DocumentName)}_{statistics.TargetLangCode}.html"
             };
+        }
+
+        [Action("Get analysis for all project documents", Description = "Get analysis for all project documents")]
+        public GetAnalysesForAllDocumentsResponse GetAnalysesForAllDocuments(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] GetAnalysisForFileRequest input)
+        {
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
+            var task = projectService.Service.StartStatisticsOnProjectTask2(new CreateStatisticsOnProjectRequest()
+            {
+                ProjectGuid = Guid.Parse(input.ProjectGuid),
+                Options = new StatisticsOptions()
+                {
+                    Algorithm = StatisticsAlgorithm.MemoQ
+                }
+            });
+            var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(authenticationCredentialsProviders, task.TaskId);
+            var analysis = taskResult.ResultsForTargetLangs.Select(x => new GetAnalysisResponse(x) { Filename = $"Analysis_{x.TargetLangCode}.html" }).ToList();
+            return new GetAnalysesForAllDocumentsResponse()
+            {
+                Analyses = analysis
+            };
+        }
+
+        [Action("Delete document from project", Description = "Delete document from project")]
+        public void DeleteFile(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+             [ActionParameter] DeleteFileRequest input)
+        {
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
+            projectService.Service.DeleteTranslationDocument(Guid.Parse(input.ProjectGuid), Guid.Parse(input.FileGuid));
+        }
+
+        [Action("Overwrite document in project", Description = "Overwrite document in project")]
+        public void OverwriteFileInProject(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+              [ActionParameter] OverwriteFileInProjectRequest input)
+        {
+            using var fileService = new MemoqServiceFactory<IFileManagerService>(ApplicationConstants.FileServiceUrl, authenticationCredentialsProviders);
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
+            var uploadFileResult = UploadFile(input.File, input.Filename, fileService.Service);
+            projectService.Service.ReImportTranslationDocuments(Guid.Parse(input.ProjectGuid),
+                new ReimportDocumentOptions[] {
+                    new ReimportDocumentOptions()
+                    {
+                        DocumentsToReplace = new Guid[] { Guid.Parse(input.DocumentToReplaceGuid) },
+                        FileGuid = uploadFileResult,
+                        KeepUserAssignments = input.KeepAssignments
+                    }
+                },
+                null
+            );
+        }
+
+        [Action("Apply translated content to updated source", Description = "Apply translated content to updated source")]
+        public ApplyTranslatedContentToUpdatedSourceResponse ApplyTranslatedContentToUpdatedSource(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+               [ActionParameter] ApplyTranslatedContentToUpdatedSourceRequest input)
+        {
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
+            var taskInfo = projectService.Service.StartXTranslateTask(Guid.Parse(input.ProjectGuid), new XTranslateOptions()
+            {
+                DocInfos = new XTranslateDocInfo[] { new XTranslateDocInfo() { DocumentGuid = Guid.Parse(input.DocumentGuid) } }
+            });
+            var taskResult = (XTranslateTaskResult)WaitForAsyncTaskToFinishAndGetResult(authenticationCredentialsProviders, taskInfo.TaskId);
+            return new ApplyTranslatedContentToUpdatedSourceResponse()
+            {
+                Results = taskResult.DocumentResults
+            };         
         }
 
         private Guid UploadFile(byte[] file, string fileName, IFileManagerService service)
