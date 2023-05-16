@@ -1,6 +1,7 @@
 ﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.TranslationMemories.Requests;
+using Apps.Memoq.Models.TranslationMemories.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
@@ -17,12 +18,28 @@ namespace Apps.Memoq.Actions
     [ActionList]
     public class TranslationMemoryActions
     {
+        [Action("List translation memories", Description = "List translation memories")]
+        public ListTranslationMemoriesResponse ListTranslationMemories(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+            [ActionParameter] string soureLang, [ActionParameter] string targetLang)
+        {
+            using var tmService = new MemoqServiceFactory<ITMService>(ApplicationConstants.TranslationMemoryServiceUrl, authenticationCredentialsProviders);
+            return new ListTranslationMemoriesResponse()
+            {
+                TranslationMemories = tmService.Service.ListTMs(soureLang, targetLang).ToList()
+            };
+        }
+
         [Action("Create translation memory", Description = "Create translation memory")]
         public TMInfo CreateTranslationMemory(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] CreateTranslationMemoryRequest input)
         {
             using var tmService = new MemoqServiceFactory<ITMService>(ApplicationConstants.TranslationMemoryServiceUrl, authenticationCredentialsProviders);
-            var tmGuid = tmService.Service.CreateAndPublish(new TMInfo() { Name = input.Name });
+            var tmGuid = tmService.Service.CreateAndPublish(
+                new TMInfo() { 
+                    Name = input.Name, 
+                    SourceLanguageCode = input.SourceLanguageCode,
+                    TargetLanguageCode = input.TargetLanguageCode,
+                });
             return tmService.Service.GetTMInfo(tmGuid);
         }
 
