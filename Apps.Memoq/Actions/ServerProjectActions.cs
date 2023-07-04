@@ -38,7 +38,7 @@ namespace Apps.Memoq.Actions
             projectService.Service.AddLanguageToProject(Guid.Parse(projectGuid), new ServerProjectAddLanguageInfo() { TargetLangCode = targetLangCode } );
         }
 
-        [Action("Create project", Description = "Create a new project")]
+        [Action("Create a project", Description = "Creates a new project in memoQ")]
         public ServerProjectInfo CreateProject(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProvider,
         [ActionParameter] CreateProjectRequest request)
         {
@@ -53,10 +53,11 @@ namespace Apps.Memoq.Actions
             };
             var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProvider);
             var guid = projectService.Service.CreateProject2(newProject);
+
             return projectService.Service.GetProject(guid);
         }
 
-        [Action("Create project from template", Description = "Create project from template")]
+        [Action("Create a project from a template", Description = "Creates a new project based on an existing memoQ project template")]
         public ServerProjectInfo CreateProjectFromTemplate(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProvider,
         [ActionParameter] CreateProjectTemplateRequest request)
         {

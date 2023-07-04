@@ -59,7 +59,7 @@ namespace Apps.Memoq.Actions
             projectService.Service.SetProjectTranslationDocumentUserAssignments(Guid.Parse(input.ProjectGuid), assignments);
         }
 
-        [Action("Upload file to project", Description = "Uploads and imports a file to a project")]
+        [Action("Upload a file to a project", Description = "Uploads and imports a file to a project")]
         public UploadFileResponse UploadAndImportFileToProject(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
             [ActionParameter] UploadDocumentToProjectRequest request)
         {
