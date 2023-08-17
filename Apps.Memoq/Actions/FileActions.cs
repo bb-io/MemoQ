@@ -56,7 +56,7 @@ namespace Apps.Memoq.Actions
         {
             var files = ListAllProjectFiles(project, new());
             return files.Files.FirstOrDefault(f => f.Guid == fileGuid)
-                   ?? throw new($"No file found with the provided id: {fileGuid}");
+                   ?? throw new($"No file found with the provided ID: {fileGuid}");
         }
 
         [Action("Assign file to user", Description = "Assign file to a specific user")]
