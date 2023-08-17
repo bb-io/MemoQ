@@ -147,7 +147,7 @@ namespace Apps.Memoq.Actions
         }
 
         [Action("Delete project", Description = "Delete a specific project")]
-        public void DeleteProject(ProjectRequest project)
+        public void DeleteProject([ActionParameter] ProjectRequest project)
         {
             var projectService = new MemoqServiceFactory<IServerProjectService>(
                 ApplicationConstants.ProjectServiceUrl, Creds);
