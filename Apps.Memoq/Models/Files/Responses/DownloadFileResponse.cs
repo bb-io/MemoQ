@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.Memoq.Models.Files.Responses
 {
     public class DownloadFileResponse
     {
+        [Display("File name")]
         public string FileName { get; set; }
 
         public byte[] File { get; set; }

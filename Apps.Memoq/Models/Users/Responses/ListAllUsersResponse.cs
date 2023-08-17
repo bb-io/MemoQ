@@ -1,14 +1,9 @@
-﻿using MQS.Security;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Apps.Memoq.Models.Dto;
 
 namespace Apps.Memoq.Models.Users.Responses
 {
     public class ListAllUsersResponse
     {
-        public IEnumerable<UserInfo> Users { get; set; }
+        public UserDto[] Users { get; set; }
     }
 }

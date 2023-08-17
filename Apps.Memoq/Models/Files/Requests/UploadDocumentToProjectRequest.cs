@@ -1,9 +1,15 @@
-﻿namespace Apps.Memoq.Models.Files.Requests;
+﻿using Apps.Memoq.Models.ServerProjects.Requests;
+using Blackbird.Applications.Sdk.Common;
 
-public class UploadDocumentToProjectRequest
+namespace Apps.Memoq.Models.Files.Requests;
+
+public class UploadDocumentToProjectRequest : ProjectRequest
 {
     public byte[] File { get; set; }
+    
+    [Display("File name")]
     public string FileName { get; set; }
-
-    public string ProjectGuid { get; set; }
+    
+    [Display("Target language codes")]
+    public IEnumerable<string>? TargetLanguageCodes { get; set; }
 }

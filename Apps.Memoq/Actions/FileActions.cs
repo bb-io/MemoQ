@@ -1,5 +1,7 @@
-﻿using Apps.Memoq.Contracts;
+﻿using Apps.Memoq.Constants;
+using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
+using Apps.Memoq.Models.Dto;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
@@ -8,198 +10,298 @@ using MQS.ServerProject;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.Files.Requests;
 using Apps.Memoq.Models.Files.Responses;
+using Apps.Memoq.Utils.FileUploader;
+using Apps.Memoq.Utils.FileUploader.Managers;
 using MQS.TasksService;
-using StatisticsResultForLang = MQS.TasksService.StatisticsResultForLang;
-using System.Reflection.Metadata;
+using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Utils.Parsers;
 
 namespace Apps.Memoq.Actions
 {
     [ActionList]
-    public class FileActions
+    public class FileActions : BaseInvocable
     {
-        [Action("List all project files", Description = "List all project files")]
-        public ListAllProjectFilesResponse ListAllProjectFiles(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-            [ActionParameter] string projectGuid)
-        {
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
-            var result = projectService.Service.ListProjectTranslationDocuments(Guid.Parse(projectGuid));
+        private IEnumerable<AuthenticationCredentialsProvider> Creds =>
+            InvocationContext.AuthenticationCredentialsProviders;
 
-            return new ListAllProjectFilesResponse
+        public FileActions(InvocationContext invocationContext) : base(invocationContext)
+        {
+        }
+
+        [Action("List project files", Description = "List all project files")]
+        public ListAllProjectFilesResponse ListAllProjectFiles(
+            [ActionParameter] ProjectRequest project,
+            [ActionParameter] ListProjectFilesRequest input)
+        {
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
+            var response = projectService.Service
+                .ListProjectTranslationDocuments2(Guid.Parse(project.ProjectGuid), new()
+                {
+                    FillInAssignmentInformation = input.FillInAssignmentInformation ?? default,
+                });
+
+            var files = response.Select(x => new FileDto(x)).ToArray();
+            return new()
             {
-                Files = result
+                Files = files
             };
         }
 
         [Action("Get file info", Description = "Get project file info by guid")]
-        public ServerProjectTranslationDocInfo? GetFile(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-            [ActionParameter] string projectGuid, [ActionParameter] string fileGuid)
+        public FileDto GetFile(
+            [ActionParameter] ProjectRequest project,
+            [ActionParameter] [Display("File GUID")]
+            string fileGuid)
         {
-            var files = ListAllProjectFiles(authenticationCredentialsProviders, projectGuid);
-            return files.Files.FirstOrDefault(f => f.DocumentGuid == Guid.Parse(fileGuid));
+            var files = ListAllProjectFiles(project, new());
+            return files.Files.FirstOrDefault(f => f.Guid == fileGuid)
+                   ?? throw new($"No file found with the provided id: {fileGuid}");
         }
 
-        [Action("Assign file to user", Description = "Assign file to user")]
-        public void AssignFileToUser(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-            [ActionParameter] AssignFileToUserRequest input)
+        [Action("Assign file to user", Description = "Assign file to a specific user")]
+        public void AssignFileToUser([ActionParameter] AssignFileToUserRequest input)
         {
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
-            var assignments = new ServerProjectTranslationDocumentUserAssignments[] { 
-                new ServerProjectTranslationDocumentUserAssignments()
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
+            var assignments = new ServerProjectTranslationDocumentUserAssignments[]
+            {
+                new()
                 {
                     DocumentGuid = Guid.Parse(input.FileGuid),
-                    UserRoleAssignments = new TranslationDocumentUserRoleAssignment[] { 
-                        new TranslationDocumentUserRoleAssignment() { 
+                    UserRoleAssignments = new TranslationDocumentUserRoleAssignment[]
+                    {
+                        new()
+                        {
                             UserGuid = Guid.Parse(input.UserGuid),
-                            DeadLine = DateTime.Parse(input.Deadline),
-                            DocumentAssignmentRole = input.Role
-                        } 
+                            DeadLine = input.Deadline,
+                            DocumentAssignmentRole = input.Role is not null ? int.Parse(input.Role) : default
+                        }
                     }
                 }
             };
-            projectService.Service.SetProjectTranslationDocumentUserAssignments(Guid.Parse(input.ProjectGuid), assignments);
+
+            projectService.Service
+                .SetProjectTranslationDocumentUserAssignments(Guid.Parse(input.ProjectGuid), assignments);
         }
 
         [Action("Upload a file to a project", Description = "Uploads and imports a file to a project")]
-        public UploadFileResponse UploadAndImportFileToProject(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+        public UploadFileResponse UploadAndImportFileToProject(
             [ActionParameter] UploadDocumentToProjectRequest request)
         {
-            using var fileService = new MemoqServiceFactory<IFileManagerService>(ApplicationConstants.FileServiceUrl, authenticationCredentialsProviders);
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
-            var uploadFileResult = UploadFile(request.File, request.FileName, fileService.Service);
-            var result = projectService.Service.ImportTranslationDocument(Guid.Parse(request.ProjectGuid), uploadFileResult, null, null);
-            return new UploadFileResponse
+            using var fileService = new MemoqServiceFactory<IFileManagerService>(
+                ApplicationConstants.FileServiceUrl, Creds);
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
+
+            var manager = new FileUploadManager(fileService.Service);
+            var uploadFileResult = FileUploader.UploadFile(request.File, manager, request.FileName);
+            var result = projectService.Service
+                .ImportTranslationDocument(
+                    Guid.Parse(request.ProjectGuid),
+                    uploadFileResult,
+                    request.TargetLanguageCodes?.ToArray(),
+                    null);
+
+            return new()
             {
                 DocumentGuids = result.DocumentGuids.Select(x => x.ToString()).ToArray()
             };
         }
 
-        [Action("Download file by guid", Description = "Download file by guid")]
-        public DownloadFileResponse DownloadFileByGuid(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+        [Action("Download file", Description = "Download specific file by guid")]
+        public DownloadFileResponse DownloadFileByGuid(
             [ActionParameter] DownloadFileRequest request)
         {
-            using var fileService = new MemoqServiceFactory<IFileManagerService>(ApplicationConstants.FileServiceUrl, authenticationCredentialsProviders);
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
+            using var fileService = new MemoqServiceFactory<IFileManagerService>(
+                ApplicationConstants.FileServiceUrl, Creds);
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
 
-            var exportResult = projectService.Service.ExportTranslationDocument(Guid.Parse(request.ProjectGuid), Guid.Parse(request.FileGuid));
-            string filename = "";
-            var data = DownloadFile(fileService.Service, exportResult.FileGuid, out filename);
-            return new DownloadFileResponse
+            var exportResult = projectService.Service
+                .ExportTranslationDocument(Guid.Parse(request.ProjectGuid), Guid.Parse(request.FileGuid));
+
+            var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
+
+            return new()
             {
                 FileName = filename,
                 File = data
             };
         }
 
-        [Action("Get analysis for a document", Description = "Get analysis for a document")]
-        public GetAnalysisResponse GetAnalysisForFile(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
+        [Action("Get analysis for a document", Description = "Get analysis for a specific document")]
+        public GetAnalysisResponse GetAnalysisForFile(
             [ActionParameter] GetAnalysisForFileRequest input)
         {
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
-            var task = projectService.Service.StartStatisticsOnTranslationDocumentsTask2(new CreateStatisticsOnDocumentsRequest()
-            {
-                ProjectGuid = Guid.Parse(input.ProjectGuid),
-                DocumentOrSliceGuids = new Guid[] { Guid.Parse(input.DocumentGuid) },
-                Options = new StatisticsOptions()
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
+
+            var task = projectService.Service.StartStatisticsOnTranslationDocumentsTask2(
+                new()
                 {
-                    Algorithm = StatisticsAlgorithm.MemoQ
-                }
-            });
-            var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(authenticationCredentialsProviders, task.TaskId);
-            var document = GetFile(authenticationCredentialsProviders, input.ProjectGuid, input.DocumentGuid);
+                    ProjectGuid = Guid.Parse(input.ProjectGuid),
+                    DocumentOrSliceGuids = new[] { Guid.Parse(input.DocumentGuid) },
+                    ResultFormat =
+                        EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format),
+                            EnumValues.Format) ?? default,
+                    Options = new()
+                    {
+                        Algorithm = EnumParser.Parse<StatisticsAlgorithm>(input.Algorithm, nameof(input.Algorithm),
+                            EnumValues.Algorithm) ?? default,
+                        Analysis_Homogenity = input.AnalysisHomogenity ?? default,
+                        Analysis_ProjectTMs = input.AnalysisProjectTMs ?? default,
+                        Analyzis_DetailsByTM = input.AnalysisDetailsByTM ?? default,
+                        DisableCrossFileRepetition = input.DisableCrossFileRepetition ?? default,
+                        IncludeLockedRows = input.IncludeLockedRows ?? default,
+                        RepetitionPreferenceOver100 = input.RepetitionPreferenceOver100 ?? default,
+                        ShowCounts = input.ShowCounts ?? default,
+                        ShowCounts_IncludeTargetCount = input.ShowCountsIncludeTargetCount ?? default,
+                        ShowCounts_IncludeWhitespacesInCharCount =
+                            input.ShowCountsIncludeWhitespacesInCharCount ?? default,
+                        ShowCounts_StatusReport = input.ShowCountsStatusReport ?? default,
+                        ShowResultsPerFile = input.ShowResultsPerFile ?? default,
+                        TagCharWeight = input.TagCharWeight ?? default,
+                        TagWordWeight = input.TagWordWeight ?? default,
+                    }
+                });
+
+            var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
+            var document = GetFile(input, input.DocumentGuid);
             var statistics = taskResult.ResultsForTargetLangs.First();
-            return new GetAnalysisResponse(statistics)
+
+            return new(statistics)
             {
-                Filename = $"{Path.GetFileNameWithoutExtension(document.DocumentName)}_{statistics.TargetLangCode}.html"
+                Filename = $"{Path.GetFileNameWithoutExtension(document.Name)}_{statistics.TargetLangCode}.html"
             };
         }
 
-        [Action("Get analysis for all project documents", Description = "Get analysis for all project documents")]
-        public GetAnalysesForAllDocumentsResponse GetAnalysesForAllDocuments(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-            [ActionParameter] GetAnalysisForFileRequest input)
+        [Action("Get analysis for project documents", Description = "Get analysis for all project documents")]
+        public GetAnalysesForAllDocumentsResponse GetAnalysesForAllDocuments(
+            [ActionParameter] GetAnalysisForProjectRequest input)
         {
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
-            var task = projectService.Service.StartStatisticsOnProjectTask2(new CreateStatisticsOnProjectRequest()
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
+            var task = projectService.Service.StartStatisticsOnProjectTask2(new()
             {
                 ProjectGuid = Guid.Parse(input.ProjectGuid),
-                Options = new StatisticsOptions()
+                ResultFormat =
+                    EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format),
+                        EnumValues.Format) ?? default,
+                Options = new()
                 {
-                    Algorithm = StatisticsAlgorithm.MemoQ
+                    Algorithm = EnumParser.Parse<StatisticsAlgorithm>(input.Algorithm, nameof(input.Algorithm),
+                        EnumValues.Algorithm) ?? default,
+                    Analysis_Homogenity = input.AnalysisHomogenity ?? default,
+                    Analysis_ProjectTMs = input.AnalysisProjectTMs ?? default,
+                    Analyzis_DetailsByTM = input.AnalysisDetailsByTM ?? default,
+                    DisableCrossFileRepetition = input.DisableCrossFileRepetition ?? default,
+                    IncludeLockedRows = input.IncludeLockedRows ?? default,
+                    RepetitionPreferenceOver100 = input.RepetitionPreferenceOver100 ?? default,
+                    ShowCounts = input.ShowCounts ?? default,
+                    ShowCounts_IncludeTargetCount = input.ShowCountsIncludeTargetCount ?? default,
+                    ShowCounts_IncludeWhitespacesInCharCount = input.ShowCountsIncludeWhitespacesInCharCount ?? default,
+                    ShowCounts_StatusReport = input.ShowCountsStatusReport ?? default,
+                    ShowResultsPerFile = input.ShowResultsPerFile ?? default,
+                    TagCharWeight = input.TagCharWeight ?? default,
+                    TagWordWeight = input.TagWordWeight ?? default,
                 }
             });
-            var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(authenticationCredentialsProviders, task.TaskId);
-            var analysis = taskResult.ResultsForTargetLangs.Select(x => new GetAnalysisResponse(x) { Filename = $"Analysis_{x.TargetLangCode}.html" }).ToList();
-            return new GetAnalysesForAllDocumentsResponse()
+
+            var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
+            var analysis = taskResult.ResultsForTargetLangs
+                .Select(x => new GetAnalysisResponse(x)
+                {
+                    Filename = $"Analysis_{x.TargetLangCode}.html"
+                }).ToList();
+
+            return new()
             {
                 Analyses = analysis
             };
         }
 
-        [Action("Delete document from project", Description = "Delete document from project")]
-        public void DeleteFile(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-             [ActionParameter] DeleteFileRequest input)
+        [Action("Delete document", Description = "Delete specific document from project")]
+        public void DeleteFile([ActionParameter] DeleteFileRequest input)
         {
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
-            projectService.Service.DeleteTranslationDocument(Guid.Parse(input.ProjectGuid), Guid.Parse(input.FileGuid));
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
+
+            projectService.Service
+                .DeleteTranslationDocument(Guid.Parse(input.ProjectGuid), Guid.Parse(input.FileGuid));
         }
 
-        [Action("Overwrite document in project", Description = "Overwrite document in project")]
-        public void OverwriteFileInProject(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-              [ActionParameter] OverwriteFileInProjectRequest input)
+        [Action("Overwrite document", Description = "Overwrite specific document in project")]
+        public void OverwriteFileInProject([ActionParameter] OverwriteFileInProjectRequest input)
         {
-            using var fileService = new MemoqServiceFactory<IFileManagerService>(ApplicationConstants.FileServiceUrl, authenticationCredentialsProviders);
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
-            var uploadFileResult = UploadFile(input.File, input.Filename, fileService.Service);
+            using var fileService = new MemoqServiceFactory<IFileManagerService>(
+                ApplicationConstants.FileServiceUrl, Creds);
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
+
+            var manager = new FileUploadManager(fileService.Service);
+            var uploadFileResult = FileUploader.UploadFile(input.File, manager, input.Filename);
             projectService.Service.ReImportTranslationDocuments(Guid.Parse(input.ProjectGuid),
-                new ReimportDocumentOptions[] {
-                    new ReimportDocumentOptions()
+                new ReimportDocumentOptions[]
+                {
+                    new()
                     {
-                        DocumentsToReplace = new Guid[] { Guid.Parse(input.DocumentToReplaceGuid) },
+                        DocumentsToReplace = new[] { Guid.Parse(input.DocumentToReplaceGuid) },
                         FileGuid = uploadFileResult,
-                        KeepUserAssignments = input.KeepAssignments
+                        KeepUserAssignments = input.KeepAssignments ?? default,
+                        PathToSetAsImportPath = input.PathToSetAsImportPath
                     }
                 },
                 null
             );
         }
 
-        [Action("Apply translated content to updated source", Description = "Apply translated content to updated source")]
-        public ApplyTranslatedContentToUpdatedSourceResponse ApplyTranslatedContentToUpdatedSource(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders,
-               [ActionParameter] ApplyTranslatedContentToUpdatedSourceRequest input)
+        [Action("Apply translated content to updated source",
+            Description = "Apply translated content to updated source")]
+        public ApplyTranslatedContentToUpdatedSourceResponse ApplyTranslatedContentToUpdatedSource(
+            [ActionParameter] ApplyTranslatedContentToUpdatedSourceRequest input)
         {
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl, authenticationCredentialsProviders);
-            var taskInfo = projectService.Service.StartXTranslateTask(Guid.Parse(input.ProjectGuid), new XTranslateOptions()
-            {
-                DocInfos = new XTranslateDocInfo[] { new XTranslateDocInfo() { DocumentGuid = Guid.Parse(input.DocumentGuid) } }
-            });
-            var taskResult = (XTranslateTaskResult)WaitForAsyncTaskToFinishAndGetResult(authenticationCredentialsProviders, taskInfo.TaskId);
-            return new ApplyTranslatedContentToUpdatedSourceResponse()
-            {
-                Results = taskResult.DocumentResults
-            };         
-        }
-
-        private Guid UploadFile(byte[] file, string fileName, IFileManagerService service)
-        {
-            using var fileStream = new MemoryStream(file);
-            const int chunkSize = 500000;
-            byte[] chunkBytes = new byte[chunkSize];
-            int bytesRead;
-            Guid fileGuid = service.BeginChunkedFileUpload(fileName, false);
-            while ((bytesRead = fileStream.Read(chunkBytes, 0, chunkSize)) != 0)
-            {
-                byte[] dataToUpload;
-                if (bytesRead == chunkSize)
-                    dataToUpload = chunkBytes;
-                else
+            using var projectService = new MemoqServiceFactory<IServerProjectService>(
+                ApplicationConstants.ProjectServiceUrl, Creds);
+            
+            var taskInfo = projectService.Service.StartXTranslateTask(Guid.Parse(input.ProjectGuid),
+                new()
                 {
-                    dataToUpload = new byte[bytesRead];
-                    Array.Copy(chunkBytes, dataToUpload, bytesRead);
-                }
-                service.AddNextFileChunk(fileGuid, dataToUpload);
-            }
-            if (fileGuid != Guid.Empty)
-                service.EndChunkedFileUpload(fileGuid);
-            return fileGuid;
+                    XTranslateScenario = EnumParser.Parse<XTranslateScenario>(input.XTranslateScenario,
+                        nameof(input.XTranslateScenario),
+                        EnumValues.XTranslateScenario) ?? default,
+
+                    WorkWithContextIds = input.WorkWithContextIds ?? default,
+                    DocInfos = new XTranslateDocInfo[]
+                    {
+                        new()
+                        {
+                            DocumentGuid = Guid.Parse(input.DocumentGuid)
+                        }
+                    },
+                    NewRevisionOptions = new()
+                    {
+                        ExpectedFinalState = EnumParser.Parse<ExpectedFinalStateAfterXTranslate>(
+                            input.ExpectedFinalState, nameof(input.ExpectedFinalState),
+                            EnumValues.ExpectedFinalState) ?? default,
+                        SourceFilter = EnumParser.Parse<ExpectedSourceStateBeforeXTranslate>(input.SourceFilter,
+                            nameof(input.SourceFilter),
+                            EnumValues.SourceFilter) ?? default,
+                        
+                        InsertEmptyTranslations = input.InsertEmptyTranslations ?? default,
+                        LockXTranslatedRows = input.LockXTranslatedRows ?? default,
+                    }
+                });
+
+            var taskResult = (XTranslateTaskResult)WaitForAsyncTaskToFinishAndGetResult(taskInfo.TaskId);
+            var documents = taskResult.DocumentResults
+                .Select(x => new XTranslateDocumentDto(x))
+                .ToArray();
+            
+            return new()
+            {
+                Results = documents
+            };
         }
 
         private byte[] DownloadFile(IFileManagerService fmService, Guid fileGuid, out string fileName)
@@ -207,40 +309,45 @@ namespace Apps.Memoq.Actions
             const int chunkSize = 500000;
             byte[] chunkBytes;
 
-            var downloadResponse = fmService.BeginChunkedFileDownload(new BeginChunkedFileDownloadRequest(fileGuid, false));
+            var downloadResponse = fmService.BeginChunkedFileDownload(new(fileGuid, false));
             fileName = downloadResponse.fileName;
-            int fileBytesLeft = downloadResponse.fileSize;
-            byte[] result = new byte[fileBytesLeft];
+
+            var fileBytesLeft = downloadResponse.fileSize;
+            var result = new byte[fileBytesLeft];
 
             while (fileBytesLeft > 0)
             {
                 chunkBytes = fmService.GetNextFileChunk(downloadResponse.BeginChunkedFileDownloadResult, chunkSize);
                 Array.Copy(chunkBytes, 0, result, downloadResponse.fileSize - fileBytesLeft, chunkBytes.Length);
                 fileBytesLeft -= chunkBytes.Length;
-            }         
+            }
+
             if (downloadResponse.BeginChunkedFileDownloadResult != Guid.Empty)
                 fmService.EndChunkedFileDownload(downloadResponse.BeginChunkedFileDownloadResult);
+
             fmService.DeleteFile(fileGuid);
+
             return result;
         }
 
-        private TaskResult WaitForAsyncTaskToFinishAndGetResult(IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders, Guid TaskId)
+        private TaskResult WaitForAsyncTaskToFinishAndGetResult(Guid TaskId)
         {
-            using var taskService = new MemoqServiceFactory<ITasksService>(ApplicationConstants.TaskServiceUrl, authenticationCredentialsProviders);
+            using var taskService = new MemoqServiceFactory<ITasksService>(
+                ApplicationConstants.TaskServiceUrl, Creds);
             var taskStatus = taskService.Service.GetTaskStatus(TaskId).Status;
-            int i = 1;
-            while (taskStatus != MQS.TasksService.TaskStatus.Cancelled
-                        && taskStatus != MQS.TasksService.TaskStatus.Completed
-                        && taskStatus != MQS.TasksService.TaskStatus.Failed
-                        && taskStatus != MQS.TasksService.TaskStatus.InvalidTask)
+            var i = 1;
+            while (taskStatus == MQS.TasksService.TaskStatus.Pending
+                   || taskStatus == MQS.TasksService.TaskStatus.Executing)
             {
                 if (i < 16)
                     i = 2 * i;
                 Thread.Sleep(i * 1000);
                 taskStatus = taskService.Service.GetTaskStatus(TaskId).Status;
             }
+
             if (taskStatus != MQS.TasksService.TaskStatus.Completed)
                 throw new Exception($"Task has status {taskStatus.ToString()}.");
+
             return taskService.Service.GetTaskResult(TaskId);
         }
     }

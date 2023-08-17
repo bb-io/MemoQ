@@ -1,19 +1,20 @@
-﻿using MQS.TasksService;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Blackbird.Applications.Sdk.Common;
+using MQS.TasksService;
 
 namespace Apps.Memoq.Models.Files.Responses
 {
-    public class GetAnalysisResponse : StatisticsResultForLang
+    public class GetAnalysisResponse
     {
-        public GetAnalysisResponse(StatisticsResultForLang statistics) 
-        { 
+        [Display("Result data")] public byte[] ResultData { get; set; }
+
+        [Display("Target language code")] public string TargetLangCode { get; set; }
+
+        [Display("File name")] public string Filename { get; set; }
+
+        public GetAnalysisResponse(StatisticsResultForLang statistics)
+        {
             ResultData = statistics.ResultData;
             TargetLangCode = statistics.TargetLangCode;
         }
-        public string Filename { get; set; }
     }
 }

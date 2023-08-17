@@ -12,5 +12,5 @@ public static class ApplicationConstants
 
     public const string TranslationMemoryServiceUrl = "/tm/tmservice";
 
-    public static readonly Guid AdminGuid = new Guid("00000000-0000-0000-0001-000000000001");
+    public static readonly Guid AdminGuid = new("00000000-0000-0000-0001-000000000001");
 }

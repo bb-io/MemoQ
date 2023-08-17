@@ -1,17 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Apps.Memoq.DataSourceHandlers;
+using Apps.Memoq.DataSourceHandlers.Enums;
+using Apps.Memoq.Models.ServerProjects.Requests;
+using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.Files.Requests
 {
-    public class AssignFileToUserRequest
+    public class AssignFileToUserRequest : ProjectRequest
     {
-        public string ProjectGuid { get; set; }
+        [Display("File GUID")]
         public string FileGuid { get; set; }
+        
+        [Display("User GUID")]
+        [DataSource(typeof(UserDataHandler))]
         public string UserGuid { get; set; }
-        public string Deadline { get; set; }
-        public int Role { get; set; }
+        public DateTime Deadline { get; set; }
+        
+        [DataSource(typeof(DocumentAssignmentRoleDataHandler))]
+        public string? Role { get; set; }
     }
 }

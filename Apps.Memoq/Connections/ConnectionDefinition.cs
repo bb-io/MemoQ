@@ -1,10 +1,5 @@
 ﻿using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Apps.Memoq.Connections
 {
@@ -12,15 +7,15 @@ namespace Apps.Memoq.Connections
     {
         public IEnumerable<ConnectionPropertyGroup> ConnectionPropertyGroups => new List<ConnectionPropertyGroup>()
         {
-            new ConnectionPropertyGroup
+            new()
             {
                 Name = "Developer API token",
                 AuthenticationType = ConnectionAuthenticationType.Undefined,
                 ConnectionUsage = ConnectionUsage.Actions,
                 ConnectionProperties = new List<ConnectionProperty>()
                 {
-                    new ConnectionProperty("url"),
-                    new ConnectionProperty("apiKey")
+                    new("url"),
+                    new("apiKey")
                 }
             }
         };

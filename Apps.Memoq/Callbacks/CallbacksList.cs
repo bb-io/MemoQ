@@ -1,9 +1,8 @@
 ﻿using Apps.Memoq.Callbacks.Payload;
 using Blackbird.Applications.Sdk.Common.Webhooks;
 using Newtonsoft.Json;
-using System.Text.Json;
 
-namespace Apps.Memoq.Webhooks
+namespace Apps.Memoq.Callbacks
 {
     [WebhookList]
     public class CallbacksList 

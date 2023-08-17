@@ -1,15 +1,10 @@
 ﻿
-using MQS.TM;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Apps.Memoq.Models.Dto;
 
 namespace Apps.Memoq.Models.TranslationMemories.Responses
 {
     public class ListTranslationMemoriesResponse
     {
-        public IEnumerable<TMInfo> TranslationMemories { get; set; }
+        public TmDto[] TranslationMemories { get; set; }
     }
 }

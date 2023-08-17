@@ -1,14 +1,9 @@
-﻿using MQS.ServerProject;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Apps.Memoq.Models.Dto;
 
 namespace Apps.Memoq.Models.Files.Responses
 {
     public class ListAllProjectFilesResponse
     {
-        public IEnumerable<ServerProjectTranslationDocInfo> Files { get; set; }
+        public FileDto[] Files { get; set; }
     }
 }

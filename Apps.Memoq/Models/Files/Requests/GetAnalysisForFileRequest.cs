@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.Memoq.Models.Files.Requests
 {
-    public class GetAnalysisForFileRequest
+    public class GetAnalysisForFileRequest : GetAnalysisForProjectRequest
     {
-        public string ProjectGuid { get; set; }
-
-        public string DocumentGuid { get; set; }
+        [Display("Document GUID")] public string DocumentGuid { get; set; }
     }
 }

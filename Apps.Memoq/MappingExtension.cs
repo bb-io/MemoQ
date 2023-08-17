@@ -4,7 +4,7 @@ public static class MappingExtension
 {
     public static string[] ToArray(this string source)
     {
-        char[] separators = new char[] { ' ', ',', ';' };
+        char[] separators = new[] { ' ', ',', ';' };
         return source.Split(separators, StringSplitOptions.RemoveEmptyEntries);
     }
 }

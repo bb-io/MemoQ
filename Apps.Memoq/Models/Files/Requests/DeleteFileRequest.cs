@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Apps.Memoq.Models.ServerProjects.Requests;
+using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.Memoq.Models.Files.Requests
 {
-    public class DeleteFileRequest
+    public class DeleteFileRequest : ProjectRequest
     {
-        public string ProjectGuid { get; set; }
-
+        [Display("File GUID")]
         public string FileGuid { get; set; }
     }
 }

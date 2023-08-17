@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.Memoq.Models.ServerProjects.Requests
 {
-    public class DownloadFileRequest
+    public class DownloadFileRequest : ProjectRequest
     {
-        public string ProjectGuid { get; set; }
+        [Display("File GUID")]
         public string FileGuid { get; set; }
     }
 }
