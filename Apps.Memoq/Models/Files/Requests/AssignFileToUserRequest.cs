@@ -11,7 +11,7 @@ namespace Apps.Memoq.Models.Files.Requests
         [Display("File GUID")]
         public string FileGuid { get; set; }
         
-        [Display("User GUID")]
+        [Display("User")]
         [DataSource(typeof(UserDataHandler))]
         public string UserGuid { get; set; }
         public DateTime Deadline { get; set; }

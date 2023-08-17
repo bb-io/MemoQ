@@ -9,13 +9,13 @@ public class ProjectDto
     public string Guid { get; set; }
     public string Name { get; set; }
 
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
-    public string Client { get; set; }
+    public string? Client { get; set; }
 
-    public string Domain { get; set; }
+    public string? Domain { get; set; }
 
-    public string Subject { get; set; }
+    public string? Subject { get; set; }
 
     public DateTime Deadline { get; set; }
 
