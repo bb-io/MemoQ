@@ -10,6 +10,7 @@ namespace Apps.Memoq.Models.TranslationMemories.Requests
         public string? Client;
         public string? Domain;
         public string? Subject;
+        public string? Project;
 
         [Display("Allow multiple")] public bool? AllowMultiple { get; set; }
 

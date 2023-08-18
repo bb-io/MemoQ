@@ -55,6 +55,7 @@ namespace Apps.Memoq.Actions
                 Client = input.Client,
                 Domain = input.Domain,
                 Subject = input.Subject,
+                Project = input.Project,
                 AllowMultiple = input.AllowMultiple ?? default,
                 AllowReverseLookup = input.AllowReverseLookup ?? default,
                 CreatorUsername = input.CreatorUsername,
