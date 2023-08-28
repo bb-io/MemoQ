@@ -2,28 +2,27 @@
 using Blackbird.Applications.Sdk.Common.Webhooks;
 using Newtonsoft.Json;
 
-namespace Apps.Memoq.Callbacks
+namespace Apps.Memoq.Callbacks;
+
+[WebhookList]
+public class CallbacksList 
 {
-    [WebhookList]
-    public class CallbacksList 
+    #region Deliver callbacks
+
+    [Webhook("On document delivered", Description = "On document delivered")]
+    public async Task<WebhookResponse<ProjectDeliveredDto>> ProjectCreation(WebhookRequest webhookRequest)
     {
-        #region Deliver callbacks
-
-        [Webhook("On document delivered", Description = "On document delivered")]
-        public async Task<WebhookResponse<ProjectDeliveredDto>> ProjectCreation(WebhookRequest webhookRequest)
+        var data = JsonConvert.DeserializeObject<ProjectDeliveredDto>(webhookRequest.Body.ToString());
+        if(data is null)
         {
-            var data = JsonConvert.DeserializeObject<ProjectDeliveredDto>(webhookRequest.Body.ToString());
-            if(data is null)
-            {
-                throw new InvalidCastException(nameof(webhookRequest.Body));
-            }
-            return new WebhookResponse<ProjectDeliveredDto>
-            {
-                HttpResponseMessage = null,
-                Result = data
-            };
+            throw new InvalidCastException(nameof(webhookRequest.Body));
         }
-
-        #endregion
+        return new WebhookResponse<ProjectDeliveredDto>
+        {
+            HttpResponseMessage = null,
+            Result = data
+        };
     }
+
+    #endregion
 }

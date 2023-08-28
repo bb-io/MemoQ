@@ -1,7 +1,6 @@
-﻿namespace Apps.Memoq.Models.Files.Responses
+﻿namespace Apps.Memoq.Models.Files.Responses;
+
+public class GetAnalysesForAllDocumentsResponse
 {
-    public class GetAnalysesForAllDocumentsResponse
-    {
-        public IEnumerable<GetAnalysisResponse> Analyses { get; set; }
-    }
+    public IEnumerable<GetAnalysisResponse> Analyses { get; set; }
 }

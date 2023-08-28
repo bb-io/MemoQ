@@ -13,81 +13,80 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Parsers;
 using MQS.TM;
 
-namespace Apps.Memoq.Actions
+namespace Apps.Memoq.Actions;
+
+[ActionList]
+public class TranslationMemoryActions : BaseInvocable
 {
-    [ActionList]
-    public class TranslationMemoryActions : BaseInvocable
+    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
+        InvocationContext.AuthenticationCredentialsProviders;
+
+    public TranslationMemoryActions(InvocationContext invocationContext) : base(invocationContext)
     {
-        private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-            InvocationContext.AuthenticationCredentialsProviders;
+    }
 
-        public TranslationMemoryActions(InvocationContext invocationContext) : base(invocationContext)
-        {
-        }
+    [Action("List translation memories", Description = "List translation memories")]
+    public ListTranslationMemoriesResponse ListTranslationMemories(
+        [ActionParameter] LanguagesRequest input)
+    {
+        using var tmService = new MemoqServiceFactory<ITMService>(
+            ApplicationConstants.TranslationMemoryServiceUrl, Creds);
 
-        [Action("List translation memories", Description = "List translation memories")]
-        public ListTranslationMemoriesResponse ListTranslationMemories(
-            [ActionParameter] LanguagesRequest input)
-        {
-            using var tmService = new MemoqServiceFactory<ITMService>(
-                ApplicationConstants.TranslationMemoryServiceUrl, Creds);
-
-            var response = tmService.Service.ListTMs(input.SourceLanguage, input.TargetLanguage);
-            var translationMemories = response.Select(x => new TmDto(x)).ToArray();
+        var response = tmService.Service.ListTMs(input.SourceLanguage, input.TargetLanguage);
+        var translationMemories = response.Select(x => new TmDto(x)).ToArray();
             
-            return new()
-            {
-                TranslationMemories = translationMemories
-            };
-        }
-
-        [Action("Create translation memory", Description = "Create translation memory")]
-        public TmDto CreateTranslationMemory([ActionParameter] CreateTranslationMemoryRequest input)
+        return new()
         {
-            using var tmService = new MemoqServiceFactory<ITMService>(
-                ApplicationConstants.TranslationMemoryServiceUrl, Creds);
+            TranslationMemories = translationMemories
+        };
+    }
 
-            var tmGuid = tmService.Service.CreateAndPublish(new()
-            {
-                Name = input.Name,
-                SourceLanguageCode = input.SourceLanguage,
-                TargetLanguageCode = input.TargetLanguage,
-                Client = input.Client,
-                Domain = input.Domain,
-                Subject = input.Subject,
-                Project = input.Project,
-                AllowMultiple = input.AllowMultiple ?? default,
-                AllowReverseLookup = input.AllowReverseLookup ?? default,
-                CreatorUsername = input.CreatorUsername,
-                OptimizationPreference = EnumParser.Parse<TMOptimizationPreference>(input.OptimizationPreference,
-                    nameof(input.OptimizationPreference), EnumValues.TMOptimizationPreference) ?? default,
-                StoreDocumentFullPath = input.StoreDocumentFullPath ?? default,
-                StoreDocumentName = input.StoreDocumentName ?? default,
-                StoreFormatting = input.StoreFormatting ?? default,
-                TMEngineType =
-                    EnumParser.Parse<TMEngineType>(input.TMEngineType, nameof(input.TMEngineType),
-                        EnumValues.TMEngineType) ?? default,
-                UseContext = input.UseContext ?? default,
-                UseIceSpiceContext = input.UseIceSpiceContext ?? default,
-            });
+    [Action("Create translation memory", Description = "Create translation memory")]
+    public TmDto CreateTranslationMemory([ActionParameter] CreateTranslationMemoryRequest input)
+    {
+        using var tmService = new MemoqServiceFactory<ITMService>(
+            ApplicationConstants.TranslationMemoryServiceUrl, Creds);
 
-            var response = tmService.Service.GetTMInfo(tmGuid);
-            return new(response);
-        }
-
-        [Action("Import TMX file", Description = "Import TMX file")]
-        public ImportTmxFileResponse ImportTMXFile([ActionParameter] ImportTMXFileRequest input)
+        var tmGuid = tmService.Service.CreateAndPublish(new()
         {
-            using var tmService = new MemoqServiceFactory<ITMService>(
-                ApplicationConstants.TranslationMemoryServiceUrl, Creds);
+            Name = input.Name,
+            SourceLanguageCode = input.SourceLanguage,
+            TargetLanguageCode = input.TargetLanguage,
+            Client = input.Client,
+            Domain = input.Domain,
+            Subject = input.Subject,
+            Project = input.Project,
+            AllowMultiple = input.AllowMultiple ?? default,
+            AllowReverseLookup = input.AllowReverseLookup ?? default,
+            CreatorUsername = input.CreatorUsername,
+            OptimizationPreference = EnumParser.Parse<TMOptimizationPreference>(input.OptimizationPreference,
+                nameof(input.OptimizationPreference), EnumValues.TMOptimizationPreference) ?? default,
+            StoreDocumentFullPath = input.StoreDocumentFullPath ?? default,
+            StoreDocumentName = input.StoreDocumentName ?? default,
+            StoreFormatting = input.StoreFormatting ?? default,
+            TMEngineType =
+                EnumParser.Parse<TMEngineType>(input.TMEngineType, nameof(input.TMEngineType),
+                    EnumValues.TMEngineType) ?? default,
+            UseContext = input.UseContext ?? default,
+            UseIceSpiceContext = input.UseIceSpiceContext ?? default,
+        });
 
-            var manager = new TMXUploadManager(tmService.Service);
-            var result = FileUploader.UploadFile(input.File, manager, input.TmGuid);
+        var response = tmService.Service.GetTMInfo(tmGuid);
+        return new(response);
+    }
 
-            return new()
-            {
-                Guid = result.ToString()
-            };
-        }
+    [Action("Import TMX file", Description = "Import TMX file")]
+    public ImportTmxFileResponse ImportTMXFile([ActionParameter] ImportTMXFileRequest input)
+    {
+        using var tmService = new MemoqServiceFactory<ITMService>(
+            ApplicationConstants.TranslationMemoryServiceUrl, Creds);
+
+        var manager = new TMXUploadManager(tmService.Service);
+        var result = FileUploader.UploadFile(input.File.Bytes, manager, input.TmGuid);
+
+        return new()
+        {
+            Guid = result.ToString()
+        };
     }
 }

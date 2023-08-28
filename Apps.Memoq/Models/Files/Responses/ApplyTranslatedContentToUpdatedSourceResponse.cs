@@ -1,10 +1,9 @@
 ﻿
 using Apps.Memoq.Models.Dto;
 
-namespace Apps.Memoq.Models.Files.Responses
+namespace Apps.Memoq.Models.Files.Responses;
+
+public class ApplyTranslatedContentToUpdatedSourceResponse
 {
-    public class ApplyTranslatedContentToUpdatedSourceResponse
-    {
-        public XTranslateDocumentDto[] Results { get; set; }
-    }
+    public XTranslateDocumentDto[] Results { get; set; }
 }

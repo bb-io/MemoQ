@@ -1,6 +1,5 @@
-﻿namespace Apps.Memoq.Callbacks.Payload
+﻿namespace Apps.Memoq.Callbacks.Payload;
+
+public class ProjectDeliveredDto
 {
-    public class ProjectDeliveredDto
-    {
-    }
 }

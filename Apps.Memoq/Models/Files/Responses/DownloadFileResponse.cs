@@ -1,12 +1,8 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using File = Blackbird.Applications.Sdk.Common.Files.File;
 
-namespace Apps.Memoq.Models.Files.Responses
+namespace Apps.Memoq.Models.Files.Responses;
+
+public class DownloadFileResponse
 {
-    public class DownloadFileResponse
-    {
-        [Display("File name")]
-        public string FileName { get; set; }
-
-        public byte[] File { get; set; }
-    }
+    public File File { get; set; }
 }

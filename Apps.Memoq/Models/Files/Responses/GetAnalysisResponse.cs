@@ -1,20 +1,23 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using System.Net.Mime;
+using Blackbird.Applications.Sdk.Common;
 using MQS.TasksService;
+using File = Blackbird.Applications.Sdk.Common.Files.File;
 
-namespace Apps.Memoq.Models.Files.Responses
+namespace Apps.Memoq.Models.Files.Responses;
+
+public class GetAnalysisResponse
 {
-    public class GetAnalysisResponse
+    [Display("Result data")] public File ResultData { get; set; }
+
+    [Display("Target language code")] public string TargetLangCode { get; set; }
+
+    public GetAnalysisResponse(StatisticsResultForLang statistics, string fileName, string? contentType = null)
     {
-        [Display("Result data")] public byte[] ResultData { get; set; }
-
-        [Display("Target language code")] public string TargetLangCode { get; set; }
-
-        [Display("File name")] public string Filename { get; set; }
-
-        public GetAnalysisResponse(StatisticsResultForLang statistics)
+        ResultData = new(statistics.ResultData)
         {
-            ResultData = statistics.ResultData;
-            TargetLangCode = statistics.TargetLangCode;
-        }
+            Name = fileName,
+            ContentType = contentType ?? MediaTypeNames.Application.Octet
+        };
+        TargetLangCode = statistics.TargetLangCode;
     }
 }

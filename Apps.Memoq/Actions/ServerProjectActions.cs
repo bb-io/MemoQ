@@ -11,148 +11,147 @@ using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using MQS.ServerProject;
 
-namespace Apps.Memoq.Actions
+namespace Apps.Memoq.Actions;
+
+[ActionList]
+public class ServerProjectActions : BaseInvocable
 {
-    [ActionList]
-    public class ServerProjectActions : BaseInvocable
+    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
+        InvocationContext.AuthenticationCredentialsProviders;
+
+    public ServerProjectActions(InvocationContext invocationContext) : base(invocationContext)
     {
-        private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-            InvocationContext.AuthenticationCredentialsProviders;
+    }
 
-        public ServerProjectActions(InvocationContext invocationContext) : base(invocationContext)
+    [Action("List projects", Description = "List all projects")]
+    public ListAllProjectsResponse ListAllProjects([ActionParameter] ListProjectsRequest input)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            ApplicationConstants.ProjectServiceUrl, Creds);
+
+        var response = projectService.Service.ListProjects(new()
         {
-        }
+            Client = input.Client,
+            Domain = input.Domain,
+            LastChangedBefore = input.LastChangedBefore,
+            NameOrDescription = input.NameOrDescription,
+            Project = input.Project,
+            SourceLanguageCode = input.SourceLanguageCode,
+            TargetLanguageCode = input.TargetLanguageCode,
+            Subject = input.Subject,
+            TimeClosed = input.TimeClosed ?? default,
+        });
 
-        [Action("List projects", Description = "List all projects")]
-        public ListAllProjectsResponse ListAllProjects([ActionParameter] ListProjectsRequest input)
+        var projects = response.Select(x => new ProjectDto(x)).ToArray();
+
+        return new()
         {
-            var projectService = new MemoqServiceFactory<IServerProjectService>(
-                ApplicationConstants.ProjectServiceUrl, Creds);
+            ServerProjects = projects
+        };
+    }
 
-            var response = projectService.Service.ListProjects(new()
+    [Action("Get project", Description = "Get project by UId")]
+    public ProjectDto GetProject([ActionParameter] ProjectRequest project)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            ApplicationConstants.ProjectServiceUrl, Creds);
+
+        var response = projectService.Service.GetProject(Guid.Parse(project.ProjectGuid));
+        return new(response);
+    }
+
+    [Action("Add target language to project", Description = "Add target language to project by code")]
+    public void AddNewTargetLanguageToProject(
+        [ActionParameter] ProjectRequest project,
+        [ActionParameter] [DataSource(typeof(TargetLanguageDataHandler))] [Display("Target language")]
+        string targetLangCode)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            ApplicationConstants.ProjectServiceUrl, Creds);
+
+        projectService.Service
+            .AddLanguageToProject(Guid.Parse(project.ProjectGuid), new()
             {
-                Client = input.Client,
-                Domain = input.Domain,
-                LastChangedBefore = input.LastChangedBefore,
-                NameOrDescription = input.NameOrDescription,
-                Project = input.Project,
-                SourceLanguageCode = input.SourceLanguageCode,
-                TargetLanguageCode = input.TargetLanguageCode,
-                Subject = input.Subject,
-                TimeClosed = input.TimeClosed ?? default,
+                TargetLangCode = targetLangCode
             });
+    }
 
-            var projects = response.Select(x => new ProjectDto(x)).ToArray();
+    [Action("Create a project", Description = "Creates a new project in memoQ")]
+    public ProjectDto CreateProject([ActionParameter] CreateProjectRequest request)
+    {
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(
+            ApplicationConstants.ProjectServiceUrl, Creds);
 
-            return new()
+        var newProject = new ServerProjectDesktopDocsCreateInfo
+        {
+            Deadline = request.Deadline,
+            Name = request.ProjectName,
+            CreatorUser = ApplicationConstants.AdminGuid,
+            SourceLanguageCode = request.SourceLangCode,
+            TargetLanguageCodes = request.TargetLangCodes.ToArray(),
+            CallbackWebServiceUrl = request.CallbackUrl,
+            Description = request.Description,
+            Domain = request.Domain,
+            Subject = request.Subject,
+            StrictSubLangMatching = request.StrictSubLangMatching ?? default,
+            EnableCommunication = request.EnableCommunication ?? default,
+            DownloadSkeleton2 = request.DownloadSkeleton2 ?? default,
+            DownloadPreview2 = request.DownloadPreview2 ?? default,
+            CustomMetas = request.CustomMetas,
+            Client = request.Client,
+            AllowPackageCreation = request.AllowPackageCreation ?? default,
+            AllowOverlappingWorkflow = request.AllowOverlappingWorkflow ?? default,
+            EnableWebTrans = request.EnableWebTrans ?? default,
+            EnableSplitJoin = request.EnableSplitJoin ?? default,
+            DownloadSkeleton = request.DownloadSkeleton ?? default,
+            DownloadPreview = request.DownloadPreview ?? default,
+            CreateOfflineTMTBCopies = request.CreateOfflineTMTBCopies ?? default,
+            ConfidentialitySettings = new()
             {
-                ServerProjects = projects
-            };
-        }
+                DisableTMPlugins = request.DisableTMPlugins,
+                DisableTBPlugins = request.DisableTBPlugins,
+                DisableMTPlugins = request.DisableMTPlugins,
+            }
+        };
 
-        [Action("Get project", Description = "Get project by UId")]
-        public ProjectDto GetProject([ActionParameter] ProjectRequest project)
+        var guid = projectService.Service.CreateProject2(newProject);
+        var response = projectService.Service.GetProject(guid);
+
+        return new(response);
+    }
+
+    [Action("Create a project from a template",
+        Description = "Creates a new project based on an existing memoQ project template")]
+    public ProjectDto CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
+    {
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(
+            ApplicationConstants.ProjectServiceUrl, Creds);
+
+        var newProject = new TemplateBasedProjectCreateInfo
         {
-            var projectService = new MemoqServiceFactory<IServerProjectService>(
-                ApplicationConstants.ProjectServiceUrl, Creds);
+            Name = request.ProjectName,
+            CreatorUser = ApplicationConstants.AdminGuid,
+            SourceLanguageCode = request.SourceLangCode,
+            TargetLanguageCodes = request.TargetLangCodes.ToArray(),
+            Description = request.Description,
+            Domain = request.Domain,
+            Subject = request.Subject,
+            Client = request.Client,
+            TemplateGuid = Guid.Parse(request.TemplateGuid)
+        };
 
-            var response = projectService.Service.GetProject(Guid.Parse(project.ProjectGuid));
-            return new(response);
-        }
+        var result = projectService.Service.CreateProjectFromTemplate(newProject);
+        var response = projectService.Service.GetProject(result.ProjectGuid);
 
-        [Action("Add target language to project", Description = "Add target language to project by code")]
-        public void AddNewTargetLanguageToProject(
-            [ActionParameter] ProjectRequest project,
-            [ActionParameter] [DataSource(typeof(TargetLanguageDataHandler))] [Display("Target language")]
-            string targetLangCode)
-        {
-            var projectService = new MemoqServiceFactory<IServerProjectService>(
-                ApplicationConstants.ProjectServiceUrl, Creds);
+        return new(response);
+    }
 
-            projectService.Service
-                .AddLanguageToProject(Guid.Parse(project.ProjectGuid), new()
-                {
-                    TargetLangCode = targetLangCode
-                });
-        }
+    [Action("Delete project", Description = "Delete a specific project")]
+    public void DeleteProject([ActionParameter] ProjectRequest project)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            ApplicationConstants.ProjectServiceUrl, Creds);
 
-        [Action("Create a project", Description = "Creates a new project in memoQ")]
-        public ProjectDto CreateProject([ActionParameter] CreateProjectRequest request)
-        {
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(
-                ApplicationConstants.ProjectServiceUrl, Creds);
-
-            var newProject = new ServerProjectDesktopDocsCreateInfo
-            {
-                Deadline = request.Deadline,
-                Name = request.ProjectName,
-                CreatorUser = ApplicationConstants.AdminGuid,
-                SourceLanguageCode = request.SourceLangCode,
-                TargetLanguageCodes = request.TargetLangCodes.ToArray(),
-                CallbackWebServiceUrl = request.CallbackUrl,
-                Description = request.Description,
-                Domain = request.Domain,
-                Subject = request.Subject,
-                StrictSubLangMatching = request.StrictSubLangMatching ?? default,
-                EnableCommunication = request.EnableCommunication ?? default,
-                DownloadSkeleton2 = request.DownloadSkeleton2 ?? default,
-                DownloadPreview2 = request.DownloadPreview2 ?? default,
-                CustomMetas = request.CustomMetas,
-                Client = request.Client,
-                AllowPackageCreation = request.AllowPackageCreation ?? default,
-                AllowOverlappingWorkflow = request.AllowOverlappingWorkflow ?? default,
-                EnableWebTrans = request.EnableWebTrans ?? default,
-                EnableSplitJoin = request.EnableSplitJoin ?? default,
-                DownloadSkeleton = request.DownloadSkeleton ?? default,
-                DownloadPreview = request.DownloadPreview ?? default,
-                CreateOfflineTMTBCopies = request.CreateOfflineTMTBCopies ?? default,
-                ConfidentialitySettings = new()
-                {
-                    DisableTMPlugins = request.DisableTMPlugins,
-                    DisableTBPlugins = request.DisableTBPlugins,
-                    DisableMTPlugins = request.DisableMTPlugins,
-                }
-            };
-
-            var guid = projectService.Service.CreateProject2(newProject);
-            var response = projectService.Service.GetProject(guid);
-
-            return new(response);
-        }
-
-        [Action("Create a project from a template",
-            Description = "Creates a new project based on an existing memoQ project template")]
-        public ProjectDto CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
-        {
-            using var projectService = new MemoqServiceFactory<IServerProjectService>(
-                ApplicationConstants.ProjectServiceUrl, Creds);
-
-            var newProject = new TemplateBasedProjectCreateInfo
-            {
-                Name = request.ProjectName,
-                CreatorUser = ApplicationConstants.AdminGuid,
-                SourceLanguageCode = request.SourceLangCode,
-                TargetLanguageCodes = request.TargetLangCodes.ToArray(),
-                Description = request.Description,
-                Domain = request.Domain,
-                Subject = request.Subject,
-                Client = request.Client,
-                TemplateGuid = Guid.Parse(request.TemplateGuid)
-            };
-
-            var result = projectService.Service.CreateProjectFromTemplate(newProject);
-            var response = projectService.Service.GetProject(result.ProjectGuid);
-
-            return new(response);
-        }
-
-        [Action("Delete project", Description = "Delete a specific project")]
-        public void DeleteProject([ActionParameter] ProjectRequest project)
-        {
-            var projectService = new MemoqServiceFactory<IServerProjectService>(
-                ApplicationConstants.ProjectServiceUrl, Creds);
-
-            projectService.Service.DeleteProject(Guid.Parse(project.ProjectGuid));
-        }
+        projectService.Service.DeleteProject(Guid.Parse(project.ProjectGuid));
     }
 }
