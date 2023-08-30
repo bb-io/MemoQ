@@ -16,7 +16,7 @@ public sealed class MemoqServiceFactory<T> : IDisposable
         var apiKey = authenticationCredentialsProviders.Get("apiKey").Value;
         var url = authenticationCredentialsProviders.Get("url").Value;
 
-        var binding = new BasicHttpBinding(BasicHttpSecurityMode.Transport)
+        var binding = new BasicHttpBinding(url.StartsWith("https") ? BasicHttpSecurityMode.Transport : BasicHttpSecurityMode.None)
         {
             MaxReceivedMessageSize = int.MaxValue
         };

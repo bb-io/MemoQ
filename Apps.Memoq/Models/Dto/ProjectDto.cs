@@ -26,7 +26,7 @@ public class ProjectDto
     public string SourceLanguageCode { get; set; }
 
     [Display("Target language codes")]
-    public string[] TargetLanguageCodes { get; set; }
+    public List<string> TargetLanguageCodes { get; set; }
 
     public ProjectDto(ServerProjectInfo project)
     {
@@ -39,6 +39,6 @@ public class ProjectDto
         Deadline = project.Deadline;
         LastChanged = project.LastChanged;
         SourceLanguageCode = project.SourceLanguageCode;
-        TargetLanguageCodes = project.TargetLanguageCodes;
+        TargetLanguageCodes = project.TargetLanguageCodes.ToList();
     }
 }

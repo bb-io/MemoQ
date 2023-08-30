@@ -42,7 +42,7 @@ public class ServerProjectActions : BaseInvocable
             TimeClosed = input.TimeClosed ?? default,
         });
 
-        var projects = response.Select(x => new ProjectDto(x)).ToArray();
+        var projects = response.Select(x => new ProjectDto(x)).ToList();
 
         return new()
         {
@@ -88,7 +88,7 @@ public class ServerProjectActions : BaseInvocable
             Name = request.ProjectName,
             CreatorUser = ApplicationConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
-            TargetLanguageCodes = request.TargetLangCodes.ToArray(),
+            TargetLanguageCodes = new List<string> { request.TargetLangCode }.ToArray(),
             CallbackWebServiceUrl = request.CallbackUrl,
             Description = request.Description,
             Domain = request.Domain,
@@ -132,7 +132,7 @@ public class ServerProjectActions : BaseInvocable
             Name = request.ProjectName,
             CreatorUser = ApplicationConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
-            TargetLanguageCodes = request.TargetLangCodes.ToArray(),
+            TargetLanguageCodes = new List<string> { request.TargetLangCode }.ToArray(),
             Description = request.Description,
             Domain = request.Domain,
             Subject = request.Subject,

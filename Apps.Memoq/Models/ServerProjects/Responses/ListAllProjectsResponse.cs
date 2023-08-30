@@ -4,5 +4,5 @@ namespace Apps.Memoq.Models.ServerProjects.Responses;
 
 public class ListAllProjectsResponse
 {
-    public ProjectDto[] ServerProjects { get; set; }
+    public List<ProjectDto> ServerProjects { get; set; }
 }

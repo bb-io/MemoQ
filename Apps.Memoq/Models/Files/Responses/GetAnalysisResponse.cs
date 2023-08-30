@@ -9,7 +9,7 @@ public class GetAnalysisResponse
 {
     [Display("Result data")] public File ResultData { get; set; }
 
-    [Display("Target language code")] public string TargetLangCode { get; set; }
+    [Display("Target language")] public string TargetLangCode { get; set; }
 
     public GetAnalysisResponse(StatisticsResultForLang statistics, string fileName, string? contentType = null)
     {

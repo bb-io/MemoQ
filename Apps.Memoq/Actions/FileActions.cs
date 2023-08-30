@@ -102,7 +102,7 @@ public class FileActions : BaseInvocable
             .ImportTranslationDocument(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
-                request.TargetLanguageCodes?.ToArray(),
+                new List<string> { request.TargetLanguageCode }.ToArray(),
                 null);
 
         return new()
