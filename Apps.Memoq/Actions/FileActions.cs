@@ -29,7 +29,7 @@ public class FileActions : BaseInvocable
     {
     }
 
-    [Action("List project files", Description = "List all project files")]
+    [Action("List project documents", Description = "List all project documents")]
     public ListAllProjectFilesResponse ListAllProjectFiles(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] ListProjectFilesRequest input)
@@ -49,7 +49,7 @@ public class FileActions : BaseInvocable
         };
     }
 
-    [Action("Get file info", Description = "Get project file info by guid")]
+    [Action("Get document info", Description = "Get project file info by guid")]
     public FileDto GetFile(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] [Display("File GUID")]
@@ -60,7 +60,7 @@ public class FileActions : BaseInvocable
                ?? throw new($"No file found with the provided ID: {fileGuid}");
     }
 
-    [Action("Assign file to user", Description = "Assign file to a specific user")]
+    [Action("Assign document to user", Description = "Assign document to a specific user")]
     public void AssignFileToUser([ActionParameter] AssignFileToUserRequest input)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
@@ -86,7 +86,7 @@ public class FileActions : BaseInvocable
             .SetProjectTranslationDocumentUserAssignments(Guid.Parse(input.ProjectGuid), assignments);
     }
 
-    [Action("Upload a file to a project", Description = "Uploads and imports a file to a project")]
+    [Action("Import document", Description = "Uploads and imports a document to a project")]
     public UploadFileResponse UploadAndImportFileToProject(
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
@@ -102,16 +102,17 @@ public class FileActions : BaseInvocable
             .ImportTranslationDocument(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
-                new List<string> { request.TargetLanguageCode }.ToArray(),
+                request.TargetLanguageCode == null ? null : new List<string> { request.TargetLanguageCode }.ToArray(),
                 null);
 
         return new()
         {
-            DocumentGuids = result.DocumentGuids.Select(x => x.ToString()).ToArray()
+            // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
+            DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).FirstOrDefault()
         };
     }
 
-    [Action("Download file", Description = "Download specific file by guid")]
+    [Action("Export document", Description = "Exports and downloads a document with options")]
     public DownloadFileResponse DownloadFileByGuid(
         [ActionParameter] DownloadFileRequest request)
     {
@@ -121,7 +122,13 @@ public class FileActions : BaseInvocable
             ApplicationConstants.ProjectServiceUrl, Creds);
 
         var exportResult = projectService.Service
-            .ExportTranslationDocument(Guid.Parse(request.ProjectGuid), Guid.Parse(request.FileGuid));
+            .ExportTranslationDocument2(Guid.Parse(request.ProjectGuid), Guid.Parse(request.DocumentGuid), new DocumentExportOptions
+            {
+                ExportAllMultilingualSiblings = request.ExportAllMultilingualSibling ?? true,
+                RevertFaultyTargetsToSource = request.RevertFaultyTargetsToSource ?? false,
+                CopySourceToEmptyTarget = request.CopySourceToEmptyTarget ?? false,
+                CopySourceToUnconfirmedRows = request.CopySourceToEmptyTarget ?? false,
+            });
 
         var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
 
@@ -135,7 +142,39 @@ public class FileActions : BaseInvocable
         };
     }
 
-    [Action("Get analysis for a document", Description = "Get analysis for a specific document")]
+    [Action("Export document as XLIFF", Description = "Exports and downloads the translation document as XLIFF (MQXLIFF) bilingual")]
+    public DownloadFileResponse DownloadFileAsXliff(
+    [ActionParameter] DownloadXliffRequest request)
+    {
+        using var fileService = new MemoqServiceFactory<IFileManagerService>(
+            ApplicationConstants.FileServiceUrl, Creds);
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(
+            ApplicationConstants.ProjectServiceUrl, Creds);
+
+        var fullVersion = request.FullVersionHistory ?? false;
+        var includeSkeleton = request.IncludeSkeleton ?? false;
+
+        var exportResult = projectService.Service
+            .ExportTranslationDocumentAsXliffBilingual(Guid.Parse(request.ProjectGuid), Guid.Parse(request.DocumentGuid), new XliffBilingualExportOptions
+            {
+                FullVersionHistory = fullVersion,
+                IncludeSkeleton = includeSkeleton,
+                SaveCompressed = fullVersion || includeSkeleton || (request.SaveCompressed ?? false )
+            });
+
+        var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
+
+        return new()
+        {
+            File = new(data)
+            {
+                Name = filename,
+                ContentType = "application/xliff+xml",
+            }
+        };
+    }
+
+    [Action("Get document analysis", Description = "Get analysis for a specific document")]
     public GetAnalysisResponse GetAnalysisForFile(
         [ActionParameter] GetAnalysisForFileRequest input)
     {
@@ -181,7 +220,7 @@ public class FileActions : BaseInvocable
             MediaTypeNames.Text.Html);
     }
 
-    [Action("Get analysis for project documents", Description = "Get analysis for all project documents")]
+    [Action("Get project analysis", Description = "Get analysis for all project documents")]
     public GetAnalysesForAllDocumentsResponse GetAnalysesForAllDocuments(
         [ActionParameter] GetAnalysisForProjectRequest input)
     {

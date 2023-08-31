@@ -8,11 +8,12 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class UploadDocumentToProjectRequest : ProjectRequest
 {
+    [Display("Document")]
     public File File { get; set; }
 
     [Display("Target language")]
     [DataSource(typeof(TargetLanguageDataHandler))]
-    public string TargetLanguageCode { get; set; }
+    public string? TargetLanguageCode { get; set; }
 
     [Display("File name")]
     public string? FileName { get; set; }
