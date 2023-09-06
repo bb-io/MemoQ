@@ -5,21 +5,17 @@ namespace Apps.Memoq.Models.Dto;
 
 public class FileDto
 {
-    [Display("GUID")]
-    public string Guid { get; set; }
-    
-    [Display("Parent document GUID")]
-    public string ParentDocumentId { get; set; }
-    
+    [Display("GUID")] public string Guid { get; set; }
+
+    [Display("Parent document GUID")] public string ParentDocumentId { get; set; }
+
     public string Name { get; set; }
 
     public string Status { get; set; }
 
-    [Display("Export path")]
-    public string ExportPath { get; set; }
+    [Display("Export path")] public string ExportPath { get; set; }
 
-    [Display("Target language code")]
-    public string TargetLanguageCode { get; set; }
+    [Display("Target language code")] public string TargetLanguageCode { get; set; }
 
     public FileDto(ServerProjectTranslationDocInfo2 file)
     {
@@ -29,5 +25,9 @@ public class FileDto
         Status = file.DocumentStatus.ToString();
         ExportPath = file.ExportPath;
         TargetLanguageCode = file.TargetLangCode;
+    }
+
+    public FileDto()
+    {
     }
 }

@@ -131,8 +131,12 @@ public class FileActions : BaseInvocable
             });
 
         var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
-
-        return new()
+        var document = GetFile(new()
+        {
+            ProjectGuid = request.ProjectGuid
+        }, exportResult.FileGuid.ToString());
+        
+        return new(document)
         {
             File = new(data)
             {
@@ -163,8 +167,12 @@ public class FileActions : BaseInvocable
             });
 
         var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
-
-        return new()
+        var document = GetFile(new()
+        {
+            ProjectGuid = request.ProjectGuid
+        }, exportResult.FileGuid.ToString());
+        
+        return new(document)
         {
             File = new(data)
             {
