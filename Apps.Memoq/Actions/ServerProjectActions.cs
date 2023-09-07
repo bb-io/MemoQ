@@ -145,6 +145,56 @@ public class ServerProjectActions : BaseInvocable
 
         return new(response);
     }
+    
+    [Action("Create a project from a package",
+        Description = "Creates a new project based on an existing memoQ package")]
+    public ProjectDto CreateProjectPackage([ActionParameter] CreateProjectFromPackageRequest input)
+    {
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var request = new ServerProjectDesktopDocsCreateInfo
+        {
+            Deadline = input.Deadline,
+            Name = input.ProjectName,
+            CreatorUser = SoapConstants.AdminGuid,
+            SourceLanguageCode = input.SourceLangCode,
+            TargetLanguageCodes = new List<string> { input.TargetLangCode }.ToArray(),
+            CallbackWebServiceUrl = input.CallbackUrl ?? ApplicationConstants.BridgeServiceUrl,
+            Description = input.Description,
+            Domain = input.Domain,
+            Subject = input.Subject,
+            StrictSubLangMatching = input.StrictSubLangMatching ?? default,
+            EnableCommunication = input.EnableCommunication ?? default,
+            DownloadSkeleton2 = input.DownloadSkeleton2 ?? default,
+            DownloadPreview2 = input.DownloadPreview2 ?? default,
+            CustomMetas = input.CustomMetas,
+            Client = input.Client,
+            AllowPackageCreation = input.AllowPackageCreation ?? default,
+            AllowOverlappingWorkflow = input.AllowOverlappingWorkflow ?? default,
+            EnableWebTrans = input.EnableWebTrans ?? default,
+            EnableSplitJoin = input.EnableSplitJoin ?? default,
+            DownloadSkeleton = input.DownloadSkeleton ?? default,
+            DownloadPreview = input.DownloadPreview ?? default,
+            CreateOfflineTMTBCopies = input.CreateOfflineTmtbCopies ?? default,
+            ConfidentialitySettings = new()
+            {
+                DisableTMPlugins = input.DisableTmPlugins,
+                DisableTBPlugins = input.DisableTbPlugins,
+                DisableMTPlugins = input.DisableMtPlugins,
+            }
+        };
+
+        var importOptions = new PackageImportOptions
+        {
+            ImportResources = input.ImportResources
+        };
+        
+        var result = projectService.Service.CreateProjectFromPackage3(request, Guid.Parse(input.FileId), importOptions);
+        var response = projectService.Service.GetProject(result);
+
+        return new(response);
+    }
 
     [Action("Delete project", Description = "Delete a specific project")]
     public void DeleteProject([ActionParameter] ProjectRequest project)
@@ -155,20 +205,12 @@ public class ServerProjectActions : BaseInvocable
         projectService.Service.DeleteProject(Guid.Parse(project.ProjectGuid));
     }
     
-    [Action("Deliver document", Description = "Deliver a specific document")]
-    public async Task DeliverDocument([ActionParameter] ProjectRequest project, [ActionParameter] DeliverDocumentInput input)
+    [Action("Distribute project", Description = "Distribute a specific project")]
+    public async Task DistributeProject([ActionParameter] ProjectRequest project)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
-        var request = new DeliverDocumentRequest()
-        {
-            DocumentGuid = Guid.Parse(input.DocumentGuid),
-            DeliveringUserGuid = Guid.Parse(input.DeliveringUserGuid),
-            ReturnDocToPreviousActor = input.ReturnDocToPreviousActorField ?? default,
-        };
-        
-        var resp = await projectService.Service.DeliverDocumentAsync(Guid.Parse(project.ProjectGuid), request);
-        var s = 5;
+        await projectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid));
     }
 }

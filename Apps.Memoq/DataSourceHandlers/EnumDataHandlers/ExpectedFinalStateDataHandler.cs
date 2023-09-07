@@ -1,6 +1,6 @@
 using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
 
-namespace Apps.Memoq.DataSourceHandlers.Enums;
+namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
 public class ExpectedFinalStateDataHandler : EnumDataHandler
 {

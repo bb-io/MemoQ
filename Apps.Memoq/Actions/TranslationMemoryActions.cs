@@ -1,4 +1,5 @@
-﻿using Apps.Memoq.Contracts;
+﻿using System.Text;
+using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.TranslationMemories.Requests;
@@ -72,6 +73,48 @@ public class TranslationMemoryActions : BaseInvocable
         var response = tmService.Service.GetTMInfo(tmGuid);
         return new(response);
     }
+    
+    [Action("Get translation memory", Description = "Get details of a specific translation memory")]
+    public async Task<TmDto> GetTranslationMemory([ActionParameter] TranslationMemoryRequest input)
+    {
+        using var tmService = new MemoqServiceFactory<ITMService>(
+            SoapConstants.TranslationMemoryServiceUrl, Creds);
+
+        var response = await tmService.Service.GetTMInfoAsync(Guid.Parse(input.TmGuid));
+        return new(response);
+    }   
+    
+    [Action("Delete translation memory", Description = "Delete specific translation memory")]
+    public async Task DeleteTranslationMemory([ActionParameter] TranslationMemoryRequest input)
+    {
+        using var tmService = new MemoqServiceFactory<ITMService>(
+            SoapConstants.TranslationMemoryServiceUrl, Creds);
+
+        await tmService.Service.DeleteTMAsync(Guid.Parse(input.TmGuid));
+    }    
+    
+    [Action("Update translation memory properties", Description = "Update specific translation memory properties")]
+    public async Task UpdateTranslationMemoryProperties(
+        [ActionParameter] TranslationMemoryRequest tm,
+        [ActionParameter] UpdateTranslationMemoryPropertiesRequest input)
+    {
+        using var tmService = new MemoqServiceFactory<ITMService>(
+            SoapConstants.TranslationMemoryServiceUrl, Creds);
+
+        await tmService.Service.UpdatePropertiesAsync(new()
+        {
+            Guid = Guid.Parse(tm.TmGuid),
+            Name = input.Name,
+            Client = input.Client,
+            Domain = input.Domain,
+            Subject = input.Subject,
+            Project = input.Project,
+            OptimizationPreference = EnumParser.Parse<TMOptimizationPreference>(input.OptimizationPreference,
+                nameof(input.OptimizationPreference)) ?? default,
+            StoreDocumentFullPath = input.StoreDocumentFullPath ?? default,
+            StoreDocumentName = input.StoreDocumentName ?? default,
+        });
+    }
 
     [Action("Import TMX file", Description = "Import TMX file")]
     public ImportTmxFileResponse ImportTmxFile([ActionParameter] ImportTmxFileRequest input)
@@ -85,6 +128,22 @@ public class TranslationMemoryActions : BaseInvocable
         return new()
         {
             Guid = result.ToString()
+        };
+    }
+    
+    [Action("Import translation memory scheme from XML", Description = "Import specific translation memory's scheme from XML")]
+    public async Task<ImportTmSchemeFromXmlResponse> ImportTmSchemeFromXml([ActionParameter] ImportTmSchemeRequest input)
+    {
+        using var tmService = new MemoqServiceFactory<ITMService>(
+            SoapConstants.TranslationMemoryServiceUrl, Creds);
+
+        var xml = Encoding.UTF8.GetString(input.File.Bytes);
+        var response = await tmService.Service
+            .ImportTMMetadataSchemeFromXMLAsync(Guid.Parse(input.TmGuid), xml);
+
+        return new()
+        {
+            ConflictedFields = response.ConflictedFields
         };
     }
 }

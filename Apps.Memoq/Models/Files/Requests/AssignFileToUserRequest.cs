@@ -1,5 +1,5 @@
 ﻿using Apps.Memoq.DataSourceHandlers;
-using Apps.Memoq.DataSourceHandlers.Enums;
+using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;

@@ -1,4 +1,4 @@
-﻿using Apps.Memoq.DataSourceHandlers.Enums;
+﻿using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
@@ -18,7 +18,7 @@ public class CreateTranslationMemoryRequest : LanguagesRequest
 
     [Display("Creator username")] public string? CreatorUsername { get; set; }
 
-    [Display("Optimization preference")] 
+    [Display("Optimization preference")]
     [DataSource(typeof(OptimizationPreferenceDataHandler))]
     public string? OptimizationPreference { get; set; }
 
@@ -28,7 +28,7 @@ public class CreateTranslationMemoryRequest : LanguagesRequest
 
     [Display("Store formatting")] public bool? StoreFormatting { get; set; }
 
-    [Display("TM engine type")] 
+    [Display("TM engine type")]
     [DataSource(typeof(TmEngineTypeDataHandler))]
     public string? TmEngineType { get; set; }
 
