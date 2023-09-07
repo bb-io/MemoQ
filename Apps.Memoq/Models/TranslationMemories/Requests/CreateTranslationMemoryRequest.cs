@@ -29,8 +29,8 @@ public class CreateTranslationMemoryRequest : LanguagesRequest
     [Display("Store formatting")] public bool? StoreFormatting { get; set; }
 
     [Display("TM engine type")] 
-    [DataSource(typeof(TMEngineTypeDataHandler))]
-    public string? TMEngineType { get; set; }
+    [DataSource(typeof(TmEngineTypeDataHandler))]
+    public string? TmEngineType { get; set; }
 
     [Display("Use context")] public bool? UseContext { get; set; }
 

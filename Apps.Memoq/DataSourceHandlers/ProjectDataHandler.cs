@@ -19,7 +19,7 @@ public class ProjectDataHandler : BaseInvocable, IDataSourceHandler
 
     public Dictionary<string, string> GetData(DataSourceContext context)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(ApplicationConstants.ProjectServiceUrl,
+        var projectService = new MemoqServiceFactory<IServerProjectService>(SoapConstants.ProjectServiceUrl,
             Creds);
         var projects = projectService.Service.ListProjects(new ServerProjectListFilter());
 

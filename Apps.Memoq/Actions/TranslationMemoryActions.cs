@@ -1,5 +1,4 @@
-﻿using Apps.Memoq.Constants;
-using Apps.Memoq.Contracts;
+﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.TranslationMemories.Requests;
@@ -30,7 +29,7 @@ public class TranslationMemoryActions : BaseInvocable
         [ActionParameter] LanguagesRequest input)
     {
         using var tmService = new MemoqServiceFactory<ITMService>(
-            ApplicationConstants.TranslationMemoryServiceUrl, Creds);
+            SoapConstants.TranslationMemoryServiceUrl, Creds);
 
         var response = tmService.Service.ListTMs(input.SourceLanguage, input.TargetLanguage);
         var translationMemories = response.Select(x => new TmDto(x)).ToArray();
@@ -45,7 +44,7 @@ public class TranslationMemoryActions : BaseInvocable
     public TmDto CreateTranslationMemory([ActionParameter] CreateTranslationMemoryRequest input)
     {
         using var tmService = new MemoqServiceFactory<ITMService>(
-            ApplicationConstants.TranslationMemoryServiceUrl, Creds);
+            SoapConstants.TranslationMemoryServiceUrl, Creds);
 
         var tmGuid = tmService.Service.CreateAndPublish(new()
         {
@@ -60,13 +59,12 @@ public class TranslationMemoryActions : BaseInvocable
             AllowReverseLookup = input.AllowReverseLookup ?? default,
             CreatorUsername = input.CreatorUsername,
             OptimizationPreference = EnumParser.Parse<TMOptimizationPreference>(input.OptimizationPreference,
-                nameof(input.OptimizationPreference), EnumValues.TMOptimizationPreference) ?? default,
+                nameof(input.OptimizationPreference)) ?? default,
             StoreDocumentFullPath = input.StoreDocumentFullPath ?? default,
             StoreDocumentName = input.StoreDocumentName ?? default,
             StoreFormatting = input.StoreFormatting ?? default,
             TMEngineType =
-                EnumParser.Parse<TMEngineType>(input.TMEngineType, nameof(input.TMEngineType),
-                    EnumValues.TMEngineType) ?? default,
+                EnumParser.Parse<TMEngineType>(input.TmEngineType, nameof(input.TmEngineType)) ?? default,
             UseContext = input.UseContext ?? default,
             UseIceSpiceContext = input.UseIceSpiceContext ?? default,
         });
@@ -76,12 +74,12 @@ public class TranslationMemoryActions : BaseInvocable
     }
 
     [Action("Import TMX file", Description = "Import TMX file")]
-    public ImportTmxFileResponse ImportTMXFile([ActionParameter] ImportTMXFileRequest input)
+    public ImportTmxFileResponse ImportTmxFile([ActionParameter] ImportTmxFileRequest input)
     {
         using var tmService = new MemoqServiceFactory<ITMService>(
-            ApplicationConstants.TranslationMemoryServiceUrl, Creds);
+            SoapConstants.TranslationMemoryServiceUrl, Creds);
 
-        var manager = new TMXUploadManager(tmService.Service);
+        var manager = new TmxUploadManager(tmService.Service);
         var result = FileUploader.UploadFile(input.File.Bytes, manager, input.TmGuid);
 
         return new()

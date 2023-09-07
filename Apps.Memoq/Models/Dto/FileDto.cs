@@ -10,6 +10,9 @@ public class FileDto
     [Display("Parent document GUID")] public string ParentDocumentId { get; set; }
 
     public string Name { get; set; }
+    
+    [Display("File extension")]
+    public string FileExtensions { get; set; }
 
     public string Status { get; set; }
 
@@ -21,13 +24,20 @@ public class FileDto
     {
         Guid = file.DocumentGuid.ToString();
         ParentDocumentId = file.ParentDocumentId.ToString();
-        Name = file.DocumentName;
+        Name = Path.GetFileNameWithoutExtension(file.DocumentName);
+        FileExtensions = Path.GetExtension(file.DocumentName);
         Status = file.DocumentStatus.ToString();
         ExportPath = file.ExportPath;
         TargetLanguageCode = file.TargetLangCode;
     }
 
-    public FileDto()
+    public FileDto(FileDto file)
     {
+        Guid = file.Guid;
+        ParentDocumentId = file.ParentDocumentId;
+        Name = file.Name;
+        Status = file.Status;
+        ExportPath = file.ExportPath;
+        TargetLanguageCode = file.TargetLanguageCode;
     }
 }

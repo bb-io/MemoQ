@@ -23,16 +23,16 @@ public class CreateProjectRequest
     public string? CallbackUrl { get; set; }
     
     [Display("Disable MT plugins")]
-    public bool? DisableMTPlugins { get; set; }
+    public bool? DisableMtPlugins { get; set; }
 
     [Display("Disable TB plugins")]
-    public bool? DisableTBPlugins { get; set; }
+    public bool? DisableTbPlugins { get; set; }
 
     [Display("Disable TM plugins")]
-    public bool? DisableTMPlugins { get; set; }
+    public bool? DisableTmPlugins { get; set; }
 
     [Display("Create offline TM/TB copies")]
-    public bool? CreateOfflineTMTBCopies { get; set; }
+    public bool? CreateOfflineTmtbCopies { get; set; }
 
     [Display("Download preview")]
     public bool? DownloadPreview { get; set; }

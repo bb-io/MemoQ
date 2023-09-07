@@ -25,7 +25,7 @@ public class UserActions : BaseInvocable
     public ListAllUsersResponse ListAllUsers()
     {
         var securityService = new MemoqServiceFactory<ISecurityService>(
-            ApplicationConstants.SecurityServiceUrl, Creds);
+            SoapConstants.SecurityServiceUrl, Creds);
 
         var response = securityService.Service.ListUsers();
         return new()
@@ -38,7 +38,7 @@ public class UserActions : BaseInvocable
     public UserDto GetUser([ActionParameter] UserRequest user)
     {
         var securityService = new MemoqServiceFactory<ISecurityService>(
-            ApplicationConstants.SecurityServiceUrl, Creds);
+            SoapConstants.SecurityServiceUrl, Creds);
             
         var response = securityService.Service.GetUser(Guid.Parse(user.UserGuid));
         return new(response);
@@ -48,7 +48,7 @@ public class UserActions : BaseInvocable
     public void DeleteUser([ActionParameter] UserRequest user)
     {
         var securityService = new MemoqServiceFactory<ISecurityService>(
-            ApplicationConstants.SecurityServiceUrl, Creds);
+            SoapConstants.SecurityServiceUrl, Creds);
             
         securityService.Service.DeleteUser(Guid.Parse(user.UserGuid));
     }

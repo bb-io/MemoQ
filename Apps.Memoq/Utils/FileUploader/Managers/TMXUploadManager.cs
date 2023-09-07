@@ -3,11 +3,11 @@ using MQS.TM;
 
 namespace Apps.Memoq.Utils.FileUploader.Managers;
 
-public class TMXUploadManager : IFileUploadManager
+public class TmxUploadManager : IFileUploadManager
 {
     public ITMService Service { get; set; }
 
-    public TMXUploadManager(ITMService service)
+    public TmxUploadManager(ITMService service)
     {
         Service = service;
     }

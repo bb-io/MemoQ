@@ -29,7 +29,7 @@ public class TmDto
     public string TargetLanguageCode { get; set; }
 
     [Display("TM engine type")]
-    public string TMEngineType { get; set; }
+    public string TmEngineType { get; set; }
     
     [Display("Optimization preference")]
     public string OptimizationPreference { get; set; }
@@ -45,7 +45,7 @@ public class TmDto
         NumOfEntries = tm.NumOfEntries;
         SourceLanguageCode = tm.SourceLanguageCode;
         TargetLanguageCode = tm.TargetLanguageCode;
-        TMEngineType = tm.TMEngineType.ToString();
+        TmEngineType = tm.TMEngineType.ToString();
         OptimizationPreference = tm.OptimizationPreference.ToString();
     }
 }

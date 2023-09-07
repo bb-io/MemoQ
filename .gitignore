@@ -354,3 +354,4 @@ healthchecksdb
 *.DS_Store
 *.dmg
 *.env
+/Apps.Memoq/ApplicationConstants.cs

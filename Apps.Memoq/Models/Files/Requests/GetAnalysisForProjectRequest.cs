@@ -19,7 +19,7 @@ public class GetAnalysisForProjectRequest : ProjectRequest
     public bool? AnalysisProjectTMs { get; set; }
 
     [Display("Analyze details by translation memory")]
-    public bool? AnalysisDetailsByTM { get; set; }
+    public bool? AnalysisDetailsByTm { get; set; }
 
     [Display("Disable cross-file repetition")]
     public bool? DisableCrossFileRepetition { get; set; }

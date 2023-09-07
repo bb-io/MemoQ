@@ -1,5 +1,4 @@
 ﻿using System.Net.Mime;
-using Apps.Memoq.Constants;
 using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
@@ -35,7 +34,7 @@ public class FileActions : BaseInvocable
         [ActionParameter] ListProjectFilesRequest input)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
         var response = projectService.Service
             .ListProjectTranslationDocuments2(Guid.Parse(project.ProjectGuid), new()
             {
@@ -64,7 +63,7 @@ public class FileActions : BaseInvocable
     public void AssignFileToUser([ActionParameter] AssignFileToUserRequest input)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
         var assignments = new ServerProjectTranslationDocumentUserAssignments[]
         {
             new()
@@ -91,9 +90,9 @@ public class FileActions : BaseInvocable
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            ApplicationConstants.FileServiceUrl, Creds);
+            SoapConstants.FileServiceUrl, Creds);
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var manager = new FileUploadManager(fileService.Service);
         var uploadFileResult =
@@ -108,7 +107,7 @@ public class FileActions : BaseInvocable
         return new()
         {
             // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
-            DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).FirstOrDefault()
+            DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).First()
         };
     }
 
@@ -117,9 +116,9 @@ public class FileActions : BaseInvocable
         [ActionParameter] DownloadFileRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            ApplicationConstants.FileServiceUrl, Creds);
+            SoapConstants.FileServiceUrl, Creds);
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var exportResult = projectService.Service
             .ExportTranslationDocument2(Guid.Parse(request.ProjectGuid), Guid.Parse(request.DocumentGuid), new DocumentExportOptions
@@ -134,7 +133,7 @@ public class FileActions : BaseInvocable
         var document = GetFile(new()
         {
             ProjectGuid = request.ProjectGuid
-        }, exportResult.FileGuid.ToString());
+        }, request.DocumentGuid);
         
         return new(document)
         {
@@ -151,9 +150,9 @@ public class FileActions : BaseInvocable
     [ActionParameter] DownloadXliffRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            ApplicationConstants.FileServiceUrl, Creds);
+            SoapConstants.FileServiceUrl, Creds);
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var fullVersion = request.FullVersionHistory ?? false;
         var includeSkeleton = request.IncludeSkeleton ?? false;
@@ -170,7 +169,7 @@ public class FileActions : BaseInvocable
         var document = GetFile(new()
         {
             ProjectGuid = request.ProjectGuid
-        }, exportResult.FileGuid.ToString());
+        }, request.DocumentGuid);
         
         return new(document)
         {
@@ -187,7 +186,7 @@ public class FileActions : BaseInvocable
         [ActionParameter] GetAnalysisForFileRequest input)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var task = projectService.Service.StartStatisticsOnTranslationDocumentsTask2(
             new()
@@ -195,15 +194,13 @@ public class FileActions : BaseInvocable
                 ProjectGuid = Guid.Parse(input.ProjectGuid),
                 DocumentOrSliceGuids = new[] { Guid.Parse(input.DocumentGuid) },
                 ResultFormat =
-                    EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format),
-                        EnumValues.Format) ?? default,
+                    EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format)) ?? default,
                 Options = new()
                 {
-                    Algorithm = EnumParser.Parse<StatisticsAlgorithm>(input.Algorithm, nameof(input.Algorithm),
-                        EnumValues.Algorithm) ?? default,
+                    Algorithm = EnumParser.Parse<StatisticsAlgorithm>(input.Algorithm, nameof(input.Algorithm)) ?? default,
                     Analysis_Homogenity = input.AnalysisHomogenity ?? default,
                     Analysis_ProjectTMs = input.AnalysisProjectTMs ?? default,
-                    Analyzis_DetailsByTM = input.AnalysisDetailsByTM ?? default,
+                    Analyzis_DetailsByTM = input.AnalysisDetailsByTm ?? default,
                     DisableCrossFileRepetition = input.DisableCrossFileRepetition ?? default,
                     IncludeLockedRows = input.IncludeLockedRows ?? default,
                     RepetitionPreferenceOver100 = input.RepetitionPreferenceOver100 ?? default,
@@ -233,20 +230,18 @@ public class FileActions : BaseInvocable
         [ActionParameter] GetAnalysisForProjectRequest input)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
         var task = projectService.Service.StartStatisticsOnProjectTask2(new()
         {
             ProjectGuid = Guid.Parse(input.ProjectGuid),
             ResultFormat =
-                EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format),
-                    EnumValues.Format) ?? default,
+                EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format)) ?? default,
             Options = new()
             {
-                Algorithm = EnumParser.Parse<StatisticsAlgorithm>(input.Algorithm, nameof(input.Algorithm),
-                    EnumValues.Algorithm) ?? default,
+                Algorithm = EnumParser.Parse<StatisticsAlgorithm>(input.Algorithm, nameof(input.Algorithm)) ?? default,
                 Analysis_Homogenity = input.AnalysisHomogenity ?? default,
                 Analysis_ProjectTMs = input.AnalysisProjectTMs ?? default,
-                Analyzis_DetailsByTM = input.AnalysisDetailsByTM ?? default,
+                Analyzis_DetailsByTM = input.AnalysisDetailsByTm ?? default,
                 DisableCrossFileRepetition = input.DisableCrossFileRepetition ?? default,
                 IncludeLockedRows = input.IncludeLockedRows ?? default,
                 RepetitionPreferenceOver100 = input.RepetitionPreferenceOver100 ?? default,
@@ -275,7 +270,7 @@ public class FileActions : BaseInvocable
     public void DeleteFile([ActionParameter] DeleteFileRequest input)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         projectService.Service
             .DeleteTranslationDocument(Guid.Parse(input.ProjectGuid), Guid.Parse(input.FileGuid));
@@ -285,9 +280,9 @@ public class FileActions : BaseInvocable
     public void OverwriteFileInProject([ActionParameter] OverwriteFileInProjectRequest input)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            ApplicationConstants.FileServiceUrl, Creds);
+            SoapConstants.FileServiceUrl, Creds);
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var manager = new FileUploadManager(fileService.Service);
         var uploadFileResult = FileUploader.UploadFile(input.File.Bytes, manager, input.Filename ?? input.File.Name);
@@ -312,14 +307,13 @@ public class FileActions : BaseInvocable
         [ActionParameter] ApplyTranslatedContentToUpdatedSourceRequest input)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var taskInfo = projectService.Service.StartXTranslateTask(Guid.Parse(input.ProjectGuid),
             new()
             {
                 XTranslateScenario = EnumParser.Parse<XTranslateScenario>(input.XTranslateScenario,
-                    nameof(input.XTranslateScenario),
-                    EnumValues.XTranslateScenario) ?? default,
+                    nameof(input.XTranslateScenario)) ?? default,
 
                 WorkWithContextIds = input.WorkWithContextIds ?? default,
                 DocInfos = new XTranslateDocInfo[]
@@ -332,11 +326,9 @@ public class FileActions : BaseInvocable
                 NewRevisionOptions = new()
                 {
                     ExpectedFinalState = EnumParser.Parse<ExpectedFinalStateAfterXTranslate>(
-                        input.ExpectedFinalState, nameof(input.ExpectedFinalState),
-                        EnumValues.ExpectedFinalState) ?? default,
+                        input.ExpectedFinalState, nameof(input.ExpectedFinalState)) ?? default,
                     SourceFilter = EnumParser.Parse<ExpectedSourceStateBeforeXTranslate>(input.SourceFilter,
-                        nameof(input.SourceFilter),
-                        EnumValues.SourceFilter) ?? default,
+                        nameof(input.SourceFilter)) ?? default,
 
                     InsertEmptyTranslations = input.InsertEmptyTranslations ?? default,
                     LockXTranslatedRows = input.LockXTranslatedRows ?? default,
@@ -380,11 +372,11 @@ public class FileActions : BaseInvocable
         return result;
     }
 
-    private TaskResult WaitForAsyncTaskToFinishAndGetResult(Guid TaskId)
+    private TaskResult WaitForAsyncTaskToFinishAndGetResult(Guid taskId)
     {
         using var taskService = new MemoqServiceFactory<ITasksService>(
-            ApplicationConstants.TaskServiceUrl, Creds);
-        var taskStatus = taskService.Service.GetTaskStatus(TaskId).Status;
+            SoapConstants.TaskServiceUrl, Creds);
+        var taskStatus = taskService.Service.GetTaskStatus(taskId).Status;
         var i = 1;
         while (taskStatus == MQS.TasksService.TaskStatus.Pending
                || taskStatus == MQS.TasksService.TaskStatus.Executing)
@@ -392,12 +384,12 @@ public class FileActions : BaseInvocable
             if (i < 16)
                 i = 2 * i;
             Thread.Sleep(i * 1000);
-            taskStatus = taskService.Service.GetTaskStatus(TaskId).Status;
+            taskStatus = taskService.Service.GetTaskStatus(taskId).Status;
         }
 
         if (taskStatus != MQS.TasksService.TaskStatus.Completed)
             throw new Exception($"Task has status {taskStatus.ToString()}.");
 
-        return taskService.Service.GetTaskResult(TaskId);
+        return taskService.Service.GetTaskResult(taskId);
     }
 }

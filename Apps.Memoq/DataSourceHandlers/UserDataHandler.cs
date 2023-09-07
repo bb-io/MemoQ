@@ -19,7 +19,7 @@ public class UserDataHandler : BaseInvocable, IDataSourceHandler
 
     public Dictionary<string, string> GetData(DataSourceContext context)
     {
-        var securityService = new MemoqServiceFactory<ISecurityService>(ApplicationConstants.SecurityServiceUrl,
+        var securityService = new MemoqServiceFactory<ISecurityService>(SoapConstants.SecurityServiceUrl,
             Creds);
         var users = securityService.Service.ListUsers();
 

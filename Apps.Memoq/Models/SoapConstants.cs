@@ -1,6 +1,6 @@
 ﻿namespace Apps.Memoq.Models;
 
-public static class ApplicationConstants
+public static class SoapConstants
 {
     public const string ProjectServiceUrl = "/serverproject/serverprojectservice";
 

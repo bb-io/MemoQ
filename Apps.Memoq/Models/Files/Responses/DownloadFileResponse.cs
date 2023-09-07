@@ -6,16 +6,9 @@ namespace Apps.Memoq.Models.Files.Responses;
 
 public class DownloadFileResponse : FileDto
 {
-    public DownloadFileResponse(FileDto file)
+    public DownloadFileResponse(FileDto file) : base(file)
     {
-        Guid = file.Guid;
-        ParentDocumentId = file.ParentDocumentId;
-        Name = file.Name;
-        Status = file.Status;
-        ExportPath = file.ExportPath;
-        TargetLanguageCode = file.TargetLanguageCode;
     }
 
-    [Display("Document")]
-    public File File { get; set; }
+    [Display("Document")] public File File { get; set; }
 }

@@ -27,7 +27,7 @@ public class ServerProjectActions : BaseInvocable
     public ListAllProjectsResponse ListAllProjects([ActionParameter] ListProjectsRequest input)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var response = projectService.Service.ListProjects(new()
         {
@@ -54,7 +54,7 @@ public class ServerProjectActions : BaseInvocable
     public ProjectDto GetProject([ActionParameter] ProjectRequest project)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var response = projectService.Service.GetProject(Guid.Parse(project.ProjectGuid));
         return new(response);
@@ -67,7 +67,7 @@ public class ServerProjectActions : BaseInvocable
         string targetLangCode)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         projectService.Service
             .AddLanguageToProject(Guid.Parse(project.ProjectGuid), new()
@@ -80,16 +80,16 @@ public class ServerProjectActions : BaseInvocable
     public ProjectDto CreateProject([ActionParameter] CreateProjectRequest request)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var newProject = new ServerProjectDesktopDocsCreateInfo
         {
             Deadline = request.Deadline,
             Name = request.ProjectName,
-            CreatorUser = ApplicationConstants.AdminGuid,
+            CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = new List<string> { request.TargetLangCode }.ToArray(),
-            CallbackWebServiceUrl = request.CallbackUrl,
+            CallbackWebServiceUrl = request.CallbackUrl ?? ApplicationConstants.BridgeServiceUrl,
             Description = request.Description,
             Domain = request.Domain,
             Subject = request.Subject,
@@ -105,12 +105,12 @@ public class ServerProjectActions : BaseInvocable
             EnableSplitJoin = request.EnableSplitJoin ?? default,
             DownloadSkeleton = request.DownloadSkeleton ?? default,
             DownloadPreview = request.DownloadPreview ?? default,
-            CreateOfflineTMTBCopies = request.CreateOfflineTMTBCopies ?? default,
+            CreateOfflineTMTBCopies = request.CreateOfflineTmtbCopies ?? default,
             ConfidentialitySettings = new()
             {
-                DisableTMPlugins = request.DisableTMPlugins,
-                DisableTBPlugins = request.DisableTBPlugins,
-                DisableMTPlugins = request.DisableMTPlugins,
+                DisableTMPlugins = request.DisableTmPlugins,
+                DisableTBPlugins = request.DisableTbPlugins,
+                DisableMTPlugins = request.DisableMtPlugins,
             }
         };
 
@@ -125,12 +125,12 @@ public class ServerProjectActions : BaseInvocable
     public ProjectDto CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         var newProject = new TemplateBasedProjectCreateInfo
         {
             Name = request.ProjectName,
-            CreatorUser = ApplicationConstants.AdminGuid,
+            CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = new List<string> { request.TargetLangCode }.ToArray(),
             Description = request.Description,
@@ -150,8 +150,25 @@ public class ServerProjectActions : BaseInvocable
     public void DeleteProject([ActionParameter] ProjectRequest project)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
-            ApplicationConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ProjectServiceUrl, Creds);
 
         projectService.Service.DeleteProject(Guid.Parse(project.ProjectGuid));
+    }
+    
+    [Action("Deliver document", Description = "Deliver a specific document")]
+    public async Task DeliverDocument([ActionParameter] ProjectRequest project, [ActionParameter] DeliverDocumentInput input)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var request = new DeliverDocumentRequest()
+        {
+            DocumentGuid = Guid.Parse(input.DocumentGuid),
+            DeliveringUserGuid = Guid.Parse(input.DeliveringUserGuid),
+            ReturnDocToPreviousActor = input.ReturnDocToPreviousActorField ?? default,
+        };
+        
+        var resp = await projectService.Service.DeliverDocumentAsync(Guid.Parse(project.ProjectGuid), request);
+        var s = 5;
     }
 }
