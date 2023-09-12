@@ -1,5 +1,6 @@
 ﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.DataSourceHandlers;
+using Apps.Memoq.Extensions;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
@@ -9,6 +10,7 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using MQS.ServerProject;
 
 namespace Apps.Memoq.Actions;
@@ -89,7 +91,9 @@ public class ServerProjectActions : BaseInvocable
             CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = new List<string> { request.TargetLangCode }.ToArray(),
-            CallbackWebServiceUrl = request.CallbackUrl ?? ApplicationConstants.BridgeServiceUrl,
+            CallbackWebServiceUrl = request.CallbackUrl ??
+                                    ApplicationConstants.BridgeServiceUrl.SetQueryParameter("id",
+                                        Creds.GetInstanceUrlHash()),
             Description = request.Description,
             Domain = request.Domain,
             Subject = request.Subject,
@@ -145,7 +149,7 @@ public class ServerProjectActions : BaseInvocable
 
         return new(response);
     }
-    
+
     [Action("Create a project from a package",
         Description = "Creates a new project based on an existing memoQ package")]
     public ProjectDto CreateProjectPackage([ActionParameter] CreateProjectFromPackageRequest input)
@@ -160,7 +164,9 @@ public class ServerProjectActions : BaseInvocable
             CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = input.SourceLangCode,
             TargetLanguageCodes = new List<string> { input.TargetLangCode }.ToArray(),
-            CallbackWebServiceUrl = input.CallbackUrl ?? ApplicationConstants.BridgeServiceUrl,
+            CallbackWebServiceUrl =
+                input.CallbackUrl ?? ApplicationConstants.BridgeServiceUrl.SetQueryParameter("id",
+                    Creds.GetInstanceUrlHash()),
             Description = input.Description,
             Domain = input.Domain,
             Subject = input.Subject,
@@ -189,7 +195,7 @@ public class ServerProjectActions : BaseInvocable
         {
             ImportResources = input.ImportResources
         };
-        
+
         var result = projectService.Service.CreateProjectFromPackage3(request, Guid.Parse(input.FileId), importOptions);
         var response = projectService.Service.GetProject(result);
 
@@ -204,7 +210,7 @@ public class ServerProjectActions : BaseInvocable
 
         projectService.Service.DeleteProject(Guid.Parse(project.ProjectGuid));
     }
-    
+
     [Action("Distribute project", Description = "Distribute a specific project")]
     public async Task DistributeProject([ActionParameter] ProjectRequest project)
     {
