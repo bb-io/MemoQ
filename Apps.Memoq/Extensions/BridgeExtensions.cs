@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Utils.Extensions.Sdk;
-using Blackbird.Applications.Sdk.Utils.Extensions.String;
 
 namespace Apps.Memoq.Extensions;
 
