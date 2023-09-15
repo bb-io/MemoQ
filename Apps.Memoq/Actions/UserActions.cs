@@ -21,7 +21,7 @@ public class UserActions : BaseInvocable
     {
     }
         
-    [Action("List all users", Description = "List all users")]
+    [Action("List users", Description = "List all users")]
     public ListAllUsersResponse ListAllUsers()
     {
         var securityService = new MemoqServiceFactory<ISecurityService>(
