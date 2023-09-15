@@ -1,4 +1,4 @@
-# Blackbird.io MemoQ
+# Blackbird.io memoQ
 
 Blackbird is the new automation backbone for the language technology industry. Blackbird provides enterprise-scale automation and orchestration with a simple no-code/low-code platform. Blackbird enables ambitious organizations to identify, vet and automate as many processes as possible. Not just localization workflows, but any business and IT process. This repository represents an application that is deployable on Blackbird and usable inside the workflow editor.
 
@@ -6,14 +6,14 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-MemoQ offers flexible translation and localization management solutions tailored to enterprises, language service providers, and translators.. This MemoQ application primarily centers around project and file management.
+memoQ offers flexible translation and localization management solutions tailored to enterprises, language service providers, and translators.. This memoQ application primarily centers around project and file management.
 
 ## Connecting
 
-1.  Navigate to apps and search for MemoQ . If you cannot find MemoQ then click _Add App_ in the top right corner, select MemoQ and add the app to your Blackbird environment.
+1.  Navigate to apps and search for memoQ . If you cannot find memoQ then click _Add App_ in the top right corner, select memoQ and add the app to your Blackbird environment.
 2.  Click _Add Connection_.
 3.  Name your connection for future reference e.g. 'My client'.
-4.  Copy API key you got from MemoQ and instance URL and paste it to the appropriate fields in the BlackBird
+4.  Copy API key you got from memoQ and instance URL and paste it to the appropriate fields in the BlackBird
 5.  Click _Connect_.
 6.  Confirm that the connection has appeared and the status is _Connected_.
 
@@ -75,6 +75,6 @@ In the future we can add actions for:
 
 ## Feedback
 
-Feedback to our implementation of MemoQ is always very welcome. Reach out to us using the established channels or create an issue.
+Feedback to our implementation of memoQ is always very welcome. Reach out to us using the [established channels](https://www.blackbird.io/), or create an issue.
 
 <!-- end docs -->
