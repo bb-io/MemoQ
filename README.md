@@ -6,7 +6,7 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 <!-- begin docs -->
 
-memoQ offers flexible translation and localization management solutions tailored to enterprises, language service providers, and translators.. This memoQ application primarily centers around project and file management.
+memoQ offers flexible translation and localization management solutions tailored to enterprises, language service providers, and translators. This memoQ application primarily centers around project and file management.
 
 ## Connecting
 
