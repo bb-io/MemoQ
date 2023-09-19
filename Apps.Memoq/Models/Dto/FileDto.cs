@@ -12,7 +12,7 @@ public class FileDto
     public string Name { get; set; }
     
     [Display("File extension")]
-    public string FileExtensions { get; set; }
+    public string FileExtension { get; set; }
 
     public string Status { get; set; }
 
@@ -25,7 +25,7 @@ public class FileDto
         Guid = file.DocumentGuid.ToString();
         ParentDocumentId = file.ParentDocumentId.ToString();
         Name = Path.GetFileNameWithoutExtension(file.DocumentName);
-        FileExtensions = Path.GetExtension(file.DocumentName);
+        FileExtension = Path.GetExtension(file.DocumentName);
         Status = file.DocumentStatus.ToString();
         ExportPath = file.ExportPath;
         TargetLanguageCode = file.TargetLangCode;
@@ -36,6 +36,7 @@ public class FileDto
         Guid = file.Guid;
         ParentDocumentId = file.ParentDocumentId;
         Name = file.Name;
+        FileExtension = file.FileExtension;
         Status = file.Status;
         ExportPath = file.ExportPath;
         TargetLanguageCode = file.TargetLanguageCode;
