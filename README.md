@@ -8,30 +8,41 @@ Blackbird is the new automation backbone for the language technology industry. B
 
 memoQ offers flexible translation and localization management solutions tailored to enterprises, language service providers, and translators. This memoQ application primarily centers around project and file management.
 
+## Before setting up
+
+Before you can connect you need to make sure that:
+
+- You have access to a memoQ instance.
+- Your memoQ instance has the API enabled and you have an API key.
+- If your memoQ instance requires whitelisting then ask us about our Blackbird _sandbox_ IP addresses.
+
 ## Connecting
 
 1.  Navigate to apps and search for memoQ . If you cannot find memoQ then click _Add App_ in the top right corner, select memoQ and add the app to your Blackbird environment.
 2.  Click _Add Connection_.
-3.  Name your connection for future reference e.g. 'My client'.
-4.  Copy API key you got from memoQ and instance URL and paste it to the appropriate fields in the BlackBird
-5.  Click _Connect_.
-6.  Confirm that the connection has appeared and the status is _Connected_.
+3.  Name your connection for future reference e.g. 'My memoQ'.
+4.  Add the URL pointing to your memoQ instance API. Usually this is your instance URL, port with the added `/memoqservices` but this can be different (see image below).
+5.  Add your API key.
+6.  Click _Connect_.
+7.  Confirm that the connection has appeared and the status is _Connected_.
+
+![1695644590394](image/README/1695644590394.png)
 
 ## Actions
 
 ### Analyses
 
--   **Get document/project analysis**
+- **Get document/project analysis**
 
 ### Files
 
--   **List project documents** returns a list of all documents related to a specified project.
--   **Slice document** slices specific document based on the specified options.
--    **Assign document to user** assigns the document to a specific user.
--   **Get/delete/overwrite/deliver document**
--   **Import/Export document**
--   **Export document as XLIFF** exports and downloads the translation document as XLIFF (MQXLIFF) bilingual.
--   **Apply translated content to updated source**
+- **List project documents** returns a list of all documents related to a specified project.
+- **Slice document** slices specific document based on the specified options.
+- **Assign document to user** assigns the document to a specific user.
+- **Get/delete/overwrite/deliver document**
+- **Import/Export document**
+- **Export document as XLIFF** exports and downloads the translation document as XLIFF (MQXLIFF) bilingual.
+- **Apply translated content to updated source**
 
 ### Groups
 
@@ -39,8 +50,8 @@ memoQ offers flexible translation and localization management solutions tailored
 
 ### Packages
 
--  **Create delivery package** creates a new delivery package from document IDs.
--  **Deliver package** delivers a specific package.
+- **Create delivery package** creates a new delivery package from document IDs.
+- **Deliver package** delivers a specific package.
 
 ### Projects
 
@@ -51,27 +62,27 @@ memoQ offers flexible translation and localization management solutions tailored
 
 ### Translation memories
 
--  **List translation memories** returns a list of all translation memory.
+- **List translation memories** returns a list of all translation memory.
 - **Get/create/update/delete**
 - **Import TMX file** imports TMX file to the translation memory.
 - **Import translation memory scheme from XML** imports translation memory metadata scheme from an XML file.
 
 ### Users
 
--  **List users** returns a list of all users.
--  **Get/create/delete user**
+- **List users** returns a list of all users.
+- **Get/create/delete user**
 
 ## Events
 
--   **On document delivered** is triggered when any project document was delivered.
+- **On document delivered** is triggered when any project document was delivered.
 
 ## Missing features
 
 In the future we can add actions for:
 
--   Termbases
--   Tasks
--   Resources
+- Termbases
+- Tasks
+- Resources
 
 ## Feedback
 
