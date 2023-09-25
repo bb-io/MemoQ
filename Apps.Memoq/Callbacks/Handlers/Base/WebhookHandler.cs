@@ -9,7 +9,7 @@ public abstract class WebhookHandler : BridgeWebhookHandler
 {
     protected abstract string Event { get; }
 
-    protected override (BridgeRequest webhookData, BridgeCredentials bridgeCreds) GetBridgeServiceInputs(
+    protected async override Task<(BridgeRequest webhookData, BridgeCredentials bridgeCreds)> GetBridgeServiceInputs(
         Dictionary<string, string> values,
         IEnumerable<AuthenticationCredentialsProvider> creds)
     {
