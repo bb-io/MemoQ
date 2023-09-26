@@ -25,7 +25,7 @@ namespace Apps.Memoq.Connections
                 return new()
                 {
                     IsValid = false,
-                    Message = ex.Message
+                    Message = ex.InnerException?.InnerException?.Message ?? ex.Message
                 };
             }
         }
