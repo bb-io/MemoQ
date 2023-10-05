@@ -40,7 +40,7 @@ Before you can connect you need to make sure that:
 - **Slice document** slices specific document based on the specified options.
 - **Assign document to user** assigns the document to a specific user.
 - **Get/delete/overwrite/deliver document**
-- **Import/Export document**
+- **Import/Export document** uploads/downloads file to the project. Make sure your file name contains extension, otherwise the action will fail.
 - **Export document as XLIFF** exports and downloads the translation document as XLIFF (MQXLIFF) bilingual.
 - **Apply translated content to updated source**
 
