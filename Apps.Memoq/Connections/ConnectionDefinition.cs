@@ -15,7 +15,7 @@ public class ConnectionDefinition : IConnectionDefinition
             ConnectionProperties = new List<ConnectionProperty>
             {
                 new("url") { DisplayName = "URL" },
-                new("apiKey") { DisplayName = "API Key" }
+                new("apiKey") { DisplayName = "API Key", Sensitive = true }
             }
         }
     };
