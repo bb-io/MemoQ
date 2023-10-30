@@ -92,7 +92,7 @@ public class ServerProjectActions : BaseInvocable
             SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = new List<string> { request.TargetLangCode }.ToArray(),
             CallbackWebServiceUrl = request.CallbackUrl ??
-                                    ApplicationConstants.BridgeServiceUrl.SetQueryParameter("id",
+                                    $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}".SetQueryParameter("id",
                                         Creds.GetInstanceUrlHash()),
             Description = request.Description,
             Domain = request.Domain,
@@ -165,7 +165,7 @@ public class ServerProjectActions : BaseInvocable
             SourceLanguageCode = input.SourceLangCode,
             TargetLanguageCodes = new List<string> { input.TargetLangCode }.ToArray(),
             CallbackWebServiceUrl =
-                input.CallbackUrl ?? ApplicationConstants.BridgeServiceUrl.SetQueryParameter("id",
+                input.CallbackUrl ?? $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}".SetQueryParameter("id",
                     Creds.GetInstanceUrlHash()),
             Description = input.Description,
             Domain = input.Domain,
