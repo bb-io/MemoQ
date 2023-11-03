@@ -10,9 +10,9 @@ public class CreateProjectTemplateRequest
     [DataSource(typeof(SourceLanguageDataHandler))]
     public string SourceLangCode { get; set; }
 
-    [Display("Target language")]
+    [Display("Target languages")]
     [DataSource(typeof(TargetLanguageDataHandler))]
-    public string TargetLangCode { get; set; }
+    public IEnumerable<string> TargetLangCodes { get; set; }
 
     [Display("Project name")]
     public string ProjectName { get; set; }

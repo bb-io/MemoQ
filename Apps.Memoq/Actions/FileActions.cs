@@ -155,7 +155,7 @@ public class FileActions : BaseInvocable
             .ImportTranslationDocument(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
-                request.TargetLanguageCode == null ? null : new List<string> { request.TargetLanguageCode }.ToArray(),
+                request.TargetLanguageCodes?.ToArray(),
                 null);
 
         return new()
