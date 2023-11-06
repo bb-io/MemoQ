@@ -90,7 +90,7 @@ public class ServerProjectActions : BaseInvocable
             Name = request.ProjectName,
             CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
-            TargetLanguageCodes = new List<string> { request.TargetLangCode }.ToArray(),
+            TargetLanguageCodes = request.TargetLangCodes.ToArray(),
             CallbackWebServiceUrl = request.CallbackUrl ??
                                     $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}".SetQueryParameter("id",
                                         Creds.GetInstanceUrlHash()),
@@ -136,7 +136,7 @@ public class ServerProjectActions : BaseInvocable
             Name = request.ProjectName,
             CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
-            TargetLanguageCodes = new List<string> { request.TargetLangCode }.ToArray(),
+            TargetLanguageCodes = request.TargetLangCodes.ToArray(),
             Description = request.Description,
             Domain = request.Domain,
             Subject = request.Subject,
@@ -163,7 +163,7 @@ public class ServerProjectActions : BaseInvocable
             Name = input.ProjectName,
             CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = input.SourceLangCode,
-            TargetLanguageCodes = new List<string> { input.TargetLangCode }.ToArray(),
+            TargetLanguageCodes = input.TargetLangCodes.ToArray(),
             CallbackWebServiceUrl =
                 input.CallbackUrl ?? $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}".SetQueryParameter("id",
                     Creds.GetInstanceUrlHash()),

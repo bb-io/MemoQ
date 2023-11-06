@@ -11,9 +11,9 @@ public class UploadDocumentToProjectRequest : ProjectRequest
     [Display("Document")]
     public File File { get; set; }
 
-    [Display("Target language")]
+    [Display("Target languages")]
     [DataSource(typeof(TargetLanguageDataHandler))]
-    public string? TargetLanguageCode { get; set; }
+    public IEnumerable<string>? TargetLanguageCodes { get; set; }
 
     [Display("File name")]
     public string? FileName { get; set; }
