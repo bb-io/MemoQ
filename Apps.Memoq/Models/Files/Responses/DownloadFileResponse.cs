@@ -1,6 +1,6 @@
 ﻿using Apps.Memoq.Models.Dto;
 using Blackbird.Applications.Sdk.Common;
-using File = Blackbird.Applications.Sdk.Common.Files.File;
+using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.Memoq.Models.Files.Responses;
 
@@ -10,5 +10,5 @@ public class DownloadFileResponse : FileDto
     {
     }
 
-    [Display("Document")] public File File { get; set; }
+    [Display("Document")] public FileReference File { get; set; }
 }

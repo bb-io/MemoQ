@@ -1,8 +1,8 @@
-using File = Blackbird.Applications.Sdk.Common.Files.File;
+using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.Memoq.Models.TranslationMemories.Requests;
 
 public class ImportTmSchemeRequest : TranslationMemoryRequest
 {
-    public File File { get; set; }
+    public FileReference File { get; set; }
 }

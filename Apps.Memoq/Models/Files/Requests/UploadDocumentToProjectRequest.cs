@@ -2,14 +2,14 @@
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dynamic;
-using File = Blackbird.Applications.Sdk.Common.Files.File;
+using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.Memoq.Models.Files.Requests;
 
 public class UploadDocumentToProjectRequest : ProjectRequest
 {
     [Display("Document")]
-    public File File { get; set; }
+    public FileReference File { get; set; }
 
     [Display("Target languages")]
     [DataSource(typeof(TargetLanguageDataHandler))]
