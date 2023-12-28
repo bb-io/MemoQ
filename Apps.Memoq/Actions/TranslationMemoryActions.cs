@@ -10,6 +10,8 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Parsers;
 using MQS.TM;
 
@@ -18,11 +20,15 @@ namespace Apps.Memoq.Actions;
 [ActionList]
 public class TranslationMemoryActions : BaseInvocable
 {
+    private readonly IFileManagementClient _fileManagementClient;
+    
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
 
-    public TranslationMemoryActions(InvocationContext invocationContext) : base(invocationContext)
+    public TranslationMemoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+        : base(invocationContext)
     {
+        _fileManagementClient = fileManagementClient;
     }
 
     [Action("List translation memories", Description = "List translation memories")]
@@ -117,13 +123,15 @@ public class TranslationMemoryActions : BaseInvocable
     }
 
     [Action("Import TMX file", Description = "Import TMX file")]
-    public ImportTmxFileResponse ImportTmxFile([ActionParameter] ImportTmxFileRequest input)
+    public async Task<ImportTmxFileResponse> ImportTmxFile([ActionParameter] ImportTmxFileRequest input)
     {
         using var tmService = new MemoqServiceFactory<ITMService>(
             SoapConstants.TranslationMemoryServiceUrl, Creds);
 
         var manager = new TmxUploadManager(tmService.Service);
-        var result = FileUploader.UploadFile(input.File.Bytes, manager, input.TmGuid);
+        var file = await _fileManagementClient.DownloadAsync(input.File);
+        var fileBytes = await file.GetByteData();
+        var result = FileUploader.UploadFile(fileBytes, manager, input.TmGuid);
 
         return new()
         {
@@ -137,7 +145,9 @@ public class TranslationMemoryActions : BaseInvocable
         using var tmService = new MemoqServiceFactory<ITMService>(
             SoapConstants.TranslationMemoryServiceUrl, Creds);
 
-        var xml = Encoding.UTF8.GetString(input.File.Bytes);
+        var file = await _fileManagementClient.DownloadAsync(input.File);
+        var fileBytes = await file.GetByteData();
+        var xml = Encoding.UTF8.GetString(fileBytes);
         var response = await tmService.Service
             .ImportTMMetadataSchemeFromXMLAsync(Guid.Parse(input.TmGuid), xml);
 

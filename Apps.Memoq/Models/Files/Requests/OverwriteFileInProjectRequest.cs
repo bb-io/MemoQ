@@ -1,6 +1,6 @@
 ﻿using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
-using File = Blackbird.Applications.Sdk.Common.Files.File;
+using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.Memoq.Models.Files.Requests;
 
@@ -9,7 +9,7 @@ public class OverwriteFileInProjectRequest : ProjectRequest
     [Display("Document to replace GUID")]
     public string DocumentToReplaceGuid { get; set; }
         
-    public File File { get; set; }
+    public FileReference File { get; set; }
 
     [Display("File name")]
     public string? Filename { get; set; }

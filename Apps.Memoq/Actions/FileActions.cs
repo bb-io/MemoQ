@@ -14,6 +14,8 @@ using Apps.Memoq.Utils.FileUploader;
 using Apps.Memoq.Utils.FileUploader.Managers;
 using MQS.TasksService;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Parsers;
 
 namespace Apps.Memoq.Actions;
@@ -21,11 +23,15 @@ namespace Apps.Memoq.Actions;
 [ActionList]
 public class FileActions : BaseInvocable
 {
+    private readonly IFileManagementClient _fileManagementClient;
+    
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
 
-    public FileActions(InvocationContext invocationContext) : base(invocationContext)
+    public FileActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+        : base(invocationContext)
     {
+        _fileManagementClient = fileManagementClient;
     }
 
     [Action("List project documents", Description = "List all project documents")]
@@ -89,7 +95,7 @@ public class FileActions : BaseInvocable
     }
 
     [Action("Overwrite document", Description = "Overwrite specific document in project")]
-    public void OverwriteFileInProject([ActionParameter] OverwriteFileInProjectRequest input)
+    public async Task OverwriteFileInProject([ActionParameter] OverwriteFileInProjectRequest input)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
             SoapConstants.FileServiceUrl, Creds);
@@ -97,8 +103,10 @@ public class FileActions : BaseInvocable
             SoapConstants.ProjectServiceUrl, Creds);
 
         var manager = new FileUploadManager(fileService.Service);
-        var uploadFileResult = FileUploader.UploadFile(input.File.Bytes, manager, input.Filename ?? input.File.Name);
-        projectService.Service.ReImportTranslationDocuments(Guid.Parse(input.ProjectGuid),
+        var file = await _fileManagementClient.DownloadAsync(input.File);
+        var fileBytes = await file.GetByteData();
+        var uploadFileResult = FileUploader.UploadFile(fileBytes, manager, input.Filename ?? input.File.Name);
+        await projectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(input.ProjectGuid),
             new ReimportDocumentOptions[]
             {
                 new()
@@ -140,7 +148,7 @@ public class FileActions : BaseInvocable
     }
 
     [Action("Import document", Description = "Uploads and imports a document to a project")]
-    public UploadFileResponse UploadAndImportFileToProject(
+    public async Task<UploadFileResponse> UploadAndImportFileToProject(
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
@@ -149,10 +157,12 @@ public class FileActions : BaseInvocable
             SoapConstants.ProjectServiceUrl, Creds);
 
         var manager = new FileUploadManager(fileService.Service);
+        var file = await _fileManagementClient.DownloadAsync(request.File);
+        var fileBytes = await file.GetByteData();
         var uploadFileResult =
-            FileUploader.UploadFile(request.File.Bytes, manager, request.FileName ?? request.File.Name);
-        var result = projectService.Service
-            .ImportTranslationDocument(
+            FileUploader.UploadFile(fileBytes, manager, request.FileName ?? request.File.Name);
+        var result = await projectService.Service
+            .ImportTranslationDocumentAsync(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
                 request.TargetLanguageCodes?.ToArray(),
@@ -166,7 +176,7 @@ public class FileActions : BaseInvocable
     }
 
     [Action("Export document", Description = "Exports and downloads a document with options")]
-    public DownloadFileResponse DownloadFileByGuid(
+    public async Task<DownloadFileResponse> DownloadFileByGuid(
         [ActionParameter] DownloadFileRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
@@ -174,8 +184,8 @@ public class FileActions : BaseInvocable
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
-        var exportResult = projectService.Service
-            .ExportTranslationDocument2(Guid.Parse(request.ProjectGuid), Guid.Parse(request.DocumentGuid),
+        var exportResult = await projectService.Service
+            .ExportTranslationDocument2Async(Guid.Parse(request.ProjectGuid), Guid.Parse(request.DocumentGuid),
                 new DocumentExportOptions
                 {
                     ExportAllMultilingualSiblings = request.ExportAllMultilingualSibling ?? true,
@@ -190,19 +200,14 @@ public class FileActions : BaseInvocable
             ProjectGuid = request.ProjectGuid
         }, request.DocumentGuid);
 
-        return new(document)
-        {
-            File = new(data)
-            {
-                Name = filename,
-                ContentType = MediaTypeNames.Application.Octet
-            }
-        };
+        using var stream = new MemoryStream(data);
+        var fileReference = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Octet, filename);
+        return new(document) { File = fileReference };
     }
 
     [Action("Export document as XLIFF",
         Description = "Exports and downloads the translation document as XLIFF (MQXLIFF) bilingual")]
-    public DownloadFileResponse DownloadFileAsXliff(
+    public async Task<DownloadFileResponse> DownloadFileAsXliff(
         [ActionParameter] DownloadXliffRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
@@ -213,8 +218,8 @@ public class FileActions : BaseInvocable
         var fullVersion = request.FullVersionHistory ?? false;
         var includeSkeleton = request.IncludeSkeleton ?? false;
 
-        var exportResult = projectService.Service
-            .ExportTranslationDocumentAsXliffBilingual(Guid.Parse(request.ProjectGuid),
+        var exportResult = await projectService.Service
+            .ExportTranslationDocumentAsXliffBilingualAsync(Guid.Parse(request.ProjectGuid),
                 Guid.Parse(request.DocumentGuid), new XliffBilingualExportOptions
                 {
                     FullVersionHistory = fullVersion,
@@ -227,15 +232,10 @@ public class FileActions : BaseInvocable
         {
             ProjectGuid = request.ProjectGuid
         }, request.DocumentGuid);
-
-        return new(document)
-        {
-            File = new(data)
-            {
-                Name = filename,
-                ContentType = "application/xliff+xml",
-            }
-        };
+        
+        using var stream = new MemoryStream(data);
+        var fileReference = await _fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
+        return new(document) { File = fileReference };
     }
 
     [Action("Get document analysis", Description = "Get analysis for a specific document")]
@@ -279,6 +279,7 @@ public class FileActions : BaseInvocable
 
         return new(
             statistics,
+            _fileManagementClient,
             $"{Path.GetFileNameWithoutExtension(document.Name)}_{statistics.TargetLangCode}.html",
             MediaTypeNames.Text.Html);
     }
@@ -315,7 +316,8 @@ public class FileActions : BaseInvocable
 
         var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
         var analysis = taskResult.ResultsForTargetLangs
-            .Select(x => new GetAnalysisResponse(x, $"Analysis_{x.TargetLangCode}.html", MediaTypeNames.Text.Html))
+            .Select(x => new GetAnalysisResponse(x, _fileManagementClient, $"Analysis_{x.TargetLangCode}.html", 
+                MediaTypeNames.Text.Html))
             .ToList();
 
         return new()
