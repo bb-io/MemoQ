@@ -235,6 +235,21 @@ public class TermBaseActions : BaseInvocable
             return null;
         }
         
+        static string EscapeString(string value)
+        {
+            const string quote = "\"";
+            const string escapedQuote = "\"\"";
+            char[] charactersThatMustBeQuoted = { ';', '"', '\n' };
+            
+            if (value.Contains(quote))
+                value = value.Replace(quote, escapedQuote);
+
+            if (value.IndexOfAny(charactersThatMustBeQuoted) > -1)
+                value = quote + value + quote;
+
+            return value;
+        }
+        
         await using var glossaryStream = await _fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
         var glossary = await glossaryStream.ConvertFromTBX();
 
@@ -308,7 +323,7 @@ public class TermBaseActions : BaseInvocable
 
         foreach (var row in rowsToAdd)
         {
-            await writer.WriteLineAsync(string.Join(";", row));
+            await writer.WriteLineAsync(string.Join(";", row.Select(EscapeString)));
         }
         
         await writer.FlushAsync();
