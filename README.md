@@ -32,21 +32,21 @@ Before you can connect you need to make sure that:
 
 ### Analyses
 
-- **Get document/project analysis**
+- **Get document/project analysis**.
 
 ### Files
 
 - **List project documents** returns a list of all documents related to a specified project.
 - **Slice document** slices specific document based on the specified options.
 - **Assign document to user** assigns the document to a specific user.
-- **Get/delete/overwrite/deliver document**
+- **Get/delete/overwrite/deliver document**.
 - **Import/Export document** uploads/downloads file to the project. Make sure your file name contains extension, otherwise the action will fail.
 - **Export document as XLIFF** exports and downloads the translation document as XLIFF (MQXLIFF) bilingual.
-- **Apply translated content to updated source**
+- **Apply translated content to updated source**.
 
 ### Groups
 
-- **List groups** returns a list of all groups
+- **List groups** returns a list of all groups.
 
 ### Packages
 
@@ -56,21 +56,30 @@ Before you can connect you need to make sure that:
 ### Projects
 
 - **List projects** returns a list of all projects.
-- **Get/create/delete/distribute project **
+- **Get/create/delete/distribute project**.
 - **Create project from package/template** creates a new project based on a specified template/package.
 - **Add target language to project** adds target language to a specific project.
 
 ### Translation memories
 
 - **List translation memories** returns a list of all translation memory.
-- **Get/create/update/delete**
+- **Get/create/update/delete**.
 - **Import TMX file** imports TMX file to the translation memory.
 - **Import translation memory scheme from XML** imports translation memory metadata scheme from an XML file.
+
+### Term bases
+
+- **Import glossary** imports a term base.
+- **Export glossary** exports an existing term base. This action accepts an optional input parameter called _Include forbidden terms_ which defaults to _False_. When set to _False_, terms with _Forbidden_ status are excluded from the resulting export.
+
+**Import glossary** and **Export glossary** support both regular term bases and QTerm. It's essential to note that the current implementation only facilitates basic imports/exports, covering fundamental information like terms, languages, and definitions. However, additional details such as domain, usage examples, client, project, and other details are not included in the glossaries.
+
+Another important consideration is that our glossaries implementation adheres to the ISO 639-1 standard language codes, in contrast to memoQ. If there is no corresponding ISO 639-1 language code for a language supported by memoQ, our glossaries will utilize memoQ's ISO 639-3 language code. This can result in incompatibility with other systems if such languages are present in a glossary. However, it's worth mentioning that you will still be able to manipulate these glossaries within memoQ.
 
 ### Users
 
 - **List users** returns a list of all users.
-- **Get/create/delete user**
+- **Get/create/delete user**.
 
 ## Events
 
@@ -80,7 +89,6 @@ Before you can connect you need to make sure that:
 
 In the future we can add actions for:
 
-- Termbases
 - Tasks
 - Resources
 
