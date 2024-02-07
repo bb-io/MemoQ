@@ -171,9 +171,10 @@ public class TermBaseActions : BaseInvocable
         ["sv-se"] = "swe-SE", ["tl"] = "tgl", ["tg"] = "tgk", ["tgk"] = "tgk", ["tzm"] = "tzm", ["ta"] = "tam",
         ["tt"] = "tat", ["te"] = "tel", ["tdt"] = "tdt", ["th"] = "tha", ["ti"] = "tir", ["tir"] = "tir", 
         ["tpi"] = "tpi", ["to"] = "ton", ["tcs"] = "tcs", ["tn"] = "tsn", ["tr"] = "tur", ["tuk"] = "tuk", 
-        ["tk"] = "tuk", ["tvl"] = "tvl", ["tw"] = "twi", ["uk"] = "ukr", ["ur"] = "urd", ["uzn"] = "uzn", 
-        ["uz-cyrl"] = "uzn", ["uz-cyrl-uz"] = "uzn", ["uzb"] = "uzb", ["uz-latn"] = "uzb", ["uz-latn-uz"] = "uzb",
-        ["vi"] = "vie", ["cy"] = "wel", ["wo"] = "wol", ["xh"] = "xho", ["yi"] = "yid", ["yo"] = "yor", ["zu"] = "zul"
+        ["tk"] = "tuk", ["tvl"] = "tvl", ["tw"] = "twi", ["uk"] = "ukr", ["uk-ua"] = "ukr", ["ur"] = "urd", 
+        ["uzn"] = "uzn", ["uz-cyrl"] = "uzn", ["uz-cyrl-uz"] = "uzn", ["uzb"] = "uzb", ["uz-latn"] = "uzb", 
+        ["uz-latn-uz"] = "uzb", ["vi"] = "vie", ["cy"] = "wel", ["wo"] = "wol", ["xh"] = "xho", ["yi"] = "yid", 
+        ["yo"] = "yor", ["zu"] = "zul"
     };
 
     [Action("Import glossary", Description = "Import a termbase")]
@@ -264,10 +265,18 @@ public class TermBaseActions : BaseInvocable
             .ToArray();
 
         using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
+
+        var termbaseName = input.Name ?? glossary.Title;
+        
+        var termbases = await tbService.Service.ListTBs2Async(new TBFilter());
+        
+        if (termbases.Any(tb => tb.Name.Equals(termbaseName, StringComparison.OrdinalIgnoreCase)))
+            termbaseName += $" {DateTime.Now.ToString("D")}";
+        
         var termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
         {
             IsQTerm = input.IsQTerm ?? false,
-            Name = input.Name ?? glossary.Title,
+            Name = termbaseName,
             Description = input.Description ?? glossary.SourceDescription,
             LanguageCodes = memoQLanguagesPresent,
             IsModerated = input.IsModerated ?? false,
