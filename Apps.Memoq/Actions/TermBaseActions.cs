@@ -171,9 +171,10 @@ public class TermBaseActions : BaseInvocable
         ["sv-se"] = "swe-SE", ["tl"] = "tgl", ["tg"] = "tgk", ["tgk"] = "tgk", ["tzm"] = "tzm", ["ta"] = "tam",
         ["tt"] = "tat", ["te"] = "tel", ["tdt"] = "tdt", ["th"] = "tha", ["ti"] = "tir", ["tir"] = "tir", 
         ["tpi"] = "tpi", ["to"] = "ton", ["tcs"] = "tcs", ["tn"] = "tsn", ["tr"] = "tur", ["tuk"] = "tuk", 
-        ["tk"] = "tuk", ["tvl"] = "tvl", ["tw"] = "twi", ["uk"] = "ukr", ["ur"] = "urd", ["uzn"] = "uzn", 
-        ["uz-cyrl"] = "uzn", ["uz-cyrl-uz"] = "uzn", ["uzb"] = "uzb", ["uz-latn"] = "uzb", ["uz-latn-uz"] = "uzb",
-        ["vi"] = "vie", ["cy"] = "wel", ["wo"] = "wol", ["xh"] = "xho", ["yi"] = "yid", ["yo"] = "yor", ["zu"] = "zul"
+        ["tk"] = "tuk", ["tvl"] = "tvl", ["tw"] = "twi", ["uk"] = "ukr", ["uk-ua"] = "ukr", ["ur"] = "urd", 
+        ["uzn"] = "uzn", ["uz-cyrl"] = "uzn", ["uz-cyrl-uz"] = "uzn", ["uzb"] = "uzb", ["uz-latn"] = "uzb", 
+        ["uz-latn-uz"] = "uzb", ["vi"] = "vie", ["cy"] = "wel", ["wo"] = "wol", ["xh"] = "xho", ["yi"] = "yid", 
+        ["yo"] = "yor", ["zu"] = "zul"
     };
 
     [Action("Import glossary", Description = "Import a termbase")]
