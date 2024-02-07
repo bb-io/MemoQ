@@ -265,10 +265,18 @@ public class TermBaseActions : BaseInvocable
             .ToArray();
 
         using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
+
+        var termbaseName = input.Name ?? glossary.Title;
+        
+        var termbases = await tbService.Service.ListTBs2Async(new TBFilter());
+        
+        if (termbases.Any(tb => tb.Name.Equals(termbaseName, StringComparison.OrdinalIgnoreCase)))
+            termbaseName += $" {DateTime.Now.ToString("D")}";
+        
         var termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
         {
             IsQTerm = input.IsQTerm ?? false,
-            Name = input.Name ?? glossary.Title,
+            Name = termbaseName,
             Description = input.Description ?? glossary.SourceDescription,
             LanguageCodes = memoQLanguagesPresent,
             IsModerated = input.IsModerated ?? false,
