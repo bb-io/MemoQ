@@ -13,6 +13,7 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
+using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using MQS.TB;
 
 namespace Apps.Memoq.Actions;
@@ -236,21 +237,6 @@ public class TermBaseActions : BaseInvocable
             return null;
         }
         
-        static string EscapeString(string value)
-        {
-            const string quote = "\"";
-            const string escapedQuote = "\"\"";
-            char[] charactersThatMustBeQuoted = { ';', '"', '\n' };
-            
-            if (value.Contains(quote))
-                value = value.Replace(quote, escapedQuote);
-
-            if (value.IndexOfAny(charactersThatMustBeQuoted) > -1)
-                value = quote + value + quote;
-
-            return value;
-        }
-        
         await using var glossaryStream = await _fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
         var glossary = await glossaryStream.ConvertFromTBX();
 
@@ -327,18 +313,8 @@ public class TermBaseActions : BaseInvocable
                 rowsToAdd[0][i] = header.Split('-')[0];
         }
         
-        await using var csvStream = new MemoryStream();
-        await using var writer = new StreamWriter(csvStream, Encoding.UTF8);
-
-        foreach (var row in rowsToAdd)
-        {
-            await writer.WriteLineAsync(string.Join(";", row.Select(EscapeString)));
-        }
+        await using var csvStream = await rowsToAdd.ConvertToCsv(Encoding.UTF8, ';');
         
-        await writer.FlushAsync();
-        
-        csvStream.Position = 0;
-
         var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(termbaseGuid, new CSVImportSettings());
         try
         {
