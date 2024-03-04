@@ -1,4 +1,6 @@
 ﻿using System.Net.Mime;
+using System.Xml.Linq;
+using Apps.MemoQ;
 using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
@@ -12,6 +14,8 @@ using Apps.Memoq.Models.Files.Requests;
 using Apps.Memoq.Models.Files.Responses;
 using Apps.Memoq.Utils.FileUploader;
 using Apps.Memoq.Utils.FileUploader.Managers;
+using Apps.Memoq.Utils.Xliff;
+using Blackbird.Applications.Sdk.Common.Files;
 using MQS.TasksService;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -24,11 +28,11 @@ namespace Apps.Memoq.Actions;
 public class FileActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-    
+
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
 
-    public FileActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    public FileActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
         : base(invocationContext)
     {
         _fileManagementClient = fileManagementClient;
@@ -175,6 +179,48 @@ public class FileActions : BaseInvocable
         };
     }
 
+    [Action("Import document as XLIFF", Description = "Uploads and imports a document to a project as XLIFF")]
+    public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
+        [ActionParameter] UploadDocumentToProjectRequest request)
+    {
+        using var fileService = new MemoqServiceFactory<IFileManagerService>(
+            SoapConstants.FileServiceUrl, Creds);
+
+        var file = await _fileManagementClient.DownloadAsync(request.File);
+
+        byte[]? fileBytes = null;
+        if (request.File.Name.EndsWith(".xliff"))
+        {
+            var xDocument = XDocument.Load(file);
+            string version = xDocument.GetXliffVersion();
+
+            if (version == "1.2")
+            {
+                fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
+            }
+            else if (version == "2.1")
+            {
+                fileBytes = await file.GetByteData();
+            }
+            else
+            {
+                throw new("Unsupported XLIFF version");
+            }
+        }
+
+        fileBytes ??= await file.GetByteData();
+
+        var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
+        var contentType = MimeTypes.GetMimeType(fileName);
+        var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
+            contentType, fileName);
+        return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+        {
+            File = fileReference, ProjectGuid = request.ProjectGuid, TargetLanguageCodes = request.TargetLanguageCodes,
+            FileName = request.FileName
+        });
+    }
+
     [Action("Export document", Description = "Exports and downloads a document with options")]
     public async Task<DownloadFileResponse> DownloadFileByGuid(
         [ActionParameter] DownloadFileRequest request)
@@ -232,7 +278,7 @@ public class FileActions : BaseInvocable
         {
             ProjectGuid = request.ProjectGuid
         }, request.DocumentGuid);
-        
+
         using var stream = new MemoryStream(data);
         var fileReference = await _fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
         return new(document) { File = fileReference };
@@ -316,7 +362,7 @@ public class FileActions : BaseInvocable
 
         var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
         var analysis = taskResult.ResultsForTargetLangs
-            .Select(x => new GetAnalysisResponse(x, _fileManagementClient, $"Analysis_{x.TargetLangCode}.html", 
+            .Select(x => new GetAnalysisResponse(x, _fileManagementClient, $"Analysis_{x.TargetLangCode}.html",
                 MediaTypeNames.Text.Html))
             .ToList();
 
@@ -433,5 +479,15 @@ public class FileActions : BaseInvocable
             throw new Exception($"Task has status {taskStatus.ToString()}.");
 
         return taskService.Service.GetTaskResult(taskId);
+    }
+
+    private async Task<byte[]> ConvertTo2_1Xliff(XDocument xDocument, string fileName)
+    {
+        var xliffFile = xDocument.ConvertToTwoPointOne();
+
+        var xliffStream = new MemoryStream();
+        xliffFile.Save(xliffStream);
+
+        return await xliffStream.GetByteData();
     }
 }
