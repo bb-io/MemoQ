@@ -155,6 +155,13 @@ public class FileActions : BaseInvocable
     public async Task<UploadFileResponse> UploadAndImportFileToProject(
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
+        var restRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+        {
+            Status = "Importing document",
+        });
+        
+        await _restClient.ExecuteAsync(restRequest);
+        
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
             SoapConstants.FileServiceUrl, Creds);
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
@@ -163,14 +170,41 @@ public class FileActions : BaseInvocable
         var manager = new FileUploadManager(fileService.Service);
         var file = await _fileManagementClient.DownloadAsync(request.File);
         var fileBytes = await file.GetByteData();
+        
+        var restRequest2 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+        {
+            Status = "Downloaded file from file management. Uploading...",
+            FileName = request.FileName ?? request.File.Name,
+            FileBytes = fileBytes
+        });
+        
+        await _restClient.ExecuteAsync(restRequest2);
+        
         var uploadFileResult =
             FileUploader.UploadFile(fileBytes, manager, request.FileName ?? request.File.Name);
+        
+        var restRequest3 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+        {
+            Status = "File uploaded to file management. Importing...",
+            Guid = uploadFileResult
+        });
+        
+        await _restClient.ExecuteAsync(restRequest3);
+        
         var result = await projectService.Service
             .ImportTranslationDocumentAsync(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
                 request.TargetLanguageCodes?.ToArray(),
                 null);
+        
+        var restRequest4 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+        {
+            Status = "File imported to project",
+            DocumentGuids = result.DocumentGuids.Select(x => x.ToString()).ToArray()
+        });
+        
+        await _restClient.ExecuteAsync(restRequest4);
 
         return new()
         {
