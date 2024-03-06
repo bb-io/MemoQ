@@ -168,10 +168,17 @@ public class FileActions : BaseInvocable
         
         var file = new MemoryStream();
         await stream.CopyToAsync(file);
+        
+        file.Position = 0;
         var fileBytes = await file.GetByteData();
 
         var uploadFileResult =
             FileUploader.UploadFile(fileBytes, manager, fileName);
+        
+        var re = new RestRequest(string.Empty, Method.Post)
+            .WithJsonBody(new { FileBytes = fileBytes });
+            
+        await _restClient.ExecuteAsync(re);
 
         var targetLanguages = request.TargetLanguageCodes?.ToArray();
 
@@ -257,8 +264,7 @@ public class FileActions : BaseInvocable
         catch (Exception e)
         {
             var errorRequest = new RestRequest(string.Empty, Method.Post)
-                .WithJsonBody(new { Error = "e.Message", Type = "e.GetType().Name" });
-            
+                .WithJsonBody(new { Error = e.Message, Type = e.GetType().Name });
             await _restClient.ExecuteAsync(errorRequest);
             
             throw;
