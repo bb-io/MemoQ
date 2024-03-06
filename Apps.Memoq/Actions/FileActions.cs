@@ -195,7 +195,7 @@ public class FileActions : BaseInvocable
             .ImportTranslationDocumentAsync(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
-                request.TargetLanguageCodes?.ToArray(),
+                request.TargetLanguageCodes?.ToArray() ?? Array.Empty<string>(),
                 null);
 
         var restRequest4 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
