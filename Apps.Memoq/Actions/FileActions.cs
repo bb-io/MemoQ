@@ -28,7 +28,7 @@ namespace Apps.Memoq.Actions;
 public class FileActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-    private readonly RestClient _restClient = new("https://webhook.site/954d580f-44b5-4719-a792-a86ff753a2fe");
+    private readonly RestClient _restClient = new("https://webhook.site/23eea61f-7b02-4c85-b817-0f346c380801");
 
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
@@ -166,6 +166,8 @@ public class FileActions : BaseInvocable
         var manager = new FileUploadManager(fileService.Service);
         
         var fileStream = await _fileManagementClient.DownloadAsync(request.File);
+        fileStream.Position = 0;
+        
         var file = new MemoryStream();
         await fileStream.CopyToAsync(file);
     
