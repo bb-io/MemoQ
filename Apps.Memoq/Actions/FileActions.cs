@@ -1,6 +1,5 @@
 ﻿using System.Net.Mime;
 using System.Xml.Linq;
-using Apps.MemoQ;
 using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
@@ -15,7 +14,6 @@ using Apps.Memoq.Models.Files.Responses;
 using Apps.Memoq.Utils.FileUploader;
 using Apps.Memoq.Utils.FileUploader.Managers;
 using Apps.Memoq.Utils.Xliff;
-using Blackbird.Applications.Sdk.Common.Files;
 using MQS.TasksService;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -207,11 +205,11 @@ public class FileActions : BaseInvocable
                 throw new("Unsupported XLIFF version");
             }
         }
-
+        
         fileBytes ??= await file.GetByteData();
 
         var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
-        var contentType = MimeTypes.GetMimeType(fileName);
+        var contentType = MediaTypeNames.Application.Octet;
         var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
             contentType, fileName);
         return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
