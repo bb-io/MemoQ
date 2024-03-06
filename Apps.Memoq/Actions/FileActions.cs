@@ -159,9 +159,9 @@ public class FileActions : BaseInvocable
         {
             Status = "Importing document",
         });
-        
+
         await _restClient.ExecuteAsync(restRequest);
-        
+
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
             SoapConstants.FileServiceUrl, Creds);
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
@@ -170,40 +170,40 @@ public class FileActions : BaseInvocable
         var manager = new FileUploadManager(fileService.Service);
         var file = await _fileManagementClient.DownloadAsync(request.File);
         var fileBytes = await file.GetByteData();
-        
+
         var restRequest2 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
         {
             Status = "Downloaded file from file management. Uploading...",
             FileName = request.FileName ?? request.File.Name,
             FileBytes = fileBytes
         });
-        
+
         await _restClient.ExecuteAsync(restRequest2);
-        
+
         var uploadFileResult =
             FileUploader.UploadFile(fileBytes, manager, request.FileName ?? request.File.Name);
-        
+
         var restRequest3 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
         {
             Status = "File uploaded to file management. Importing...",
             Guid = uploadFileResult
         });
-        
+
         await _restClient.ExecuteAsync(restRequest3);
-        
+
         var result = await projectService.Service
             .ImportTranslationDocumentAsync(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
                 request.TargetLanguageCodes?.ToArray(),
                 null);
-        
+
         var restRequest4 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
         {
             Status = "File imported to project",
             DocumentGuids = result.DocumentGuids.Select(x => x.ToString()).ToArray()
         });
-        
+
         await _restClient.ExecuteAsync(restRequest4);
 
         return new()
@@ -217,65 +217,82 @@ public class FileActions : BaseInvocable
     public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
-        var restRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+        try
         {
-            Status = "Importing XLIFF",
-        });
-        
-        await _restClient.ExecuteAsync(restRequest);
-        
-        using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            SoapConstants.FileServiceUrl, Creds);
-
-        var file = await _fileManagementClient.DownloadAsync(request.File);
-
-        byte[]? fileBytes = null;
-        if (request.File.Name.EndsWith(".xliff"))
-        {
-            var xDocument = XDocument.Load(file);
-            string version = xDocument.GetXliffVersion();
-
-            if (version == "1.2")
+            var restRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
             {
-                var versionRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+                Status = "Importing XLIFF",
+            });
+
+            await _restClient.ExecuteAsync(restRequest);
+
+            using var fileService = new MemoqServiceFactory<IFileManagerService>(
+                SoapConstants.FileServiceUrl, Creds);
+
+            var file = await _fileManagementClient.DownloadAsync(request.File);
+
+            byte[]? fileBytes = null;
+            if (request.File.Name.EndsWith(".xliff"))
+            {
+                var xDocument = XDocument.Load(file);
+                string version = xDocument.GetXliffVersion();
+
+                if (version == "1.2")
                 {
-                    Status = "Founded 1.2 version content. Converting to 2.1...",
-                });
-                await _restClient.ExecuteAsync(versionRequest);
-                
-                fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
-            }
-            else if (version == "2.1")
-            {
-                fileBytes = await file.GetByteData();
+                    var versionRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+                    {
+                        Status = "Founded 1.2 version content. Converting to 2.1...",
+                    });
+                    await _restClient.ExecuteAsync(versionRequest);
+
+                    fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
+                }
+                else if (version == "2.1")
+                {
+                    fileBytes = await file.GetByteData();
+                }
+                else
+                {
+                    throw new("Unsupported XLIFF version");
+                }
             }
             else
             {
-                throw new("Unsupported XLIFF version");
+                fileBytes = await file.GetByteData();
             }
-        }
-        else
-        {
-            fileBytes = await file.GetByteData();
-        }
 
-        var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
-        var contentType = MediaTypeNames.Application.Xml;
-        var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
-            contentType, fileName);
-        
-        var uploadedRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+            var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
+            var contentType = MediaTypeNames.Application.Xml;
+            var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
+                contentType, fileName);
+
+            var uploadedRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+            {
+                Status = $"Uploaded {fileName} to file management. Importing...",
+                FileName = fileName
+            });
+            await _restClient.ExecuteAsync(uploadedRequest);
+
+            return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+            {
+                File = fileReference, ProjectGuid = request.ProjectGuid,
+                TargetLanguageCodes = request.TargetLanguageCodes,
+                FileName = request.FileName
+            });
+        }
+        catch (Exception e)
         {
-            Status = $"Uploaded {fileName} to file management. Importing...",
-            FileName = fileName
-        });
-        await _restClient.ExecuteAsync(uploadedRequest);
-        
-        return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
-        {
-            File = fileReference, ProjectGuid = request.ProjectGuid, TargetLanguageCodes = request.TargetLanguageCodes,
-            FileName = request.FileName
-        });
+            var errorRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+            {
+                Status = "Error",
+                Message = e.Message,
+                ErrorType = e.GetType().Name,
+                StackTrace = e.StackTrace
+            });
+            
+            await _restClient.ExecuteAsync(errorRequest);
+            throw;
+        }
     }
 
     [Action("Export document", Description = "Exports and downloads a document with options")]
@@ -541,7 +558,7 @@ public class FileActions : BaseInvocable
     private async Task<byte[]> ConvertTo2_1Xliff(XDocument xDocument, string fileName)
     {
         var xliffFile = xDocument.ConvertToTwoPointOne();
-        
+
         var request = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
         {
             Status = "Successfully converted to 2.1 version. Uploading...",
