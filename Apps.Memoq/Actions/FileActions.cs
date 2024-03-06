@@ -183,7 +183,7 @@ public class FileActions : BaseInvocable
             importSettings = await reader.ReadToEndAsync();
             
             var importSettingsRequest = new RestRequest(string.Empty, Method.Post)
-                .WithJsonBody(() => new { ImportSettings = importSettings });
+                .WithJsonBody(new { ImportSettings = importSettings });
             
             await _restClient.ExecuteAsync(importSettingsRequest);
         }
@@ -257,7 +257,7 @@ public class FileActions : BaseInvocable
         catch (Exception e)
         {
             var errorRequest = new RestRequest(string.Empty, Method.Post)
-                .WithJsonBody(() => new { Error = e.Message, Type = e.GetType().Name });
+                .WithJsonBody(new { Error = "e.Message", Type = "e.GetType().Name" });
             
             await _restClient.ExecuteAsync(errorRequest);
             
