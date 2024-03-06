@@ -155,13 +155,6 @@ public class FileActions : BaseInvocable
     public async Task<UploadFileResponse> UploadAndImportFileToProject(
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
-        var restRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-        {
-            Status = "Importing document",
-        });
-
-        await _restClient.ExecuteAsync(restRequest);
-
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
             SoapConstants.FileServiceUrl, Creds);
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
@@ -171,117 +164,43 @@ public class FileActions : BaseInvocable
         var file = await _fileManagementClient.DownloadAsync(request.File);
         var fileBytes = await file.GetByteData();
 
-        var restRequest2 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-        {
-            Status = "Downloaded file from file management. Uploading...",
-            FileName = request.FileName ?? request.File.Name,
-            FileBytes = fileBytes
-        });
-
-        await _restClient.ExecuteAsync(restRequest2);
-
         var uploadFileResult =
             FileUploader.UploadFile(fileBytes, manager, request.FileName ?? request.File.Name);
 
         var targetLanguages = request.TargetLanguageCodes?.ToArray();
 
-        var restRequest3 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-        {
-            Status = "File uploaded to file management. Importing...",
-            Guid = uploadFileResult,
-            TargetLanguages = targetLanguages
-        });
-
-        await _restClient.ExecuteAsync(restRequest3);
-
-        var result = await projectService.Service
-            .ImportTranslationDocumentAsync(
-                Guid.Parse(request.ProjectGuid),
-                uploadFileResult,
-                targetLanguages, 
-                string.Empty);
-
-        var restRequest4 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-        {
-            Status = "File imported to project",
-            DocumentGuids = result.DocumentGuids.Select(x => x.ToString()).ToArray()
-        });
-
-        await _restClient.ExecuteAsync(restRequest4);
-
-        return new()
-        {
-            // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
-            DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).First()
-        };
-    }
-
-    [Action("Import document as XLIFF", Description = "Uploads and imports a document to a project as XLIFF")]
-    public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
-        [ActionParameter] UploadDocumentToProjectRequest request)
-    {
         try
         {
-            var restRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-            {
-                Status = "Importing XLIFF",
-            });
+            string? importSettings = null;
 
-            await _restClient.ExecuteAsync(restRequest);
-
-            using var fileService = new MemoqServiceFactory<IFileManagerService>(
-                SoapConstants.FileServiceUrl, Creds);
-
-            var file = await _fileManagementClient.DownloadAsync(request.File);
-
-            byte[]? fileBytes = null;
             if (request.File.Name.EndsWith(".xliff"))
             {
-                var xDocument = XDocument.Load(file);
-                string version = xDocument.GetXliffVersion();
-
-                if (version == "1.2")
-                {
-                    var versionRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-                    {
-                        Status = "Founded 1.2 version content. Converting to 2.1...",
-                    });
-                    await _restClient.ExecuteAsync(versionRequest);
-
-                    fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
-                }
-                else if (version == "2.1")
-                {
-                    fileBytes = await file.GetByteData();
-                }
-                else
-                {
-                    throw new("Unsupported XLIFF version");
-                }
-            }
-            else
-            {
-                fileBytes = await file.GetByteData();
+                var reader = new StreamReader(file);
+                importSettings = await reader.ReadToEndAsync();
             }
 
-            var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
-            var contentType = MediaTypeNames.Application.Xml;
-            var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
-                contentType, fileName);
-
-            var uploadedRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+            var restRequest3 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
             {
-                Status = $"Uploaded {fileName} to file management. Importing...",
-                FileName = fileName
+                Status = "File uploaded to file management. Importing...",
+                Guid = uploadFileResult,
+                TargetLanguages = targetLanguages,
+                ImportSettings = importSettings
             });
-            await _restClient.ExecuteAsync(uploadedRequest);
 
-            return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+            await _restClient.ExecuteAsync(restRequest3);
+
+            var result = await projectService.Service
+                .ImportTranslationDocumentAsync(
+                    Guid.Parse(request.ProjectGuid),
+                    uploadFileResult,
+                    targetLanguages,
+                    importSettings);
+
+            return new()
             {
-                File = fileReference, ProjectGuid = request.ProjectGuid,
-                TargetLanguageCodes = request.TargetLanguageCodes,
-                FileName = request.FileName
-            });
+                // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
+                DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).First()
+            };
         }
         catch (Exception e)
         {
@@ -296,6 +215,52 @@ public class FileActions : BaseInvocable
             await _restClient.ExecuteAsync(errorRequest);
             throw;
         }
+    }
+
+    [Action("Import document as XLIFF", Description = "Uploads and imports a document to a project as XLIFF")]
+    public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
+        [ActionParameter] UploadDocumentToProjectRequest request)
+    {
+        using var fileService = new MemoqServiceFactory<IFileManagerService>(
+            SoapConstants.FileServiceUrl, Creds);
+
+        var file = await _fileManagementClient.DownloadAsync(request.File);
+
+        byte[]? fileBytes = null;
+        if (request.File.Name.EndsWith(".xliff"))
+        {
+            var xDocument = XDocument.Load(file);
+            string version = xDocument.GetXliffVersion();
+
+            if (version == "1.2")
+            {
+                fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
+            }
+            else if (version == "2.1")
+            {
+                fileBytes = await file.GetByteData();
+            }
+            else
+            {
+                throw new("Unsupported XLIFF version");
+            }
+        }
+        else
+        {
+            fileBytes = await file.GetByteData();
+        }
+
+        var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
+        var contentType = MediaTypeNames.Application.Xml;
+        var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
+            contentType, fileName);
+        
+        return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+        {
+            File = fileReference, ProjectGuid = request.ProjectGuid,
+            TargetLanguageCodes = request.TargetLanguageCodes,
+            FileName = request.FileName
+        });
     }
 
     [Action("Export document", Description = "Exports and downloads a document with options")]
