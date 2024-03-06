@@ -165,8 +165,6 @@ public class FileActions : BaseInvocable
         var manager = new FileUploadManager(fileService.Service);
         
         var fileStream = await _fileManagementClient.DownloadAsync(request.File);
-        fileStream.Position = 0;
-        
         var file = new MemoryStream();
         await fileStream.CopyToAsync(file);
     
