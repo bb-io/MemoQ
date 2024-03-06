@@ -220,17 +220,20 @@ public class FileActions : BaseInvocable
                 throw new("Unsupported XLIFF version");
             }
         }
-        
-        fileBytes ??= await file.GetByteData();
+        else
+        {
+            fileBytes = await file.GetByteData();
+        }
 
         var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
-        var contentType = MediaTypeNames.Application.Octet;
+        var contentType = MediaTypeNames.Application.Xml;
         var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
             contentType, fileName);
         
         var uploadedRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
         {
             Status = $"Uploaded {fileName} to file management. Importing...",
+            FileName = fileName
         });
         await _restClient.ExecuteAsync(uploadedRequest);
         
