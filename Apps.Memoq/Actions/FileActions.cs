@@ -18,6 +18,7 @@ using MQS.TasksService;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Parsers;
 using RestSharp;
 
@@ -159,63 +160,48 @@ public class FileActions : BaseInvocable
             SoapConstants.FileServiceUrl, Creds);
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
+        
+        string fileName = request.FileName ?? request.File.Name;
 
         var manager = new FileUploadManager(fileService.Service);
         var file = await _fileManagementClient.DownloadAsync(request.File);
         var fileBytes = await file.GetByteData();
 
         var uploadFileResult =
-            FileUploader.UploadFile(fileBytes, manager, request.FileName ?? request.File.Name);
+            FileUploader.UploadFile(fileBytes, manager, fileName);
 
         var targetLanguages = request.TargetLanguageCodes?.ToArray();
 
-        try
+        string? importSettings = null;
+        if (fileName.EndsWith(".xliff"))
         {
-            string? importSettings = null;
-
-            if (request.File.Name.EndsWith(".xliff"))
-            {
-                file.Seek(0, SeekOrigin.Begin);
-                var reader = new StreamReader(file);
-                importSettings = await reader.ReadToEndAsync();
-            }
-
-            var restRequest3 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-            {
-                Status = "File uploaded to file management. Importing...",
-                Guid = uploadFileResult,
-                TargetLanguages = targetLanguages,
-                ImportSettings = importSettings
-            });
-
-            await _restClient.ExecuteAsync(restRequest3);
-
-            var result = await projectService.Service
-                .ImportTranslationDocumentAsync(
-                    Guid.Parse(request.ProjectGuid),
-                    uploadFileResult,
-                    targetLanguages,
-                    importSettings);
-
-            return new()
-            {
-                // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
-                DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).First()
-            };
+            file.Position = 0;
+            var reader = new StreamReader(file);
+            importSettings = await reader.ReadToEndAsync();
+            
+            var importSettingsRequest = new RestRequest(string.Empty, Method.Post)
+                .WithJsonBody(() => new { ImportSettings = importSettings });
+            
+            await _restClient.ExecuteAsync(importSettingsRequest);
         }
-        catch (Exception e)
+
+        var result = await projectService.Service
+            .ImportTranslationDocumentAsync(
+                Guid.Parse(request.ProjectGuid),
+                uploadFileResult,
+                targetLanguages,
+                importSettings);
+        
+        if(result.ResultStatus == ResultStatus.Error)
         {
-            var errorRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-            {
-                Status = "Error",
-                Message = e.Message,
-                ErrorType = e.GetType().Name,
-                StackTrace = e.StackTrace
-            });
-
-            await _restClient.ExecuteAsync(errorRequest);
-            throw;
+            throw new InvalidOperationException($"Error while importing file, result status: {result.ResultStatus}, message: {result.DetailedMessage}");
         }
+
+        return new()
+        {
+            // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
+            DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).First()
+        };
     }
 
     [Action("Import document as XLIFF", Description = "Uploads and imports a document to a project as XLIFF")]
@@ -527,12 +513,6 @@ public class FileActions : BaseInvocable
     private async Task<byte[]> ConvertTo2_1Xliff(XDocument xDocument, string fileName)
     {
         var xliffFile = xDocument.ConvertToTwoPointOne();
-
-        var request = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
-        {
-            Status = "Successfully converted to 2.1 version. Uploading...",
-        });
-        await _restClient.ExecuteAsync(request);
 
         var xliffStream = new MemoryStream();
         xliffFile.Save(xliffStream);
