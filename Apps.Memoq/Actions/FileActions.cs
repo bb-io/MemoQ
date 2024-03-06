@@ -164,44 +164,32 @@ public class FileActions : BaseInvocable
         string fileName = request.FileName ?? request.File.Name;
 
         var manager = new FileUploadManager(fileService.Service);
-        var stream = await _fileManagementClient.DownloadAsync(request.File);
         
+        var fileStream = await _fileManagementClient.DownloadAsync(request.File);
         var file = new MemoryStream();
-        await stream.CopyToAsync(file);
-        
+        await fileStream.CopyToAsync(file);
+    
         file.Position = 0;
         var fileBytes = await file.GetByteData();
 
         var uploadFileResult =
             FileUploader.UploadFile(fileBytes, manager, fileName);
-        
-        var re = new RestRequest(string.Empty, Method.Post)
-            .WithJsonBody(new { FileBytes = fileBytes });
-            
-        await _restClient.ExecuteAsync(re);
-
-        var targetLanguages = request.TargetLanguageCodes?.ToArray();
 
         string? importSettings = null;
         if (fileName.EndsWith(".xliff"))
         {
             file.Position = 0;
             var reader = new StreamReader(file);
-            importSettings = await reader.ReadToEndAsync();
-            
-            var importSettingsRequest = new RestRequest(string.Empty, Method.Post)
-                .WithJsonBody(new { ImportSettings = importSettings });
-            
-            await _restClient.ExecuteAsync(importSettingsRequest);
+            importSettings = reader.ReadToEnd();
         }
 
         var result = await projectService.Service
             .ImportTranslationDocumentAsync(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
-                targetLanguages,
+                request.TargetLanguageCodes?.ToArray(),
                 importSettings);
-        
+    
         if(result.ResultStatus == ResultStatus.Error)
         {
             throw new InvalidOperationException($"Error while importing file, result status: {result.ResultStatus}, message: {result.DetailedMessage}");
