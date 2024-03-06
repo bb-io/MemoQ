@@ -175,6 +175,7 @@ public class FileActions : BaseInvocable
 
             if (request.File.Name.EndsWith(".xliff"))
             {
+                file.Seek(0, SeekOrigin.Begin);
                 var reader = new StreamReader(file);
                 importSettings = await reader.ReadToEndAsync();
             }
