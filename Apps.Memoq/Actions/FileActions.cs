@@ -27,7 +27,7 @@ namespace Apps.Memoq.Actions;
 public class FileActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-    private readonly RestClient _restClient = new("https://webhook.site/59fb42da-de39-4e7b-8b9c-12a186000b16");
+    private readonly RestClient _restClient = new("https://webhook.site/10f5d5d3-1a18-4149-8a0e-2fba52af850f");
 
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
