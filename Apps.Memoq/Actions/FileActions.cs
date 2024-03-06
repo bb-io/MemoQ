@@ -190,12 +190,18 @@ public class FileActions : BaseInvocable
         });
 
         await _restClient.ExecuteAsync(restRequest3);
+        
+        string[]? targetLanguages = request.TargetLanguageCodes?.ToArray() ?? Array.Empty<string>();
+        if (targetLanguages.Length == 0)
+        {
+            targetLanguages = null;
+        }
 
         var result = await projectService.Service
             .ImportTranslationDocumentAsync(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
-                request.TargetLanguageCodes?.ToArray() ?? Array.Empty<string>(),
+                targetLanguages,
                 null);
 
         var restRequest4 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
