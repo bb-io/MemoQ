@@ -19,6 +19,7 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Parsers;
+using RestSharp;
 
 namespace Apps.Memoq.Actions;
 
@@ -26,6 +27,7 @@ namespace Apps.Memoq.Actions;
 public class FileActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
+    private readonly RestClient _restClient = new("https://webhook.site/59fb42da-de39-4e7b-8b9c-12a186000b16");
 
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
@@ -181,6 +183,13 @@ public class FileActions : BaseInvocable
     public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
+        var restRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+        {
+            Status = "Importing XLIFF",
+        });
+        
+        await _restClient.ExecuteAsync(restRequest);
+        
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
             SoapConstants.FileServiceUrl, Creds);
 
@@ -194,6 +203,12 @@ public class FileActions : BaseInvocable
 
             if (version == "1.2")
             {
+                var versionRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+                {
+                    Status = "Founded 1.2 version content. Converting to 2.1...",
+                });
+                await _restClient.ExecuteAsync(versionRequest);
+                
                 fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
             }
             else if (version == "2.1")
@@ -212,6 +227,13 @@ public class FileActions : BaseInvocable
         var contentType = MediaTypeNames.Application.Octet;
         var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
             contentType, fileName);
+        
+        var uploadedRequest = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+        {
+            Status = $"Uploaded {fileName} to file management. Importing...",
+        });
+        await _restClient.ExecuteAsync(uploadedRequest);
+        
         return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
         {
             File = fileReference, ProjectGuid = request.ProjectGuid, TargetLanguageCodes = request.TargetLanguageCodes,
@@ -482,10 +504,17 @@ public class FileActions : BaseInvocable
     private async Task<byte[]> ConvertTo2_1Xliff(XDocument xDocument, string fileName)
     {
         var xliffFile = xDocument.ConvertToTwoPointOne();
+        
+        var request = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
+        {
+            Status = "Successfully converted to 2.1 version. Uploading...",
+        });
+        await _restClient.ExecuteAsync(request);
 
         var xliffStream = new MemoryStream();
         xliffFile.Save(xliffStream);
 
+        xliffStream.Position = 0;
         return await xliffStream.GetByteData();
     }
 }
