@@ -28,7 +28,6 @@ namespace Apps.Memoq.Actions;
 public class FileActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-    private readonly RestClient _restClient = new("https://webhook.site/23eea61f-7b02-4c85-b817-0f346c380801");
 
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
@@ -208,57 +207,46 @@ public class FileActions : BaseInvocable
     public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
-        try
+        using var fileService = new MemoqServiceFactory<IFileManagerService>(
+            SoapConstants.FileServiceUrl, Creds);
+
+        var file = await _fileManagementClient.DownloadAsync(request.File);
+
+        byte[]? fileBytes = null;
+        if (request.File.Name.EndsWith(".xliff"))
         {
-            using var fileService = new MemoqServiceFactory<IFileManagerService>(
-                SoapConstants.FileServiceUrl, Creds);
+            var xDocument = XDocument.Load(file);
+            string version = xDocument.GetXliffVersion();
 
-            var file = await _fileManagementClient.DownloadAsync(request.File);
-
-            byte[]? fileBytes = null;
-            if (request.File.Name.EndsWith(".xliff"))
+            if (version == "1.2")
             {
-                var xDocument = XDocument.Load(file);
-                string version = xDocument.GetXliffVersion();
-
-                if (version == "1.2")
-                {
-                    fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
-                }
-                else if (version == "2.1")
-                {
-                    fileBytes = await file.GetByteData();
-                }
-                else
-                {
-                    throw new("Unsupported XLIFF version");
-                }
+                fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
             }
-            else
+            else if (version == "2.1")
             {
                 fileBytes = await file.GetByteData();
             }
-
-            var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
-            var contentType = MediaTypeNames.Application.Xml;
-            var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
-                contentType, fileName);
-        
-            return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+            else
             {
-                File = fileReference, ProjectGuid = request.ProjectGuid,
-                TargetLanguageCodes = request.TargetLanguageCodes,
-                FileName = request.FileName
-            });
+                throw new("Unsupported XLIFF version");
+            }
         }
-        catch (Exception e)
+        else
         {
-            var errorRequest = new RestRequest(string.Empty, Method.Post)
-                .WithJsonBody(new { Error = e.Message, Type = e.GetType().Name });
-            await _restClient.ExecuteAsync(errorRequest);
-            
-            throw;
+            fileBytes = await file.GetByteData();
         }
+
+        var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
+        var contentType = MediaTypeNames.Application.Xml;
+        var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
+            contentType, fileName);
+        
+        return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+        {
+            File = fileReference, ProjectGuid = request.ProjectGuid,
+            TargetLanguageCodes = request.TargetLanguageCodes,
+            FileName = request.FileName
+        });
     }
 
     [Action("Export document", Description = "Exports and downloads a document with options")]
