@@ -164,7 +164,10 @@ public class FileActions : BaseInvocable
         string fileName = request.FileName ?? request.File.Name;
 
         var manager = new FileUploadManager(fileService.Service);
-        var file = await _fileManagementClient.DownloadAsync(request.File);
+        var stream = await _fileManagementClient.DownloadAsync(request.File);
+        
+        var file = new MemoryStream();
+        await stream.CopyToAsync(file);
         var fileBytes = await file.GetByteData();
 
         var uploadFileResult =
@@ -208,46 +211,58 @@ public class FileActions : BaseInvocable
     public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
         [ActionParameter] UploadDocumentToProjectRequest request)
     {
-        using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            SoapConstants.FileServiceUrl, Creds);
-
-        var file = await _fileManagementClient.DownloadAsync(request.File);
-
-        byte[]? fileBytes = null;
-        if (request.File.Name.EndsWith(".xliff"))
+        try
         {
-            var xDocument = XDocument.Load(file);
-            string version = xDocument.GetXliffVersion();
+            using var fileService = new MemoqServiceFactory<IFileManagerService>(
+                SoapConstants.FileServiceUrl, Creds);
 
-            if (version == "1.2")
+            var file = await _fileManagementClient.DownloadAsync(request.File);
+
+            byte[]? fileBytes = null;
+            if (request.File.Name.EndsWith(".xliff"))
             {
-                fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
-            }
-            else if (version == "2.1")
-            {
-                fileBytes = await file.GetByteData();
+                var xDocument = XDocument.Load(file);
+                string version = xDocument.GetXliffVersion();
+
+                if (version == "1.2")
+                {
+                    fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
+                }
+                else if (version == "2.1")
+                {
+                    fileBytes = await file.GetByteData();
+                }
+                else
+                {
+                    throw new("Unsupported XLIFF version");
+                }
             }
             else
             {
-                throw new("Unsupported XLIFF version");
+                fileBytes = await file.GetByteData();
             }
-        }
-        else
-        {
-            fileBytes = await file.GetByteData();
-        }
 
-        var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
-        var contentType = MediaTypeNames.Application.Xml;
-        var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
-            contentType, fileName);
+            var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
+            var contentType = MediaTypeNames.Application.Xml;
+            var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
+                contentType, fileName);
         
-        return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+            return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+            {
+                File = fileReference, ProjectGuid = request.ProjectGuid,
+                TargetLanguageCodes = request.TargetLanguageCodes,
+                FileName = request.FileName
+            });
+        }
+        catch (Exception e)
         {
-            File = fileReference, ProjectGuid = request.ProjectGuid,
-            TargetLanguageCodes = request.TargetLanguageCodes,
-            FileName = request.FileName
-        });
+            var errorRequest = new RestRequest(string.Empty, Method.Post)
+                .WithJsonBody(() => new { Error = e.Message, Type = e.GetType().Name });
+            
+            await _restClient.ExecuteAsync(errorRequest);
+            
+            throw;
+        }
     }
 
     [Action("Export document", Description = "Exports and downloads a document with options")]
