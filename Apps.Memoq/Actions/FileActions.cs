@@ -27,7 +27,7 @@ namespace Apps.Memoq.Actions;
 public class FileActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-    private readonly RestClient _restClient = new("https://webhook.site/10f5d5d3-1a18-4149-8a0e-2fba52af850f");
+    private readonly RestClient _restClient = new("https://webhook.site/6f1b10ac-818c-4080-8170-cba1ad8ca3f2");
 
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
@@ -182,20 +182,17 @@ public class FileActions : BaseInvocable
 
         var uploadFileResult =
             FileUploader.UploadFile(fileBytes, manager, request.FileName ?? request.File.Name);
-
+        
+        var targetLanguages = request.TargetLanguageCodes?.ToArray();
+        
         var restRequest3 = new RestRequest(string.Empty, Method.Post).AddJsonBody(new
         {
             Status = "File uploaded to file management. Importing...",
-            Guid = uploadFileResult
+            Guid = uploadFileResult,
+            TargetLanguages = targetLanguages
         });
 
         await _restClient.ExecuteAsync(restRequest3);
-        
-        string[]? targetLanguages = request.TargetLanguageCodes?.ToArray() ?? Array.Empty<string>();
-        if (targetLanguages.Length == 0)
-        {
-            targetLanguages = null;
-        }
 
         var result = await projectService.Service
             .ImportTranslationDocumentAsync(
