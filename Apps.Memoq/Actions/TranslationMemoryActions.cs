@@ -178,10 +178,12 @@ public class TranslationMemoryActions : BaseInvocable
         Guid primaryGuid = translationMemoryRequest.PrimaryTmGuid != null
             ? Guid.Parse(translationMemoryRequest.PrimaryTmGuid)
             : Guid.Empty;
+        
+        var tmGuids = translationMemoryRequest.TmGuids ?? new List<string>();
 
         var tmAssignments = new ServerProjectTMAssignmentsForTargetLang
         {
-            TMGuids = translationMemoryRequest.TmGuids.Select(Guid.Parse).ToArray(),
+            TMGuids = tmGuids.Select(Guid.Parse).ToArray(),
             TargetLangCode = translationMemoryRequest.TargetLanguageCode,
             MasterTMGuid = masterGuid,
             PrimaryTMGuid = primaryGuid

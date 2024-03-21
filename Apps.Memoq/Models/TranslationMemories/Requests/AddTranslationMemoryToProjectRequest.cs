@@ -7,7 +7,7 @@ namespace Apps.Memoq.Models.TranslationMemories.Requests;
 public class AddTranslationMemoryToProjectRequest
 {
     [Display("Translation memory GUID"), DataSource(typeof(TranslationMemoryDataHandler))]
-    public IEnumerable<string> TmGuids { get; set; }
+    public IEnumerable<string>? TmGuids { get; set; }
 
     [Display("Target language code"), DataSource(typeof(TargetLanguageDataHandler))]
     public string TargetLanguageCode { get; set; }
