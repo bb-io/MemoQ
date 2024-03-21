@@ -1,6 +1,7 @@
 ﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
+using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.Users.Requests;
 using Apps.Memoq.Models.Users.Responses;
 using Blackbird.Applications.Sdk.Common;
@@ -8,6 +9,8 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using MQS.Security;
+using MQS.ServerProject;
+using UserInfo = MQS.Security.UserInfo;
 
 namespace Apps.Memoq.Actions;
 
@@ -16,11 +19,11 @@ public class UserActions : BaseInvocable
 {
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
-        
+
     public UserActions(InvocationContext invocationContext) : base(invocationContext)
     {
     }
-        
+
     [Action("List users", Description = "List all users")]
     public ListAllUsersResponse ListAllUsers()
     {
@@ -39,7 +42,7 @@ public class UserActions : BaseInvocable
     {
         if (input.Password is null && input.PlainTextPassword is null)
             throw new("You should specify either Password or Plain text password to create a user");
-        
+
         var securityService = new MemoqServiceFactory<ISecurityService>(
             SoapConstants.SecurityServiceUrl, Creds);
 
@@ -62,19 +65,19 @@ public class UserActions : BaseInvocable
             UserName = input.UserName,
         };
         var response = await securityService.Service.CreateUserAsync(request);
-      
+
         return await GetUser(new()
         {
             UserGuid = response.ToString()
         });
     }
-    
+
     [Action("Get user", Description = "Get user by guid")]
     public async Task<UserDto> GetUser([ActionParameter] UserRequest user)
     {
         var securityService = new MemoqServiceFactory<ISecurityService>(
             SoapConstants.SecurityServiceUrl, Creds);
-            
+
         var response = await securityService.Service.GetUserAsync(Guid.Parse(user.UserGuid));
         return new(response);
     }
@@ -84,7 +87,18 @@ public class UserActions : BaseInvocable
     {
         var securityService = new MemoqServiceFactory<ISecurityService>(
             SoapConstants.SecurityServiceUrl, Creds);
-            
+
         securityService.Service.DeleteUser(Guid.Parse(user.UserGuid));
+    }
+
+    [Action("Add users to project", Description = "Add users to project")]
+    public void AddUserToProject([ActionParameter] UsersRequest request,
+        [ActionParameter] ProjectRequest projectRequest)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var users = request.UserGuids.Select(x => new ServerProjectUserInfo { UserGuid = Guid.Parse(x), PermForLicense = true }).ToArray();
+        projectService.Service.SetProjectUsers(Guid.Parse(projectRequest.ProjectGuid), users);
     }
 }
