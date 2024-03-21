@@ -23,10 +23,15 @@ public class UserDataHandler : BaseInvocable, IDataSourceHandler
             Creds);
         var users = securityService.Service.ListUsers();
 
+        if (users is null)
+        {
+            return new();
+        }
+
         return users
             .Where(x => context.SearchString is null ||
                         x.FullName.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .Take(20)
-            .ToDictionary(x => x.UserGuid.ToString(), x => x.FullName);
+            .ToDictionary(x => x.UserGuid.ToString(), x => x.FullName ?? x.UserName);
     }
 }
