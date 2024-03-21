@@ -1,4 +1,5 @@
-﻿using Apps.Memoq.Contracts;
+﻿using System.Runtime.Serialization;
+using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
@@ -98,7 +99,10 @@ public class UserActions : BaseInvocable
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
-        var users = request.UserGuids.Select(x => new ServerProjectUserInfo { UserGuid = Guid.Parse(x), PermForLicense = true }).ToArray();
+        var users = request.UserGuids.Select(x => new ServerProjectUserInfo
+        {
+            UserGuid = Guid.Parse(x), PermForLicense = true, ProjectRoles = new ServerProjectRoles(),
+        }).ToArray();
         projectService.Service.SetProjectUsers(Guid.Parse(projectRequest.ProjectGuid), users);
     }
 }
