@@ -11,7 +11,9 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
+using MQS.Resource;
 using MQS.ServerProject;
+using ResourceType = MQS.ServerProject.ResourceType;
 
 namespace Apps.Memoq.Actions;
 
@@ -92,8 +94,9 @@ public class ServerProjectActions : BaseInvocable
             SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = request.TargetLangCodes.ToArray(),
             CallbackWebServiceUrl = request.CallbackUrl ??
-                                    $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}".SetQueryParameter("id",
-                                        Creds.GetInstanceUrlHash()),
+                                    $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}"
+                                        .SetQueryParameter("id",
+                                            Creds.GetInstanceUrlHash()),
             Description = request.Description,
             Domain = request.Domain,
             Subject = request.Subject,
@@ -165,8 +168,10 @@ public class ServerProjectActions : BaseInvocable
             SourceLanguageCode = input.SourceLangCode,
             TargetLanguageCodes = input.TargetLangCodes.ToArray(),
             CallbackWebServiceUrl =
-                input.CallbackUrl ?? $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}".SetQueryParameter("id",
-                    Creds.GetInstanceUrlHash()),
+                input.CallbackUrl ??
+                $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}"
+                    .SetQueryParameter("id",
+                        Creds.GetInstanceUrlHash()),
             Description = input.Description,
             Domain = input.Domain,
             Subject = input.Subject,
@@ -218,5 +223,32 @@ public class ServerProjectActions : BaseInvocable
             SoapConstants.ProjectServiceUrl, Creds);
 
         await projectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid));
+    }
+
+    [Action("Add resources to project", Description = "Add resources to a specific project")]
+    public async Task AddResourceToProject([ActionParameter] ProjectRequest project, [ActionParameter] AddResourceToProjectRequest request)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+        
+        var resourceType = (ResourceType)int.Parse(request.ResourceType);
+        var serverProjectResourceAssignment = request.ResourceGuids
+            .Zip(request.ObjectIds, (resourceGuid, objectId) => new ServerProjectResourceAssignment
+            {
+                ResourceGuid = Guid.Parse(resourceGuid),
+                Primary = true,
+                ObjectId = objectId
+            })
+            .ToArray();
+        
+        var array = new[]
+        {
+            new ServerProjectResourceAssignmentForResourceType
+            {
+                ResourceType = resourceType,
+                ServerProjectResourceAssignment = serverProjectResourceAssignment
+            }
+        };
+        await projectService.Service.SetProjectResourceAssignmentsAsync(Guid.Parse(project.ProjectGuid), array);
     }
 }
