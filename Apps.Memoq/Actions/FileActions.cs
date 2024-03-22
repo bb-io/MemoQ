@@ -1,4 +1,5 @@
 ﻿using System.Net.Mime;
+using System.Xml.Linq;
 using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
@@ -12,11 +13,15 @@ using Apps.Memoq.Models.Files.Requests;
 using Apps.Memoq.Models.Files.Responses;
 using Apps.Memoq.Utils.FileUploader;
 using Apps.Memoq.Utils.FileUploader.Managers;
+using Apps.Memoq.Utils.Xliff;
+using Blackbird.Applications.Sdk.Common.Files;
 using MQS.TasksService;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
+using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Parsers;
+using RestSharp;
 
 namespace Apps.Memoq.Actions;
 
@@ -24,11 +29,11 @@ namespace Apps.Memoq.Actions;
 public class FileActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-    
+
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
 
-    public FileActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    public FileActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
         : base(invocationContext)
     {
         _fileManagementClient = fileManagementClient;
@@ -156,23 +161,174 @@ public class FileActions : BaseInvocable
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
+        string fileName = request.FileName ?? request.File.Name;
+
         var manager = new FileUploadManager(fileService.Service);
-        var file = await _fileManagementClient.DownloadAsync(request.File);
+
+        var fileStream = await _fileManagementClient.DownloadAsync(request.File);
+        var file = new MemoryStream();
+        await fileStream.CopyToAsync(file);
+
+        file.Position = 0;
         var fileBytes = await file.GetByteData();
+
         var uploadFileResult =
-            FileUploader.UploadFile(fileBytes, manager, request.FileName ?? request.File.Name);
+            FileUploader.UploadFile(fileBytes, manager, fileName);
+
+        string? importSettings = null;
+        if (fileName.EndsWith(".xliff"))
+        {
+            file.Position = 0;
+            var reader = new StreamReader(file);
+            importSettings = reader.ReadToEnd();
+        }
+
         var result = await projectService.Service
             .ImportTranslationDocumentAsync(
                 Guid.Parse(request.ProjectGuid),
                 uploadFileResult,
                 request.TargetLanguageCodes?.ToArray(),
-                null);
+                importSettings);
+
+        if (result.ResultStatus == ResultStatus.Error)
+        {
+            throw new InvalidOperationException(
+                $"Error while importing file, result status: {result.ResultStatus}, message: {result.DetailedMessage}");
+        }
 
         return new()
         {
             // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
             DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).First()
         };
+    }
+
+    [Action("Re-import document", Description = "Uploads and re-imports a document to a project")]
+    public async Task<UploadFileResponse> UploadAndReimportFileToProject(
+        [ActionParameter] UploadDocumentToProjectRequest request,
+        [ActionParameter] ReimportDocumentsRequest reimportDocumentsRequest)
+    {
+        using var fileService = new MemoqServiceFactory<IFileManagerService>(
+            SoapConstants.FileServiceUrl, Creds);
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        string fileName = request.FileName ?? request.File.Name;
+
+        var manager = new FileUploadManager(fileService.Service);
+
+        var fileStream = await _fileManagementClient.DownloadAsync(request.File);
+        var file = new MemoryStream();
+        await fileStream.CopyToAsync(file);
+
+        file.Position = 0;
+        var fileBytes = await file.GetByteData();
+
+        var uploadFileResult =
+            FileUploader.UploadFile(fileBytes, manager, fileName);
+
+        string? importSettings = null;
+        if (fileName.EndsWith(".xliff"))
+        {
+            file.Position = 0;
+            var reader = new StreamReader(file);
+            importSettings = reader.ReadToEnd();
+        }
+
+        var result = await projectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(request.ProjectGuid),
+            new[]
+            {
+                new ReimportDocumentOptions
+                {
+                    DocumentsToReplace = new[]
+                    {
+                        Guid.Parse(reimportDocumentsRequest.DocumentGuid)
+                    },
+                    FileGuid = uploadFileResult,
+                    KeepUserAssignments = reimportDocumentsRequest.KeepUserAssignments ?? default,
+                    PathToSetAsImportPath = reimportDocumentsRequest.PathToSetAsImportPath ?? string.Empty
+                },
+            }, importSettings);
+
+        if (result.Any(x => x.ResultStatus == ResultStatus.Error))
+        {
+            throw new InvalidOperationException(
+                $"Error while importing file, result status: {result.First(x => x.ResultStatus == ResultStatus.Error).ResultStatus}, message: {result.First(x => x.ResultStatus == ResultStatus.Error).DetailedMessage}");
+        }
+
+        var first = result.FirstOrDefault(x => x.ResultStatus == ResultStatus.Success);
+        if (first is null)
+        {
+            throw new InvalidOperationException("No successful reimport found");
+        }
+
+        return new()
+        {
+            // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
+            DocumentGuid = first.DocumentGuids.Select(x => x.ToString()).First()
+        };
+    }
+
+    [Action("Import document as XLIFF", Description = "Uploads and imports a document to a project as XLIFF")]
+    public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
+        [ActionParameter] UploadDocumentToProjectRequest request,
+        [ActionParameter] ImportDocumentAsXliffRequest importDocumentAsXliffRequest)
+    {
+        using var fileService = new MemoqServiceFactory<IFileManagerService>(
+            SoapConstants.FileServiceUrl, Creds);
+
+        var file = await _fileManagementClient.DownloadAsync(request.File);
+
+        byte[]? fileBytes = null;
+        if (request.File.Name.EndsWith(".xliff"))
+        {
+            var xDocument = XDocument.Load(file);
+            string version = xDocument.GetXliffVersion();
+
+            if (version == "1.2")
+            {
+                fileBytes = await ConvertTo2_1Xliff(xDocument, request.File.Name);
+            }
+            else if (version == "2.1")
+            {
+                fileBytes = await file.GetByteData();
+            }
+            else
+            {
+                throw new("Unsupported XLIFF version");
+            }
+        }
+        else
+        {
+            fileBytes = await file.GetByteData();
+        }
+
+        var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
+        var contentType = MediaTypeNames.Application.Xml;
+        var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
+            contentType, fileName);
+
+        if (!string.IsNullOrEmpty(importDocumentAsXliffRequest.DocumentGuid))
+        {
+            return await UploadAndReimportFileToProject(new UploadDocumentToProjectRequest
+            {
+                File = fileReference, ProjectGuid = request.ProjectGuid,
+                TargetLanguageCodes = request.TargetLanguageCodes,
+                FileName = request.FileName
+            }, new ReimportDocumentsRequest
+            {
+                DocumentGuid = importDocumentAsXliffRequest.DocumentGuid,
+                KeepUserAssignments = importDocumentAsXliffRequest.KeepUserAssignments,
+                PathToSetAsImportPath = importDocumentAsXliffRequest.PathToSetAsImportPath
+            });
+        }
+
+        return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+        {
+            File = fileReference, ProjectGuid = request.ProjectGuid,
+            TargetLanguageCodes = request.TargetLanguageCodes,
+            FileName = request.FileName
+        });
     }
 
     [Action("Export document", Description = "Exports and downloads a document with options")]
@@ -208,6 +364,7 @@ public class FileActions : BaseInvocable
     [Action("Export document as XLIFF",
         Description = "Exports and downloads the translation document as XLIFF (MQXLIFF) bilingual")]
     public async Task<DownloadFileResponse> DownloadFileAsXliff(
+        [ActionParameter] GetDocumentRequest documentRequest,
         [ActionParameter] DownloadXliffRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
@@ -219,8 +376,8 @@ public class FileActions : BaseInvocable
         var includeSkeleton = request.IncludeSkeleton ?? false;
 
         var exportResult = await projectService.Service
-            .ExportTranslationDocumentAsXliffBilingualAsync(Guid.Parse(request.ProjectGuid),
-                Guid.Parse(request.DocumentGuid), new XliffBilingualExportOptions
+            .ExportTranslationDocumentAsXliffBilingualAsync(Guid.Parse(documentRequest.ProjectGuid),
+                Guid.Parse(documentRequest.DocumentGuid), new XliffBilingualExportOptions
                 {
                     FullVersionHistory = fullVersion,
                     IncludeSkeleton = includeSkeleton,
@@ -230,12 +387,20 @@ public class FileActions : BaseInvocable
         var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
         var document = GetFile(new()
         {
-            ProjectGuid = request.ProjectGuid
-        }, request.DocumentGuid);
-        
+            ProjectGuid = documentRequest.ProjectGuid
+        }, documentRequest.DocumentGuid);
+
         using var stream = new MemoryStream(data);
-        var fileReference = await _fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
-        return new(document) { File = fileReference };
+
+        var useMqxliff = request.UseMqxliff ?? false;
+        if (useMqxliff)
+        {
+            var fileReference = await _fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
+            return new(document) { File = fileReference };
+        }
+
+        var fileReferenceXliff = await ConvertMqXliffToXliff(stream, filename.Replace(".mqxliff", ".xliff"));
+        return new(document) { File = fileReferenceXliff };
     }
 
     [Action("Get document analysis", Description = "Get analysis for a specific document")]
@@ -316,7 +481,7 @@ public class FileActions : BaseInvocable
 
         var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
         var analysis = taskResult.ResultsForTargetLangs
-            .Select(x => new GetAnalysisResponse(x, _fileManagementClient, $"Analysis_{x.TargetLangCode}.html", 
+            .Select(x => new GetAnalysisResponse(x, _fileManagementClient, $"Analysis_{x.TargetLangCode}.html",
                 MediaTypeNames.Text.Html))
             .ToList();
 
@@ -433,5 +598,27 @@ public class FileActions : BaseInvocable
             throw new Exception($"Task has status {taskStatus.ToString()}.");
 
         return taskService.Service.GetTaskResult(taskId);
+    }
+
+    private async Task<byte[]> ConvertTo2_1Xliff(XDocument xDocument, string fileName)
+    {
+        var xliffFile = xDocument.ConvertToTwoPointOne();
+
+        var xliffStream = new MemoryStream();
+        xliffFile.Save(xliffStream);
+
+        xliffStream.Position = 0;
+        return await xliffStream.GetByteData();
+    }
+
+    private async Task<FileReference> ConvertMqXliffToXliff(Stream stream, string fileName, bool useSkeleton = false)
+    {
+        XDocument xliffFile = stream.ConvertMqXliffToXliff(useSkeleton);
+        var xliffStream = new MemoryStream();
+        xliffFile.Save(xliffStream);
+
+        xliffStream.Position = 0;
+        string contentType = MediaTypeNames.Text.Xml;
+        return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
     }
 }

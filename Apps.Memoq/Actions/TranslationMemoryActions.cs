@@ -2,6 +2,7 @@
 using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
+using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.TranslationMemories.Requests;
 using Apps.Memoq.Models.TranslationMemories.Responses;
 using Apps.Memoq.Utils.FileUploader;
@@ -9,11 +10,15 @@ using Apps.Memoq.Utils.FileUploader.Managers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Parsers;
+using MQS.ServerProject;
 using MQS.TM;
+using TMEngineType = MQS.TM.TMEngineType;
+using TMOptimizationPreference = MQS.TM.TMOptimizationPreference;
 
 namespace Apps.Memoq.Actions;
 
@@ -155,5 +160,36 @@ public class TranslationMemoryActions : BaseInvocable
         {
             ConflictedFields = response.ConflictedFields
         };
+    }
+    
+    [Action("Add translation memory to project", Description = "Add translation memory to project by UId")]
+    public async Task AddTranslationMemoryToProject(
+        [ActionParameter] ProjectRequest project,
+        [ActionParameter] AddTranslationMemoryToProjectRequest translationMemoryRequest)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+        
+        
+        Guid masterGuid = translationMemoryRequest.MasterTmGuid != null
+            ? Guid.Parse(translationMemoryRequest.MasterTmGuid)
+            : Guid.Empty;
+        
+        Guid primaryGuid = translationMemoryRequest.PrimaryTmGuid != null
+            ? Guid.Parse(translationMemoryRequest.PrimaryTmGuid)
+            : Guid.Empty;
+        
+        var tmGuids = translationMemoryRequest.TmGuids ?? new List<string>();
+
+        var tmAssignments = new ServerProjectTMAssignmentsForTargetLang
+        {
+            TMGuids = tmGuids.Select(Guid.Parse).ToArray(),
+            TargetLangCode = translationMemoryRequest.TargetLanguageCode,
+            MasterTMGuid = masterGuid,
+            PrimaryTMGuid = primaryGuid
+        };
+
+        await projectService.Service
+            .SetProjectTMs2Async(Guid.Parse(project.ProjectGuid), new[] { tmAssignments });
     }
 }
