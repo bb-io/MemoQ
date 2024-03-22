@@ -14,6 +14,7 @@ using Apps.Memoq.Models.Files.Responses;
 using Apps.Memoq.Utils.FileUploader;
 using Apps.Memoq.Utils.FileUploader.Managers;
 using Apps.Memoq.Utils.Xliff;
+using Blackbird.Applications.Sdk.Common.Files;
 using MQS.TasksService;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
@@ -306,8 +307,16 @@ public class FileActions : BaseInvocable
         }, request.DocumentGuid);
 
         using var stream = new MemoryStream(data);
-        var fileReference = await _fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
-        return new(document) { File = fileReference };
+        
+        var useMqxliff = request.UseMqxliff ?? true;
+        if (useMqxliff)
+        {
+            var fileReference = await _fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
+            return new(document) { File = fileReference };
+        }
+        
+        var fileReferenceXliff = await ConvertMqXliffToXliff(stream, filename);
+        return new(document) { File = fileReferenceXliff };
     }
 
     [Action("Get document analysis", Description = "Get analysis for a specific document")]
@@ -517,4 +526,15 @@ public class FileActions : BaseInvocable
         xliffStream.Position = 0;
         return await xliffStream.GetByteData();
     }
+    
+    private async Task<FileReference> ConvertMqXliffToXliff(Stream stream, string fileName, bool useSkeleton = false)
+    {
+        XDocument xliffFile = stream.ConvertMqXliffToXliff(useSkeleton);
+        var xliffStream = new MemoryStream();
+        xliffFile.Save(xliffStream);
+
+        xliffStream.Position = 0;
+        string contentType = MediaTypeNames.Text.Xml;
+        return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
+    } 
 }

@@ -256,18 +256,14 @@ public class ServerProjectActions : BaseInvocable
         await projectService.Service.SetProjectResourceAssignmentsAsync(Guid.Parse(project.ProjectGuid), array);
     }
 
-    [Action("Pre translate documents", Description = "Pretranslate documents in a specific project")]
+    [Action("Pretranslate documents", Description = "Pretranslate documents in a specific project")]
     public async Task<PretranslateDocumentsResponse> PretranslateDocuments([ActionParameter] ProjectRequest projectRequest,
         [ActionParameter] PretranslateDocumentsRequest request)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
-        var guids = request.DocumentGuids.Select(Guid.Parse).ToArray();
-        var options = new PretranslateOptions
-        {
-            PretranslateLookupBehavior = PretranslateLookupBehavior.AnyMatch,
-        };
+        var options = new PretranslateOptions();
         
         if(request.LockPretranslated.HasValue)
             options.LockPretranslated = request.LockPretranslated.Value;
@@ -283,6 +279,7 @@ public class ServerProjectActions : BaseInvocable
             options.PretranslateLookupBehavior =
                 (PretranslateLookupBehavior)int.Parse(request.PretranslateLookupBehavior);
         
+        var guids = request.DocumentGuids.Select(Guid.Parse).ToArray();
         var resultInfo = await projectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid),
             guids, options);
 

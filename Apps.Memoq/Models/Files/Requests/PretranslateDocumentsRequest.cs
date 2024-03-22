@@ -12,7 +12,7 @@ public class PretranslateDocumentsRequest
     [Display("Lock")]
     public bool? LockPretranslated { get; set; }
     
-    [Display("Confirm lock pre translated"), DataSource(typeof(ConfirmLockDataHandler))]
+    [Display("Confirm lock pretranslated"), DataSource(typeof(ConfirmLockDataHandler))]
     public string? ConfirmLockPreTranslated { get; set; }
     
     [Display("Pretranslate lookup behavior"), DataSource(typeof(PretranslateLookupBehaviorDataHandler))]
