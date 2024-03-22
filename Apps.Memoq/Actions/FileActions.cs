@@ -247,7 +247,7 @@ public class FileActions : BaseInvocable
                     KeepUserAssignments = reimportDocumentsRequest.KeepUserAssignments ?? default,
                     PathToSetAsImportPath = reimportDocumentsRequest.PathToSetAsImportPath ?? string.Empty
                 },
-            }, string.Empty);
+            }, importSettings);
 
         if (result.Any(x => x.ResultStatus == ResultStatus.Error))
         {
