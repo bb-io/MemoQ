@@ -228,7 +228,7 @@ public class ServerProjectActions : BaseInvocable
         await projectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid));
     }
 
-    [Action("Add resources to project", Description = "Add resources to a specific project")]
+    // [Action("Add resources to project", Description = "Add resources to a specific project")]
     public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
         [ActionParameter] AddResourceToProjectRequest request)
     {
