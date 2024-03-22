@@ -1,8 +1,11 @@
-﻿using Apps.Memoq.Contracts;
+﻿using System.Runtime.Serialization;
+using Apps.Memoq.Contracts;
 using Apps.Memoq.DataSourceHandlers;
 using Apps.Memoq.Extensions;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
+using Apps.Memoq.Models.Files.Requests;
+using Apps.Memoq.Models.Files.Responses;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.ServerProjects.Responses;
 using Blackbird.Applications.Sdk.Common;
@@ -226,11 +229,12 @@ public class ServerProjectActions : BaseInvocable
     }
 
     [Action("Add resources to project", Description = "Add resources to a specific project")]
-    public async Task AddResourceToProject([ActionParameter] ProjectRequest project, [ActionParameter] AddResourceToProjectRequest request)
+    public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
+        [ActionParameter] AddResourceToProjectRequest request)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
-        
+
         var resourceType = (ResourceType)int.Parse(request.ResourceType);
         var serverProjectResourceAssignment = request.ResourceGuids
             .Zip(request.ObjectIds, (resourceGuid, objectId) => new ServerProjectResourceAssignment
@@ -240,7 +244,7 @@ public class ServerProjectActions : BaseInvocable
                 ObjectId = objectId
             })
             .ToArray();
-        
+
         var array = new[]
         {
             new ServerProjectResourceAssignmentForResourceType
@@ -250,5 +254,38 @@ public class ServerProjectActions : BaseInvocable
             }
         };
         await projectService.Service.SetProjectResourceAssignmentsAsync(Guid.Parse(project.ProjectGuid), array);
+    }
+
+    [Action("Pre translate documents", Description = "Pretranslate documents in a specific project")]
+    public async Task<PretranslateDocumentsResponse> PretranslateDocuments([ActionParameter] ProjectRequest projectRequest,
+        [ActionParameter] PretranslateDocumentsRequest request)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var guids = request.DocumentGuids.Select(Guid.Parse).ToArray();
+        var options = new PretranslateOptions
+        {
+            PretranslateLookupBehavior = PretranslateLookupBehavior.AnyMatch,
+        };
+        
+        if(request.LockPretranslated.HasValue)
+            options.LockPretranslated = request.LockPretranslated.Value;
+        
+        if(request.UseMt.HasValue)
+            options.UseMT = request.UseMt.Value;
+
+        if (request.ConfirmLockPreTranslated != null)
+            options.ConfirmLockPretranslated =
+                (PretranslateStateToConfirmAndLock)int.Parse(request.ConfirmLockPreTranslated);
+        
+        if (request.PretranslateLookupBehavior != null)
+            options.PretranslateLookupBehavior =
+                (PretranslateLookupBehavior)int.Parse(request.PretranslateLookupBehavior);
+        
+        var resultInfo = await projectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid),
+            guids, options);
+
+        return new(resultInfo);
     }
 }
