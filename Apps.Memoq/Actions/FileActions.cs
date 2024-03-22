@@ -203,7 +203,7 @@ public class FileActions : BaseInvocable
         };
     }
     
-    [Action("Reimport document", Description = "Uploads and imports a document to a project")]
+    [Action("Re-import document", Description = "Uploads and re-imports a document to a project")]
     public async Task<UploadFileResponse> UploadAndReimportFileToProject(
         [ActionParameter] UploadDocumentToProjectRequest request, [ActionParameter] ReimportDocumentsRequest reimportDocumentsRequest)
     {
@@ -390,7 +390,7 @@ public class FileActions : BaseInvocable
 
         using var stream = new MemoryStream(data);
 
-        var useMqxliff = request.UseMqxliff ?? true;
+        var useMqxliff = request.UseMqxliff ?? false;
         if (useMqxliff)
         {
             var fileReference = await _fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
