@@ -202,10 +202,11 @@ public class FileActions : BaseInvocable
             DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).First()
         };
     }
-    
+
     [Action("Re-import document", Description = "Uploads and re-imports a document to a project")]
     public async Task<UploadFileResponse> UploadAndReimportFileToProject(
-        [ActionParameter] UploadDocumentToProjectRequest request, [ActionParameter] ReimportDocumentsRequest reimportDocumentsRequest)
+        [ActionParameter] UploadDocumentToProjectRequest request,
+        [ActionParameter] ReimportDocumentsRequest reimportDocumentsRequest)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
             SoapConstants.FileServiceUrl, Creds);
@@ -254,13 +255,13 @@ public class FileActions : BaseInvocable
             throw new InvalidOperationException(
                 $"Error while importing file, result status: {result.First(x => x.ResultStatus == ResultStatus.Error).ResultStatus}, message: {result.First(x => x.ResultStatus == ResultStatus.Error).DetailedMessage}");
         }
-        
+
         var first = result.FirstOrDefault(x => x.ResultStatus == ResultStatus.Success);
         if (first is null)
         {
             throw new InvalidOperationException("No successful reimport found");
         }
-        
+
         return new()
         {
             // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
@@ -363,6 +364,7 @@ public class FileActions : BaseInvocable
     [Action("Export document as XLIFF",
         Description = "Exports and downloads the translation document as XLIFF (MQXLIFF) bilingual")]
     public async Task<DownloadFileResponse> DownloadFileAsXliff(
+        [ActionParameter] GetDocumentRequest documentRequest,
         [ActionParameter] DownloadXliffRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
@@ -374,8 +376,8 @@ public class FileActions : BaseInvocable
         var includeSkeleton = request.IncludeSkeleton ?? false;
 
         var exportResult = await projectService.Service
-            .ExportTranslationDocumentAsXliffBilingualAsync(Guid.Parse(request.ProjectGuid),
-                Guid.Parse(request.DocumentGuid), new XliffBilingualExportOptions
+            .ExportTranslationDocumentAsXliffBilingualAsync(Guid.Parse(documentRequest.ProjectGuid),
+                Guid.Parse(documentRequest.DocumentGuid), new XliffBilingualExportOptions
                 {
                     FullVersionHistory = fullVersion,
                     IncludeSkeleton = includeSkeleton,
@@ -385,8 +387,8 @@ public class FileActions : BaseInvocable
         var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
         var document = GetFile(new()
         {
-            ProjectGuid = request.ProjectGuid
-        }, request.DocumentGuid);
+            ProjectGuid = documentRequest.ProjectGuid
+        }, documentRequest.DocumentGuid);
 
         using var stream = new MemoryStream(data);
 
