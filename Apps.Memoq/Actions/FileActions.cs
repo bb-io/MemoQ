@@ -315,7 +315,7 @@ public class FileActions : BaseInvocable
             return new(document) { File = fileReference };
         }
         
-        var fileReferenceXliff = await ConvertMqXliffToXliff(stream, filename);
+        var fileReferenceXliff = await ConvertMqXliffToXliff(stream, filename.Replace(".mqxliff", ".xliff"));
         return new(document) { File = fileReferenceXliff };
     }
 
