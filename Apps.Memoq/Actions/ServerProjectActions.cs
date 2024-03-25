@@ -228,7 +228,7 @@ public class ServerProjectActions : BaseInvocable
         await projectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid));
     }
 
-    // [Action("Add resources to project", Description = "Add resources to a specific project")]
+    [Action("Add resource to project", Description = "Add resources to a specific project")]
     public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
         [ActionParameter] AddResourceToProjectRequest request)
     {
@@ -236,53 +236,76 @@ public class ServerProjectActions : BaseInvocable
             SoapConstants.ProjectServiceUrl, Creds);
 
         var resourceType = (ResourceType)int.Parse(request.ResourceType);
-        var serverProjectResourceAssignment = request.ResourceGuids
-            .Zip(request.ObjectIds, (resourceGuid, objectId) => new ServerProjectResourceAssignment
-            {
-                ResourceGuid = Guid.Parse(resourceGuid),
-                Primary = true,
-                ObjectId = objectId
-            })
-            .ToArray();
-
+        var assignments = CreateAssignmentsBasedOnResourceType(resourceType, request);
         var array = new[]
         {
             new ServerProjectResourceAssignmentForResourceType
             {
                 ResourceType = resourceType,
-                ServerProjectResourceAssignment = serverProjectResourceAssignment
+                ServerProjectResourceAssignment = assignments.ToArray()
             }
         };
+
         await projectService.Service.SetProjectResourceAssignmentsAsync(Guid.Parse(project.ProjectGuid), array);
     }
 
     [Action("Pretranslate documents", Description = "Pretranslate documents in a specific project")]
-    public async Task<PretranslateDocumentsResponse> PretranslateDocuments([ActionParameter] ProjectRequest projectRequest,
+    public async Task<PretranslateDocumentsResponse> PretranslateDocuments(
+        [ActionParameter] ProjectRequest projectRequest,
         [ActionParameter] PretranslateDocumentsRequest request)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
         var options = new PretranslateOptions();
-        
-        if(request.LockPretranslated.HasValue)
+
+        if (request.LockPretranslated.HasValue)
             options.LockPretranslated = request.LockPretranslated.Value;
-        
-        if(request.UseMt.HasValue)
+
+        if (request.UseMt.HasValue)
             options.UseMT = request.UseMt.Value;
 
         if (request.ConfirmLockPreTranslated != null)
             options.ConfirmLockPretranslated =
                 (PretranslateStateToConfirmAndLock)int.Parse(request.ConfirmLockPreTranslated);
-        
+
         if (request.PretranslateLookupBehavior != null)
             options.PretranslateLookupBehavior =
                 (PretranslateLookupBehavior)int.Parse(request.PretranslateLookupBehavior);
-        
+
         var guids = request.DocumentGuids.Select(Guid.Parse).ToArray();
         var resultInfo = await projectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid),
             guids, options);
 
         return new(resultInfo);
+    }
+
+    private List<ServerProjectResourceAssignment> CreateAssignmentsBasedOnResourceType(ResourceType resourceType,
+        AddResourceToProjectRequest request)
+    {
+        var assignments = new List<ServerProjectResourceAssignment>();
+
+        if (request.ObjectIds != null && request.ObjectIds.Any())
+        {
+            foreach (var objectId in request.ObjectIds)
+            {
+                assignments.Add(new ServerProjectResourceAssignment()
+                {
+                    ResourceGuid = Guid.Parse(request.ResourceGuid),
+                    ObjectId = objectId,
+                    Primary = request.Primary ?? false
+                });
+            }
+        }
+        else
+        {
+            assignments.Add(new ServerProjectResourceAssignment()
+            {
+                ResourceGuid = Guid.Parse(request.ResourceGuid),
+                Primary = request.Primary ?? false
+            });
+        }
+
+        return assignments;
     }
 }

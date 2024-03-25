@@ -28,10 +28,10 @@ public class ResourceDataHandler : BaseInvocable, IAsyncDataSourceHandler
         }
         
         var resourceService = new MemoqServiceFactory<IResourceService>(
-            SoapConstants.ProjectServiceUrl, Creds);
+            SoapConstants.ResourceServiceUrl, Creds);
 
-        var resourceType = (MQS.Resource.ResourceType)int.Parse(_resourceType);
-        var resources = await resourceService.Service.ListResourcesAsync(resourceType, null);
+        var resourceType = (ResourceType)int.Parse(_resourceType);
+        var resources = await resourceService.Service.ListResourcesAsync(resourceType, new LightResourceListFilter());
         
         return resources
             .Where(x => context.SearchString is null ||
