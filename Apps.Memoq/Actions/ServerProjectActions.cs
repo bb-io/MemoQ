@@ -235,68 +235,152 @@ public class ServerProjectActions : BaseInvocable
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
-        ServerProjectResourceAssignment[] serverProjectResourceAssignment;
-        if (request.ObjectIds == null)
-        {
-            serverProjectResourceAssignment = request.ResourceGuids
-                .Select(resourceGuid => new ServerProjectResourceAssignment
-                {
-                    ResourceGuid = Guid.Parse(resourceGuid),
-                    Primary = true
-                })
-                .ToArray();
-        }
-        else
-        {
-            serverProjectResourceAssignment = request.ResourceGuids
-                .Zip(request.ObjectIds, (resourceGuid, objectId) => new ServerProjectResourceAssignment
-                {
-                    ResourceGuid = Guid.Parse(resourceGuid),
-                    Primary = true,
-                    ObjectId = objectId
-                })
-                .ToArray();
-        }
-        
         var resourceType = (ResourceType)int.Parse(request.ResourceType);
+        var assignments = CreateAssignmentsBasedOnResourceType(resourceType, request);
         var array = new[]
         {
             new ServerProjectResourceAssignmentForResourceType
             {
                 ResourceType = resourceType,
-                ServerProjectResourceAssignment = serverProjectResourceAssignment
+                ServerProjectResourceAssignment = assignments.ToArray()
             }
         };
+
         await projectService.Service.SetProjectResourceAssignmentsAsync(Guid.Parse(project.ProjectGuid), array);
     }
 
     [Action("Pretranslate documents", Description = "Pretranslate documents in a specific project")]
-    public async Task<PretranslateDocumentsResponse> PretranslateDocuments([ActionParameter] ProjectRequest projectRequest,
+    public async Task<PretranslateDocumentsResponse> PretranslateDocuments(
+        [ActionParameter] ProjectRequest projectRequest,
         [ActionParameter] PretranslateDocumentsRequest request)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
         var options = new PretranslateOptions();
-        
-        if(request.LockPretranslated.HasValue)
+
+        if (request.LockPretranslated.HasValue)
             options.LockPretranslated = request.LockPretranslated.Value;
-        
-        if(request.UseMt.HasValue)
+
+        if (request.UseMt.HasValue)
             options.UseMT = request.UseMt.Value;
 
         if (request.ConfirmLockPreTranslated != null)
             options.ConfirmLockPretranslated =
                 (PretranslateStateToConfirmAndLock)int.Parse(request.ConfirmLockPreTranslated);
-        
+
         if (request.PretranslateLookupBehavior != null)
             options.PretranslateLookupBehavior =
                 (PretranslateLookupBehavior)int.Parse(request.PretranslateLookupBehavior);
-        
+
         var guids = request.DocumentGuids.Select(Guid.Parse).ToArray();
         var resultInfo = await projectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid),
             guids, options);
 
         return new(resultInfo);
+    }
+
+    private List<ServerProjectResourceAssignment> CreateAssignmentsBasedOnResourceType(ResourceType resourceType,
+        AddResourceToProjectRequest request)
+    {
+        var assignments = new List<ServerProjectResourceAssignment>();
+        switch (resourceType)
+        {
+            case ResourceType.AutoTrans:
+            case ResourceType.IgnoreLists:
+            case ResourceType.MTSettings:
+            case ResourceType.QASettings:
+                if (request.TargetLanguages == null || !request.TargetLanguages.Any())
+                {
+                    throw new ArgumentException("Target languages must be provided for the selected resource type.");
+                }
+
+                AddAssignmentsForLanguages(request.TargetLanguages, request.ResourceGuids, true, assignments);
+                break;
+
+            case ResourceType.SegRules:
+                if (request.SourceLanguages != null)
+                {
+                    AddAssignmentsForLanguages(request.SourceLanguages, request.ResourceGuids, true, assignments);
+                }
+
+                if (request.TargetLanguages != null)
+                {
+                    AddAssignmentsForLanguages(request.TargetLanguages, request.ResourceGuids, true, assignments);
+                }
+
+                break;
+
+            case ResourceType.PathRules:
+                assignments.AddRange(request.ResourceGuids.Select(guid => new ServerProjectResourceAssignment
+                {
+                    ResourceGuid = Guid.Parse(guid),
+                    ObjectId = "File",
+                    Primary = true
+                }));
+                assignments.AddRange(request.ResourceGuids.Select(guid => new ServerProjectResourceAssignment
+                {
+                    ResourceGuid = Guid.Parse(guid),
+                    ObjectId = "Folder",
+                    Primary = true
+                }));
+                break;
+
+            case ResourceType.LQA:
+            case ResourceType.FontSubstitution:
+            case ResourceType.WebSearchSettings:
+            case ResourceType.KeyboardShortcuts:
+                throw new NotSupportedException(
+                    $"The resource type '{resourceType}' cannot be assigned to server projects. You can check the documentation: https://docs.memoq.com/current/api-docs/wsapi/api/serverprojectservice/MemoQServices.ServerProjectResourceAssignmentForResourceType.html");
+            case ResourceType.TMSettings:
+            case ResourceType.LiveDocsSettings:
+                AddAssignmentsForTMsOrLiveDocs(request.Tms ?? Enumerable.Empty<string>(), request.ResourceGuids, true, assignments);
+                break;
+
+            default:
+                throw new NotSupportedException(
+                    $"The resource type '{resourceType}' is not supported or not recognized.");
+        }
+
+        return assignments;
+    }
+    
+    // A helper method to create assignments based on language codes.
+    void AddAssignmentsForLanguages(IEnumerable<string> languages, IEnumerable<string> guids, bool isPrimary, List<ServerProjectResourceAssignment> assignments)
+    {
+        foreach (var language in languages)
+        {
+            assignments.AddRange(guids.Select(guid => new ServerProjectResourceAssignment
+            {
+                ResourceGuid = Guid.Parse(guid),
+                ObjectId = language,
+                Primary = isPrimary
+            }));
+        }
+    }
+
+    // A helper method for resource types that can have TM or LiveDocs settings.
+    void AddAssignmentsForTMsOrLiveDocs(IEnumerable<string> tms, IEnumerable<string> guids, bool isPrimary, List<ServerProjectResourceAssignment> assignments)
+    {
+        if (tms != null && tms.Any())
+        {
+            foreach (var tm in tms)
+            {
+                assignments.AddRange(guids.Select(guid => new ServerProjectResourceAssignment
+                {
+                    ResourceGuid = Guid.Parse(guid),
+                    ObjectId = tm,
+                    Primary = isPrimary
+                }));
+            }
+        }
+        else
+        {
+            assignments.AddRange(guids.Select(guid => new ServerProjectResourceAssignment
+            {
+                ResourceGuid = Guid.Parse(guid),
+                Primary = isPrimary
+            }));
+        }
     }
 }
