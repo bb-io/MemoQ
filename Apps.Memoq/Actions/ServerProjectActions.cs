@@ -228,7 +228,7 @@ public class ServerProjectActions : BaseInvocable
         await projectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid));
     }
 
-    [Action("Add resources to project", Description = "Add resources to a specific project")]
+    [Action("Add resource to project", Description = "Add resources to a specific project")]
     public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
         [ActionParameter] AddResourceToProjectRequest request)
     {
@@ -284,103 +284,28 @@ public class ServerProjectActions : BaseInvocable
         AddResourceToProjectRequest request)
     {
         var assignments = new List<ServerProjectResourceAssignment>();
-        switch (resourceType)
+
+        if (request.ObjectIds != null && request.ObjectIds.Any())
         {
-            case ResourceType.AutoTrans:
-            case ResourceType.IgnoreLists:
-            case ResourceType.MTSettings:
-            case ResourceType.QASettings:
-                if (request.TargetLanguages == null || !request.TargetLanguages.Any())
-                {
-                    throw new ArgumentException("Target languages must be provided for the selected resource type.");
-                }
-
-                AddAssignmentsForLanguages(request.TargetLanguages, request.ResourceGuids, true, assignments);
-                break;
-
-            case ResourceType.SegRules:
-                if (request.SourceLanguages != null)
-                {
-                    AddAssignmentsForLanguages(request.SourceLanguages, request.ResourceGuids, true, assignments);
-                }
-
-                if (request.TargetLanguages != null)
-                {
-                    AddAssignmentsForLanguages(request.TargetLanguages, request.ResourceGuids, true, assignments);
-                }
-
-                break;
-
-            case ResourceType.PathRules:
-                assignments.AddRange(request.ResourceGuids.Select(guid => new ServerProjectResourceAssignment
-                {
-                    ResourceGuid = Guid.Parse(guid),
-                    ObjectId = "File",
-                    Primary = true
-                }));
-                assignments.AddRange(request.ResourceGuids.Select(guid => new ServerProjectResourceAssignment
-                {
-                    ResourceGuid = Guid.Parse(guid),
-                    ObjectId = "Folder",
-                    Primary = true
-                }));
-                break;
-
-            case ResourceType.LQA:
-            case ResourceType.FontSubstitution:
-            case ResourceType.WebSearchSettings:
-            case ResourceType.KeyboardShortcuts:
-                throw new NotSupportedException(
-                    $"The resource type '{resourceType}' cannot be assigned to server projects. You can check the documentation: https://docs.memoq.com/current/api-docs/wsapi/api/serverprojectservice/MemoQServices.ServerProjectResourceAssignmentForResourceType.html");
-            case ResourceType.TMSettings:
-            case ResourceType.LiveDocsSettings:
-                AddAssignmentsForTMsOrLiveDocs(request.Tms ?? Enumerable.Empty<string>(), request.ResourceGuids, true, assignments);
-                break;
-
-            default:
-                throw new NotSupportedException(
-                    $"The resource type '{resourceType}' is not supported or not recognized.");
-        }
-
-        return assignments;
-    }
-    
-    // A helper method to create assignments based on language codes.
-    void AddAssignmentsForLanguages(IEnumerable<string> languages, IEnumerable<string> guids, bool isPrimary, List<ServerProjectResourceAssignment> assignments)
-    {
-        foreach (var language in languages)
-        {
-            assignments.AddRange(guids.Select(guid => new ServerProjectResourceAssignment
+            foreach (var objectId in request.ObjectIds)
             {
-                ResourceGuid = Guid.Parse(guid),
-                ObjectId = language,
-                Primary = isPrimary
-            }));
-        }
-    }
-
-    // A helper method for resource types that can have TM or LiveDocs settings.
-    void AddAssignmentsForTMsOrLiveDocs(IEnumerable<string> tms, IEnumerable<string> guids, bool isPrimary, List<ServerProjectResourceAssignment> assignments)
-    {
-        if (tms != null && tms.Any())
-        {
-            foreach (var tm in tms)
-            {
-                assignments.AddRange(guids.Select(guid => new ServerProjectResourceAssignment
+                assignments.Add(new ServerProjectResourceAssignment()
                 {
-                    ResourceGuid = Guid.Parse(guid),
-                    ObjectId = tm,
-                    Primary = isPrimary
-                }));
+                    ResourceGuid = Guid.Parse(request.ResourceGuid),
+                    ObjectId = objectId,
+                    Primary = request.Primary ?? false
+                });
             }
         }
         else
         {
-            assignments.AddRange(guids.Select(guid => new ServerProjectResourceAssignment
+            assignments.Add(new ServerProjectResourceAssignment()
             {
-                ResourceGuid = Guid.Parse(guid),
-                Primary = isPrimary
-            }));
+                ResourceGuid = Guid.Parse(request.ResourceGuid),
+                Primary = request.Primary ?? false
+            });
         }
+
+        return assignments;
     }
 }
