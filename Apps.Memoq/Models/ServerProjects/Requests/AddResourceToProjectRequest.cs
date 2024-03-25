@@ -14,5 +14,5 @@ public class AddResourceToProjectRequest
     public IEnumerable<string> ResourceGuids { get; set; }
 
     [Display("Object ids")]
-    public IEnumerable<string> ObjectIds { get; set; }
+    public IEnumerable<string>? ObjectIds { get; set; }
 }

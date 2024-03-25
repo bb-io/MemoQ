@@ -235,16 +235,30 @@ public class ServerProjectActions : BaseInvocable
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
+        ServerProjectResourceAssignment[] serverProjectResourceAssignment;
+        if (request.ObjectIds == null)
+        {
+            serverProjectResourceAssignment = request.ResourceGuids
+                .Select(resourceGuid => new ServerProjectResourceAssignment
+                {
+                    ResourceGuid = Guid.Parse(resourceGuid),
+                    Primary = true
+                })
+                .ToArray();
+        }
+        else
+        {
+            serverProjectResourceAssignment = request.ResourceGuids
+                .Zip(request.ObjectIds, (resourceGuid, objectId) => new ServerProjectResourceAssignment
+                {
+                    ResourceGuid = Guid.Parse(resourceGuid),
+                    Primary = true,
+                    ObjectId = objectId
+                })
+                .ToArray();
+        }
+        
         var resourceType = (ResourceType)int.Parse(request.ResourceType);
-        var serverProjectResourceAssignment = request.ResourceGuids
-            .Zip(request.ObjectIds, (resourceGuid, objectId) => new ServerProjectResourceAssignment
-            {
-                ResourceGuid = Guid.Parse(resourceGuid),
-                Primary = true,
-                ObjectId = objectId
-            })
-            .ToArray();
-
         var array = new[]
         {
             new ServerProjectResourceAssignmentForResourceType
