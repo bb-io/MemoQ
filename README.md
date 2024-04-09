@@ -22,7 +22,7 @@ Before you can connect you need to make sure that:
 2.  Click _Add Connection_.
 3.  Name your connection for future reference e.g. 'My memoQ'.
 4.  Add the URL pointing to your memoQ instance API. Usually this is your instance URL, port with the added `/memoqservices` but this can be different (see image below).
-5.  Add your API key.
+5.  Add your API key. If your memoQ service doesn't require an API key, you can input 'NONE'. We will process it under the hood and exclude it from requests.
 6.  Click _Connect_.
 7.  Confirm that the connection has appeared and the status is _Connected_.
 
