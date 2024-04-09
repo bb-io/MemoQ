@@ -1,8 +1,11 @@
-﻿using Apps.Memoq.Contracts;
+﻿using System.Runtime.Serialization;
+using Apps.Memoq.Contracts;
 using Apps.Memoq.DataSourceHandlers;
 using Apps.Memoq.Extensions;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
+using Apps.Memoq.Models.Files.Requests;
+using Apps.Memoq.Models.Files.Responses;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.ServerProjects.Responses;
 using Blackbird.Applications.Sdk.Common;
@@ -11,7 +14,9 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
+using MQS.Resource;
 using MQS.ServerProject;
+using ResourceType = MQS.ServerProject.ResourceType;
 
 namespace Apps.Memoq.Actions;
 
@@ -92,8 +97,9 @@ public class ServerProjectActions : BaseInvocable
             SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = request.TargetLangCodes.ToArray(),
             CallbackWebServiceUrl = request.CallbackUrl ??
-                                    $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}".SetQueryParameter("id",
-                                        Creds.GetInstanceUrlHash()),
+                                    $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}"
+                                        .SetQueryParameter("id",
+                                            Creds.GetInstanceUrlHash()),
             Description = request.Description,
             Domain = request.Domain,
             Subject = request.Subject,
@@ -165,8 +171,10 @@ public class ServerProjectActions : BaseInvocable
             SourceLanguageCode = input.SourceLangCode,
             TargetLanguageCodes = input.TargetLangCodes.ToArray(),
             CallbackWebServiceUrl =
-                input.CallbackUrl ?? $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}".SetQueryParameter("id",
-                    Creds.GetInstanceUrlHash()),
+                input.CallbackUrl ??
+                $"{InvocationContext.UriInfo.BridgeServiceUrl.ToString().TrimEnd('/')}{ApplicationConstants.MemoqBridgePath}"
+                    .SetQueryParameter("id",
+                        Creds.GetInstanceUrlHash()),
             Description = input.Description,
             Domain = input.Domain,
             Subject = input.Subject,
@@ -218,5 +226,86 @@ public class ServerProjectActions : BaseInvocable
             SoapConstants.ProjectServiceUrl, Creds);
 
         await projectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid));
+    }
+
+    [Action("Add resource to project", Description = "Add resource to a specific project by type and ID, optionally with object IDs")]
+    public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
+        [ActionParameter] AddResourceToProjectRequest request)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var resourceType = (ResourceType)int.Parse(request.ResourceType);
+        var assignments = CreateAssignmentsBasedOnResourceType(resourceType, request);
+        var array = new[]
+        {
+            new ServerProjectResourceAssignmentForResourceType
+            {
+                ResourceType = resourceType,
+                ServerProjectResourceAssignment = assignments.ToArray()
+            }
+        };
+
+        await projectService.Service.SetProjectResourceAssignmentsAsync(Guid.Parse(project.ProjectGuid), array);
+    }
+
+    [Action("Pretranslate documents", Description = "Pretranslate documents in a specific project")]
+    public async Task<PretranslateDocumentsResponse> PretranslateDocuments(
+        [ActionParameter] ProjectRequest projectRequest,
+        [ActionParameter] PretranslateDocumentsRequest request)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var options = new PretranslateOptions();
+
+        if (request.LockPretranslated.HasValue)
+            options.LockPretranslated = request.LockPretranslated.Value;
+
+        if (request.UseMt.HasValue)
+            options.UseMT = request.UseMt.Value;
+
+        if (request.ConfirmLockPreTranslated != null)
+            options.ConfirmLockPretranslated =
+                (PretranslateStateToConfirmAndLock)int.Parse(request.ConfirmLockPreTranslated);
+
+        if (request.PretranslateLookupBehavior != null)
+            options.PretranslateLookupBehavior =
+                (PretranslateLookupBehavior)int.Parse(request.PretranslateLookupBehavior);
+
+        var guids = request.DocumentGuids.Select(Guid.Parse).ToArray();
+        var resultInfo = await projectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid),
+            guids, options);
+
+        return new(resultInfo);
+    }
+
+    private List<ServerProjectResourceAssignment> CreateAssignmentsBasedOnResourceType(ResourceType resourceType,
+        AddResourceToProjectRequest request)
+    {
+        var assignments = new List<ServerProjectResourceAssignment>();
+
+        if (request.ObjectIds != null && request.ObjectIds.Any())
+        {
+            foreach (var objectId in request.ObjectIds)
+            {
+                assignments.Add(new ServerProjectResourceAssignment()
+                {
+                    ResourceGuid = Guid.Parse(request.ResourceGuid),
+                    ObjectId = objectId,
+                    Primary = request.Primary ?? false
+                });
+            }
+        }
+        else
+        {
+            assignments.Add(new ServerProjectResourceAssignment()
+            {
+                ResourceGuid = Guid.Parse(request.ResourceGuid),
+                Primary = request.Primary ?? false
+            });
+        }
+
+        return assignments;
     }
 }

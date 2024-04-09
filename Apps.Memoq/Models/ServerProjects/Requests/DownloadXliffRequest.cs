@@ -2,11 +2,8 @@
 
 namespace Apps.Memoq.Models.ServerProjects.Requests
 {
-    public class DownloadXliffRequest : ProjectRequest
+    public class DownloadXliffRequest
     {
-        [Display("Document GUID")]
-        public string DocumentGuid { get; set; }
-
         [Display("Include full version history?")]
         public bool? FullVersionHistory { get; set; }
 
@@ -15,5 +12,8 @@ namespace Apps.Memoq.Models.ServerProjects.Requests
 
         [Display("Save compressed?")]
         public bool? SaveCompressed { get; set; }
+
+        [Display("Use mqxliff")]
+        public bool? UseMqxliff { get; set; }
     }
 }
