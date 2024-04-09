@@ -15,7 +15,7 @@ public class ConnectionDefinition : IConnectionDefinition
             ConnectionProperties = new List<ConnectionProperty>
             {
                 new("url") { DisplayName = "URL" },
-                new("apiKey") { DisplayName = "API Key", Sensitive = true }
+                new("apiKey") { DisplayName = "API Key", Description = "If your service doesn't require API Key, just input 'NONE'", Sensitive = true }
             }
         }
     };
