@@ -229,7 +229,7 @@ public class FileActions : BaseInvocable
             FileUploader.UploadFile(fileBytes, manager, fileName);
 
         string? importSettings = null;
-        if (fileName.EndsWith(".xliff") || fileName.EndsWith(".mqxliff"))
+        if (fileName.EndsWith(".xliff"))
         {
             file.Position = 0;
             var reader = new StreamReader(file);
