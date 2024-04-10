@@ -334,24 +334,26 @@ public class FileActions : BaseInvocable
                 new GetDocumentRequest
                 {
                     ProjectGuid = request.ProjectGuid,
-                    DocumentGuid = importDocumentAsXliffRequest.DocumentGuid ?? throw new("Can not reimport without document guid")
+                    DocumentGuid = importDocumentAsXliffRequest.DocumentGuid ??
+                                   throw new("Can not reimport without document guid")
                 },
                 new DownloadXliffRequest
                 {
                     FullVersionHistory = false,
                     UseMqxliff = true
                 });
-        
+
             var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
             var fileStream = await _fileManagementClient.DownloadAsync(fileReference);
-            
+
             var updatedMqXliffFile = await UpdateMqxliffFile(mqXliffFile, fileStream);
             string mqXliffFileName = request.FileName ?? request.File.Name + ".mqxliff";
-            fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml, mqXliffFileName);
-            
+            fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml,
+                mqXliffFileName);
+
             return await UploadAndReimportFileToProject(new UploadDocumentToProjectRequest
             {
-                File = fileReference, 
+                File = fileReference,
                 ProjectGuid = request.ProjectGuid,
                 TargetLanguageCodes = request.TargetLanguageCodes,
             }, new ReimportDocumentsRequest
@@ -364,7 +366,7 @@ public class FileActions : BaseInvocable
 
         return await UploadAndReimportFileToProject(new UploadDocumentToProjectRequest
         {
-            File = fileReference, 
+            File = fileReference,
             ProjectGuid = request.ProjectGuid,
             TargetLanguageCodes = request.TargetLanguageCodes,
             FileName = request.FileName
@@ -375,42 +377,36 @@ public class FileActions : BaseInvocable
             PathToSetAsImportPath = importDocumentAsXliffRequest.PathToSetAsImportPath
         });
     }
-    
+
     public async Task<Stream> UpdateMqxliffFile(Stream mqXliffFile, Stream xliffFile)
     {
-        // Define the XLIFF namespace (used for both files in different versions)
         XNamespace nsXliff = "urn:oasis:names:tc:xliff:document:1.2";
         XNamespace nsXliff21 = "urn:oasis:names:tc:xliff:document:2.0";
 
-        // Load the documents
         var xliffDoc = XDocument.Load(xliffFile);
         var mqXliffDoc = XDocument.Load(mqXliffFile);
 
-        // Get translation units from the XLIFF 2.1 document
         var xliffUnits = xliffDoc.Descendants(nsXliff21 + "unit");
 
-        // Iterate over each MQXLIFF trans-unit
         foreach (var mqTransUnit in mqXliffDoc.Descendants(nsXliff + "trans-unit"))
         {
             var id = mqTransUnit.Attribute("id")?.Value;
             var mqTarget = mqTransUnit.Elements(nsXliff + "target").FirstOrDefault();
 
-            // Find the corresponding unit in the XLIFF 2.1 document
             var xliffUnit = xliffUnits.FirstOrDefault(x => x.Attribute("id")?.Value == id);
-            var xliffTarget = xliffUnit?.Elements(nsXliff21 + "segment").Elements(nsXliff21 + "target").FirstOrDefault()?.Value;
+            var xliffTargetNodes = xliffUnit?.Elements(nsXliff21 + "segment").Elements(nsXliff21 + "target").Nodes();
 
-            if (mqTarget != null && xliffTarget != null && mqTarget.Value != xliffTarget)
+            if (mqTarget != null && xliffTargetNodes != null && !mqTarget.Nodes().SequenceEqual(xliffTargetNodes, new XNodeEqualityComparer()))
             {
-                mqTarget.Value = xliffTarget;
-                // Explicitly set the mq:status attribute to "Edited"
-                mqTransUnit.SetAttributeValue("{MQXliff}status", "Edited");
+                mqTarget.RemoveAll();
+                mqTarget.Add(xliffTargetNodes);
+                mqTransUnit.SetAttributeValue(XNamespace.Get("MQXliff") + "status", "Edited");
             }
         }
 
-        // Prepare the updated MQXLIFF document for return
         var updatedMqXliffStream = new MemoryStream();
         mqXliffDoc.Save(updatedMqXliffStream);
-        updatedMqXliffStream.Position = 0; // Reset stream position to start
+        updatedMqXliffStream.Position = 0;
 
         return updatedMqXliffStream;
     }
