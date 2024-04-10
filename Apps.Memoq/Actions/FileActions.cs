@@ -21,6 +21,7 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Parsers;
+using Blackbird.Xliff.Utils;
 using RestSharp;
 
 namespace Apps.Memoq.Actions;
@@ -305,14 +306,52 @@ public class FileActions : BaseInvocable
 
         var fileName = string.IsNullOrEmpty(request.FileName) ? request.File.Name : request.FileName;
         var contentType = MediaTypeNames.Application.Xml;
-        var fileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
+        var xliffFileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes),
             contentType, fileName);
 
         if (!string.IsNullOrEmpty(importDocumentAsXliffRequest.DocumentGuid))
         {
+            return await ReimportDocumentAsync(importDocumentAsXliffRequest, xliffFileReference, request);
+        }
+
+        return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+        {
+            File = xliffFileReference, ProjectGuid = request.ProjectGuid,
+            TargetLanguageCodes = request.TargetLanguageCodes,
+            FileName = request.FileName
+        });
+    }
+
+    private async Task<UploadFileResponse> ReimportDocumentAsync(
+        ImportDocumentAsXliffRequest importDocumentAsXliffRequest,
+        FileReference fileReference,
+        UploadDocumentToProjectRequest request)
+    {
+        if (importDocumentAsXliffRequest.UpdateSegmentStatuses != null &&
+            importDocumentAsXliffRequest.UpdateSegmentStatuses.Value)
+        {
+            var mqXliffFileResponse = await DownloadFileAsXliff(
+                new GetDocumentRequest
+                {
+                    ProjectGuid = request.ProjectGuid,
+                    DocumentGuid = importDocumentAsXliffRequest.DocumentGuid ?? throw new("Can not reimport without document guid")
+                },
+                new DownloadXliffRequest
+                {
+                    FullVersionHistory = false,
+                    UseMqxliff = true
+                });
+        
+            var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
+            var fileStream = await _fileManagementClient.DownloadAsync(fileReference);
+            
+            var updatedMqXliffFile = await UpdateMqxliffFile(mqXliffFile, fileStream);
+            fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml, request.FileName ?? request.File.Name);
+            
             return await UploadAndReimportFileToProject(new UploadDocumentToProjectRequest
             {
-                File = fileReference, ProjectGuid = request.ProjectGuid,
+                File = fileReference, 
+                ProjectGuid = request.ProjectGuid,
                 TargetLanguageCodes = request.TargetLanguageCodes,
                 FileName = request.FileName
             }, new ReimportDocumentsRequest
@@ -323,12 +362,51 @@ public class FileActions : BaseInvocable
             });
         }
 
-        return await UploadAndImportFileToProject(new UploadDocumentToProjectRequest
+        return await UploadAndReimportFileToProject(new UploadDocumentToProjectRequest
         {
-            File = fileReference, ProjectGuid = request.ProjectGuid,
+            File = fileReference, 
+            ProjectGuid = request.ProjectGuid,
             TargetLanguageCodes = request.TargetLanguageCodes,
             FileName = request.FileName
+        }, new ReimportDocumentsRequest
+        {
+            DocumentGuid = importDocumentAsXliffRequest.DocumentGuid,
+            KeepUserAssignments = importDocumentAsXliffRequest.KeepUserAssignments,
+            PathToSetAsImportPath = importDocumentAsXliffRequest.PathToSetAsImportPath
         });
+    }
+    
+    private async Task<Stream> UpdateMqxliffFile(Stream mqXliffFile, Stream xliffFile)
+    {
+        var xliffDoc = XDocument.Load(xliffFile);
+        var mqXliffDoc = XDocument.Load(mqXliffFile);
+
+        // Get translation units from both documents
+        var xliffTUs = xliffDoc.Descendants("{urn:oasis:names:tc:xliff:document:1.2}trans-unit");
+        var mqXliffTUs = mqXliffDoc.Descendants("{urn:oasis:names:tc:xliff:document:1.2}trans-unit");
+
+        foreach (var mqTu in mqXliffTUs)
+        {
+            var id = mqTu.Attribute("id")?.Value;
+            var mqTarget = mqTu.Element("{urn:oasis:names:tc:xliff:document:1.2}target");
+            var xliffTu = xliffTUs.FirstOrDefault(x => x.Attribute("id")?.Value == id);
+            var xliffTarget = xliffTu?.Element("{urn:oasis:names:tc:xliff:document:1.2}target")?.Value;
+
+            if (xliffTarget != null && mqTarget != null && xliffTarget != mqTarget.Value)
+            {
+                // Update target value
+                mqTarget.Value = xliffTarget;
+
+                // Set mq:status to Edited
+                mqTu.SetAttributeValue("{MQXliff}status", "Edited");
+            }
+        }
+
+        var updatedFileStream = new MemoryStream();
+        mqXliffDoc.Save(updatedFileStream);
+        updatedFileStream.Position = 0; // Reset the stream position to the beginning
+
+        return updatedFileStream;
     }
 
     [Action("Export document", Description = "Exports and downloads a document with options")]

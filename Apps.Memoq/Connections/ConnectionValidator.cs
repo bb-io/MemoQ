@@ -3,7 +3,6 @@ using Apps.Memoq.Models;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Connections;
 using MQS.Security;
-using RestSharp;
 
 namespace Apps.Memoq.Connections
 {
