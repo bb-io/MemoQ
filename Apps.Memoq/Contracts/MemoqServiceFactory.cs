@@ -25,9 +25,8 @@ public sealed class MemoqServiceFactory<T> : IDisposable
             ? null 
             : AddressHeader.CreateAddressHeader("ApiKey", "", apiKey);
         var address = header == null 
-            ? new EndpointAddress(new Uri(url)) 
-            : new EndpointAddress(new Uri(url), header);
-        
+            ? new EndpointAddress(new Uri($"{url}{serviceUrl}"))
+            : new EndpointAddress(new Uri($"{url}{serviceUrl}"), header);
         _channelFactory = new ChannelFactory<T>(binding, address);
         _channelFactory.Credentials.ServiceCertificate.SslCertificateAuthentication =
             new()
