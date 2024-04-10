@@ -229,7 +229,7 @@ public class FileActions : BaseInvocable
             FileUploader.UploadFile(fileBytes, manager, fileName);
 
         string? importSettings = null;
-        if (fileName.EndsWith(".xliff"))
+        if (fileName.EndsWith(".xliff") || fileName.EndsWith(".mqxliff"))
         {
             file.Position = 0;
             var reader = new StreamReader(file);
@@ -346,14 +346,14 @@ public class FileActions : BaseInvocable
             var fileStream = await _fileManagementClient.DownloadAsync(fileReference);
             
             var updatedMqXliffFile = await UpdateMqxliffFile(mqXliffFile, fileStream);
-            fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml, request.FileName ?? request.File.Name);
+            string mqXliffFileName = request.FileName ?? request.File.Name + ".mqxliff";
+            fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml, mqXliffFileName);
             
             return await UploadAndReimportFileToProject(new UploadDocumentToProjectRequest
             {
                 File = fileReference, 
                 ProjectGuid = request.ProjectGuid,
                 TargetLanguageCodes = request.TargetLanguageCodes,
-                FileName = request.FileName
             }, new ReimportDocumentsRequest
             {
                 DocumentGuid = importDocumentAsXliffRequest.DocumentGuid,
@@ -376,37 +376,43 @@ public class FileActions : BaseInvocable
         });
     }
     
-    private async Task<Stream> UpdateMqxliffFile(Stream mqXliffFile, Stream xliffFile)
+    public async Task<Stream> UpdateMqxliffFile(Stream mqXliffFile, Stream xliffFile)
     {
+        // Define the XLIFF namespace (used for both files in different versions)
+        XNamespace nsXliff = "urn:oasis:names:tc:xliff:document:1.2";
+        XNamespace nsXliff21 = "urn:oasis:names:tc:xliff:document:2.0";
+
+        // Load the documents
         var xliffDoc = XDocument.Load(xliffFile);
         var mqXliffDoc = XDocument.Load(mqXliffFile);
 
-        // Get translation units from both documents
-        var xliffTUs = xliffDoc.Descendants("{urn:oasis:names:tc:xliff:document:1.2}trans-unit");
-        var mqXliffTUs = mqXliffDoc.Descendants("{urn:oasis:names:tc:xliff:document:1.2}trans-unit");
+        // Get translation units from the XLIFF 2.1 document
+        var xliffUnits = xliffDoc.Descendants(nsXliff21 + "unit");
 
-        foreach (var mqTu in mqXliffTUs)
+        // Iterate over each MQXLIFF trans-unit
+        foreach (var mqTransUnit in mqXliffDoc.Descendants(nsXliff + "trans-unit"))
         {
-            var id = mqTu.Attribute("id")?.Value;
-            var mqTarget = mqTu.Element("{urn:oasis:names:tc:xliff:document:1.2}target");
-            var xliffTu = xliffTUs.FirstOrDefault(x => x.Attribute("id")?.Value == id);
-            var xliffTarget = xliffTu?.Element("{urn:oasis:names:tc:xliff:document:1.2}target")?.Value;
+            var id = mqTransUnit.Attribute("id")?.Value;
+            var mqTarget = mqTransUnit.Elements(nsXliff + "target").FirstOrDefault();
 
-            if (xliffTarget != null && mqTarget != null && xliffTarget != mqTarget.Value)
+            // Find the corresponding unit in the XLIFF 2.1 document
+            var xliffUnit = xliffUnits.FirstOrDefault(x => x.Attribute("id")?.Value == id);
+            var xliffTarget = xliffUnit?.Elements(nsXliff21 + "segment").Elements(nsXliff21 + "target").FirstOrDefault()?.Value;
+
+            if (mqTarget != null && xliffTarget != null && mqTarget.Value != xliffTarget)
             {
-                // Update target value
                 mqTarget.Value = xliffTarget;
-
-                // Set mq:status to Edited
-                mqTu.SetAttributeValue("{MQXliff}status", "Edited");
+                // Explicitly set the mq:status attribute to "Edited"
+                mqTransUnit.SetAttributeValue("{MQXliff}status", "Edited");
             }
         }
 
-        var updatedFileStream = new MemoryStream();
-        mqXliffDoc.Save(updatedFileStream);
-        updatedFileStream.Position = 0; // Reset the stream position to the beginning
+        // Prepare the updated MQXLIFF document for return
+        var updatedMqXliffStream = new MemoryStream();
+        mqXliffDoc.Save(updatedMqXliffStream);
+        updatedMqXliffStream.Position = 0; // Reset stream position to start
 
-        return updatedFileStream;
+        return updatedMqXliffStream;
     }
 
     [Action("Export document", Description = "Exports and downloads a document with options")]
