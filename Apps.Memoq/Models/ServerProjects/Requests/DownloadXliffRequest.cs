@@ -13,7 +13,7 @@ namespace Apps.Memoq.Models.ServerProjects.Requests
         [Display("Save compressed?")]
         public bool? SaveCompressed { get; set; }
 
-        [Display("Use mqxliff")]
+        [Display("Use MQXLIFF")]
         public bool? UseMqxliff { get; set; }
     }
 }

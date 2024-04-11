@@ -1,4 +1,5 @@
 ﻿using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Metadata;
 
 namespace Apps.Memoq;
 

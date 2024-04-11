@@ -12,4 +12,7 @@ public class ImportDocumentAsXliffRequest
 
     [Display("Path to set as import path")]
     public string? PathToSetAsImportPath { get; set; }
+
+    [Display("Update segment statuses")]
+    public bool? UpdateSegmentStatuses { get; set; }
 }
