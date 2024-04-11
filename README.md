@@ -41,8 +41,16 @@ Before you can connect you need to make sure that:
 - **Assign document to user** assigns the document to a specific user.
 - **Get/delete/overwrite/deliver document**.
 - **Import/Export document** uploads/downloads file to the project. Make sure your file name contains extension, otherwise the action will fail.
-- **Export document as XLIFF** exports and downloads the translation document as XLIFF (MQXLIFF) bilingual.
 - **Apply translated content to updated source**.
+
+### XLIFFs
+
+- **Export document as XLIFF**: Exports and downloads the translation document as XLIFF. If you set 'Use MQXLIFF' optional input to true, it will return an mqxliff file; if it's set to false, it will return an XLIFF 1.2 version file. By default, it is set to false.
+- **Import document as XLIFF**: Uploads and imports a document to a project as XLIFF. This action allows you to upload and import a document to a project as XLIFF, which is a standard for exchanging localization data. Currently, it supports XLIFF versions 1.2 and 2.1, and you can also import mqxliff files.
+
+- 'Re-import document GUID': The unique identifier of the document you want to import. This is required if you want to reimport a document. If specified, the action will try to reimport the document instead of a simple import.
+- 'Update segment statuses': An optional input that indicates whether to update segment statuses during the import operation. If set to false, it will only reimport the existing document; if set to true, it will match the IDs of segments and update the segment status to 'Edited' if the target value of the segment is different, and also update the target text of the segment.
+- 'Path to set as import path': An optional input that represents the path to set as the import path. If you want to reimport document it's required, you can find this path from **Export document as XLIFF** action by exporting specific file, and you can use 'Export path' property here (it looks like: '\\en-uk_ukr.xliff')
 
 ### Groups
 
