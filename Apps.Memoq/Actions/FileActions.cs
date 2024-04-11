@@ -213,15 +213,19 @@ public class FileActions : BaseInvocable
         var projectService = new MemoqServiceFactory<IServerProjectService>(SoapConstants.ProjectServiceUrl, Creds);
 
         var fileStream = await _fileManagementClient.DownloadAsync(request.File);
-        var fileBytes = await fileStream.GetByteData();
+        var file = new MemoryStream();
+        await fileStream.CopyToAsync(file);
+        file.Position = 0;
+        
+        var fileBytes = await file.GetByteData();
 
         var uploadFileResult = FileUploader.UploadFile(fileBytes, new FileUploadManager(fileService.Service), request.FileName ?? request.File.Name);
 
         string? importSettings = null;
         if ((request.FileName ?? request.File.Name).EndsWith(".xliff"))
         {
-            fileStream.Position = 0;
-            importSettings = await new StreamReader(fileStream).ReadToEndAsync();
+            file.Position = 0;
+            importSettings = await new StreamReader(file).ReadToEndAsync();
         }
 
         var result = await projectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(request.ProjectGuid),
@@ -229,7 +233,7 @@ public class FileActions : BaseInvocable
             {
                 new ReimportDocumentOptions
                 {
-                    DocumentsToReplace = new[] { Guid.Parse(reimportDocumentsRequest.DocumentGuid) },
+                    DocumentsToReplace = [Guid.Parse(reimportDocumentsRequest.DocumentGuid)],
                     FileGuid = uploadFileResult,
                     KeepUserAssignments = reimportDocumentsRequest.KeepUserAssignments ?? default,
                     PathToSetAsImportPath = reimportDocumentsRequest.PathToSetAsImportPath ?? string.Empty
@@ -257,6 +261,13 @@ public class FileActions : BaseInvocable
         byte[] fileBytes = request.File.Name.EndsWith(".xliff") ? await ProcessXliffFile(file, request.File.Name) : await file.GetByteData();
 
         var fileName = request.FileName ?? request.File.Name;
+        string fileReferenceName = string.Empty;
+        if(fileName.EndsWith(".xliff"))
+        {
+            fileReferenceName = fileName.Replace(".xliff", "-2.1.xliff");
+        }
+        
+        fileName = string.IsNullOrEmpty(fileReferenceName) ? fileName : fileReferenceName;
         var xliffFileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes), MediaTypeNames.Application.Xml, fileName);
 
         return string.IsNullOrEmpty(importDocumentAsXliffRequest.DocumentGuid) 
@@ -555,7 +566,7 @@ public class FileActions : BaseInvocable
         return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
     }
     
-        private async Task<byte[]> ProcessXliffFile(Stream file, string fileName)
+    private async Task<byte[]> ProcessXliffFile(Stream file, string fileName)
     {
         var xDocument = XDocument.Load(file);
         string version = xDocument.GetXliffVersion();
