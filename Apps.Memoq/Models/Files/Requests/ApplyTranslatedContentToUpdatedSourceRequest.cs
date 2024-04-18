@@ -1,6 +1,7 @@
 ﻿using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.Files.Requests;
@@ -12,11 +13,11 @@ public class ApplyTranslatedContentToUpdatedSourceRequest : ProjectRequest
     [Display("Work with context IDs")] public bool? WorkWithContextIds { get; set; }
 
     [Display("XTranslate scenario")]
-    [DataSource(typeof(XTranslateScenarioDataHandler))]
+    [StaticDataSource(typeof(XTranslateScenarioDataHandler))]
     public string? XTranslateScenario { get; set; }
 
     [Display("Expected final state")]
-    [DataSource(typeof(ExpectedFinalStateDataHandler))]
+    [StaticDataSource(typeof(ExpectedFinalStateDataHandler))]
     public string? ExpectedFinalState { get; set; }
 
     [Display("Insert empty translations")]  public bool? InsertEmptyTranslations { get; set; }
@@ -24,6 +25,6 @@ public class ApplyTranslatedContentToUpdatedSourceRequest : ProjectRequest
     [Display("Lock XTranslated rows")]  public bool? LockXTranslatedRows { get; set; }
 
     [Display("Source filter")]  
-    [DataSource(typeof(SourceFilterDataHandler))]
+    [StaticDataSource(typeof(SourceFilterDataHandler))]
     public string? SourceFilter { get; set; }
 }

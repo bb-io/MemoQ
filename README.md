@@ -69,6 +69,21 @@ Before you can connect you need to make sure that:
 - **Get/create/delete/distribute project**.
 - **Create project from package/template** creates a new project based on a specified template/package.
 - **Add target language to project** adds target language to a specific project.
+- **Pretranslate documents** This action allows you to pretranslate documents in a specific project. Pretranslation is a process where the system automatically fills in the translations for segments in a document based on certain criteria. This can significantly speed up the translation process. Parameters:  
+1. **Document GUIDs**: This parameter is used to specify the unique identifiers of the documents you want to pretranslate.  
+2. **Lock**: This optional parameter, when set to true, locks the pretranslated segments to prevent further editing.  
+3. **Confirm lock pretranslated**: This optional parameter determines the state of segments that should be confirmed and locked during pretranslation.  
+4. **Pretranslate lookup behavior**: This optional parameter determines the behavior of the pretranslation lookup process.  
+5. **Use MT**: This optional parameter, when set to true, enables the use of Machine Translation (MT) during pretranslation.  
+6. **Translation memories GUIDs**: This optional parameter is used to specify the unique identifiers of the translation memories to be used during pretranslation.  
+7. **Include numbers**: This optional parameter, when set to true, includes numbers in the pretranslation. By default, this is set to true.  
+8. **Change case**: This optional parameter, when set to true, changes the case of the pretranslated text. By default, this is set to false.  
+9. **Include auto translations**: This optional parameter, when set to true, includes auto translations in the pretranslation. By default, this is set to true.  
+10. **Include fragments**: This optional parameter, when set to true, includes fragments in the pretranslation. By default, this is set to true.  
+11. **Include non-translatables**: This optional parameter, when set to true, includes non-translatable text in the pretranslation. By default, this is set to true.  
+12. **Include term bases**: This optional parameter, when set to true, includes term bases in the pretranslation. By default, this is set to true.  
+13. **Minimum coverage**: This optional parameter is used to specify the minimum coverage for pretranslation. By default, this is set to 50.  
+14. **Coverage type**: This optional parameter is used to specify the type of coverage for pretranslation. By default, this is set to 'Not full'.  
 
 ### Translation memories
 

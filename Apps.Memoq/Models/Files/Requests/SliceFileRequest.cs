@@ -1,5 +1,6 @@
 using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.Files.Requests;
@@ -10,7 +11,7 @@ public class SliceFileRequest
     public string DocumentGuid { get; set; }
     
     [Display("Slicing measurement unit")]
-    [DataSource(typeof(SlicingMeasurementUnitHandler))]
+    [StaticDataSource(typeof(SlicingMeasurementUnitHandler))]
     public string SlicingMeasurementUnit { get; set; }
     
     [Display("Number of parts")]

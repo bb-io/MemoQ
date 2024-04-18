@@ -1,6 +1,7 @@
 ﻿using Apps.Memoq.DataSourceHandlers;
 using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.ServerProjects.Requests;
@@ -8,7 +9,7 @@ namespace Apps.Memoq.Models.ServerProjects.Requests;
 // Docs about ObjectIds: https://docs.memoq.com/current/api-docs/wsapi/api/serverprojectservice/MemoQServices.ServerProjectResourceAssignmentForResourceType.html
 public class AddResourceToProjectRequest
 {
-    [Display("Resource type"), DataSource(typeof(ResourceTypeDataHandler))]
+    [Display("Resource type"), StaticDataSource(typeof(ResourceTypeDataHandler))]
     public string ResourceType { get; set; }
     
     [Display("Resource ID"), DataSource(typeof(ResourceDataHandler))]

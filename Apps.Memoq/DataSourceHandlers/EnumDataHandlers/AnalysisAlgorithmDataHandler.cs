@@ -1,12 +1,17 @@
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
-public class AnalysisAlgorithmDataHandler : EnumDataHandler
+public class AnalysisAlgorithmDataHandler : IStaticDataSourceHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    protected Dictionary<string, string> EnumValues => new()
     {
         {"MemoQ", "MemoQ"},
         {"Trados", "Trados"},
     };
+
+    public Dictionary<string, string> GetData()
+    {
+        return EnumValues;
+    }
 }

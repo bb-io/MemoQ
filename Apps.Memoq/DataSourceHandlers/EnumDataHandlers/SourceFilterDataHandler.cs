@@ -1,13 +1,18 @@
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
-public class SourceFilterDataHandler : EnumDataHandler
+public class SourceFilterDataHandler : IStaticDataSourceHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    protected Dictionary<string, string> EnumValues => new()
     {
         {"ProofreadOnly", "Proofread only"},
         {"ProofreadOrConfirmed", "Proofread or confirmed"},
         {"AllTarget", "All target"},
     };
+
+    public Dictionary<string, string> GetData()
+    {
+        return EnumValues;
+    }
 }

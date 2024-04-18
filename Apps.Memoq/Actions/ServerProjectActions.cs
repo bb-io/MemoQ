@@ -1,5 +1,4 @@
-﻿using System.Runtime.Serialization;
-using Apps.Memoq.Contracts;
+﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.DataSourceHandlers;
 using Apps.Memoq.Extensions;
 using Apps.Memoq.Models;
@@ -14,7 +13,6 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
-using MQS.Resource;
 using MQS.ServerProject;
 using ResourceType = MQS.ServerProject.ResourceType;
 
@@ -228,7 +226,8 @@ public class ServerProjectActions : BaseInvocable
         await projectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid));
     }
 
-    [Action("Add resource to project", Description = "Add resource to a specific project by type and ID, optionally with object IDs")]
+    [Action("Add resource to project",
+        Description = "Add resource to a specific project by type and ID, optionally with object IDs")]
     public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
         [ActionParameter] AddResourceToProjectRequest request)
     {
@@ -272,6 +271,26 @@ public class ServerProjectActions : BaseInvocable
         if (request.PretranslateLookupBehavior != null)
             options.PretranslateLookupBehavior =
                 (PretranslateLookupBehavior)int.Parse(request.PretranslateLookupBehavior);
+
+        if (request.TranslationMemoriesGuids != null && request.TranslationMemoriesGuids.Any())
+        {
+            options.ResourceFilter = new PreTransFilter()
+            {
+                TMs = request.TranslationMemoriesGuids.Select(Guid.Parse).ToArray()
+            };
+        }
+        
+        options.FragmentAssemblySettings = new FragmentAssemblySettings
+        {
+            IncludeNum = request.IncludeNumbers ?? true,
+            ChangeCase = request.ChangeCase ?? false,
+            IncludeAT = request.IncludeAutoTranslations ?? true,
+            IncludeFrag = request.IncludeFragments ?? true,
+            IncludeNT = request.IncludeNonTranslatables ?? true,
+            IncludeTB = request.IncludeTermBases ?? true,
+            MinCoverage = request.MinCoverage ?? 50,
+            CoverageType = (MatchCoverageType)int.Parse(request.CoverageType ?? "300")
+        };
 
         var guids = request.DocumentGuids.Select(Guid.Parse).ToArray();
         var resultInfo = await projectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid),

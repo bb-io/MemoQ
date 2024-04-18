@@ -2,6 +2,7 @@
 using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.Files.Requests;
@@ -16,6 +17,6 @@ public class AssignFileToUserRequest : ProjectRequest
     public string UserGuid { get; set; }
     public DateTime Deadline { get; set; }
         
-    [DataSource(typeof(DocumentAssignmentRoleDataHandler))]
+    [StaticDataSource(typeof(DocumentAssignmentRoleDataHandler))]
     public string? Role { get; set; }
 }
