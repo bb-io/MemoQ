@@ -1,5 +1,6 @@
 ﻿using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.TranslationMemories.Requests;
@@ -19,7 +20,7 @@ public class CreateTranslationMemoryRequest : LanguagesRequest
     [Display("Creator username")] public string? CreatorUsername { get; set; }
 
     [Display("Optimization preference")]
-    [DataSource(typeof(OptimizationPreferenceDataHandler))]
+    [StaticDataSource(typeof(OptimizationPreferenceDataHandler))]
     public string? OptimizationPreference { get; set; }
 
     [Display("Store document full path")] public bool? StoreDocumentFullPath { get; set; }
@@ -29,7 +30,7 @@ public class CreateTranslationMemoryRequest : LanguagesRequest
     [Display("Store formatting")] public bool? StoreFormatting { get; set; }
 
     [Display("TM engine type")]
-    [DataSource(typeof(TmEngineTypeDataHandler))]
+    [StaticDataSource(typeof(TmEngineTypeDataHandler))]
     public string? TmEngineType { get; set; }
 
     [Display("Use context")] public bool? UseContext { get; set; }

@@ -1,10 +1,10 @@
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
-public class ExpectedFinalStateDataHandler : EnumDataHandler
+public class ExpectedFinalStateDataHandler : IStaticDataSourceHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    protected Dictionary<string, string> EnumValues => new()
     {
         {"SameAsPrevious", "Same as previous"},
         {"Pretranslated", "Pretranslated"},
@@ -12,4 +12,9 @@ public class ExpectedFinalStateDataHandler : EnumDataHandler
         {"Proofread", "Proofread"},
         {"Reviewer1Confirmed", "Reviewer 1 confirmed"},
     };
+
+    public Dictionary<string, string> GetData()
+    {
+        return EnumValues;
+    }
 }

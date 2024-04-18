@@ -1,16 +1,17 @@
 using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.Files.Requests;
 
 public class GetAnalysisForProjectRequest : ProjectRequest
 {
-    [DataSource(typeof(FileFormatDataHandler))]
+    [StaticDataSource(typeof(FileFormatDataHandler))]
     public string? Format { get; set; }
 
-    [DataSource(typeof(AnalysisAlgorithmDataHandler))]
+    [StaticDataSource(typeof(AnalysisAlgorithmDataHandler))]
     public string? Algorithm { get; set; }
 
     [Display("Homogeneity in analysis")] public bool? AnalysisHomogenity { get; set; }

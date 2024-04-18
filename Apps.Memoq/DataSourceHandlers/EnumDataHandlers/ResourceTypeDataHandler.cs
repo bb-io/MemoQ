@@ -1,10 +1,10 @@
-﻿using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+﻿using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
-public class ResourceTypeDataHandler : EnumDataHandler
+public class ResourceTypeDataHandler : IStaticDataSourceHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    protected Dictionary<string, string> EnumValues => new()
     {
         { "0", "Auto translate" },
         { "1", "Non translate" },
@@ -22,4 +22,9 @@ public class ResourceTypeDataHandler : EnumDataHandler
         { "16", "Project template" },
         { "17", "MT settings" }
     };
+
+    public Dictionary<string, string> GetData()
+    {
+        return EnumValues;
+    }
 }
