@@ -257,30 +257,23 @@ public class ServerProjectActions : BaseInvocable
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
-        var options = new PretranslateOptions();
-        
-        options.OnlyUnambiguousMatches = request.OnlyUnambiguousMatches ?? true;
-        options.LockPretranslated = request.LockPretranslated ?? true;
-        options.UseMT = request.UseMt ?? true;
-        if (request.ConfirmLockPreTranslated != null)
+        var options = new PretranslateOptions
         {
-            options.ConfirmLockPretranslated =
-                (PretranslateStateToConfirmAndLock)int.Parse(request.ConfirmLockPreTranslated);
-        }
-        else
-        {
-            options.ConfirmLockPretranslated = PretranslateStateToConfirmAndLock.ExactMatch;
-        }
+            OnlyUnambiguousMatches = request.OnlyUnambiguousMatches ?? true,
+            LockPretranslated = request.LockPretranslated ?? true,
+            UseMT = request.UseMt ?? true,
+            ConfirmLockPretranslated = request.ConfirmLockPreTranslated != null 
+                ? (PretranslateStateToConfirmAndLock)int.Parse(request.ConfirmLockPreTranslated) 
+                : PretranslateStateToConfirmAndLock.ExactMatch,
+            FinalTranslationState = request.FinalTranslationState != null 
+                ? (PretranslateExpectedFinalTranslationState)int.Parse(request.FinalTranslationState) 
+                : PretranslateExpectedFinalTranslationState.NoChange
+        };
         
-        if (request.FinalTranslationState != null)
-            options.FinalTranslationState = (PretranslateExpectedFinalTranslationState)int.Parse(request.FinalTranslationState);
-
         if (request.PretranslateLookupBehavior != null)
             options.PretranslateLookupBehavior =
                 (PretranslateLookupBehavior)int.Parse(request.PretranslateLookupBehavior);
-
-        options.PretranslateLookupBehavior = PretranslateLookupBehavior.AnyMatch;
-
+        
         if (request.TranslationMemoriesGuids != null && request.TranslationMemoriesGuids.Any())
         {
             options.ResourceFilter = new PreTransFilter
