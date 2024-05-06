@@ -1,5 +1,7 @@
 ﻿using Apps.Memoq.DataSourceHandlers;
+using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.ServerProjects.Requests;
@@ -10,8 +12,7 @@ public class CreateProjectRequest
     [DataSource(typeof(SourceLanguageDataHandler))]
     public string SourceLangCode { get; set; }
 
-    [Display("Target languages")]
-    [DataSource(typeof(TargetLanguageDataHandler))]
+    [Display("Target languages"), StaticDataSource(typeof(TargetLanguageDataHandler))]
     public IEnumerable<string> TargetLangCodes { get; set; }
 
     [Display("Project name")]

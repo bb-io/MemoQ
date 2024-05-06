@@ -1,25 +1,28 @@
 ﻿using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
+using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.Files.Requests;
 
 public class PretranslateDocumentsRequest
 {
-    [Display("Document GUIDs")]
-    public IEnumerable<string> DocumentGuids { get; set; }
+    [Display("Document GUIDs", Description = "If not provided, all documents in the project will be pretranslated")]
+    public IEnumerable<string>? DocumentGuids { get; set; }
+    
+    [Display("Target languages", Description = "If not provided, documents with all target languages will be translated"), StaticDataSource(typeof(TargetLanguageDataHandler))]
+    public IEnumerable<string>? TargetLanguages { get; set; }
 
-    [Display("Lock")]
+    [Display("Lock", Description = "By default: true")]
     public bool? LockPretranslated { get; set; }
     
-    [Display("Confirm lock pretranslated"), StaticDataSource(typeof(ConfirmLockDataHandler))]
+    [Display("Confirm lock pretranslated", Description = "By default: Exact match"), StaticDataSource(typeof(ConfirmLockDataHandler))]
     public string? ConfirmLockPreTranslated { get; set; }
     
     [Display("Pretranslate lookup behavior"), StaticDataSource(typeof(PretranslateLookupBehaviorDataHandler))]
     public string? PretranslateLookupBehavior { get; set; }
     
-    [Display("Use MT")] 
+    [Display("Use MT", Description = "By default: true")] 
     public bool? UseMt { get; set; }
     
     [Display("Translation memories GUIDs")]
@@ -48,4 +51,10 @@ public class PretranslateDocumentsRequest
     
     [Display("Coverage type", Description = "By default: Not full"), StaticDataSource(typeof(MatchCoverageTypeDataHandler))]
     public string? CoverageType { get; set; }
+    
+    [Display("Only unambiguous matches", Description = "By default: false")]
+    public bool? OnlyUnambiguousMatches { get; set; }
+
+    [Display("Final translation state", Description = "By default: No change"), StaticDataSource(typeof(FinalTranslationStateDataHandler))]
+    public string? FinalTranslationState { get; set; }
 }

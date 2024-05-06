@@ -1,4 +1,5 @@
-﻿using Apps.Memoq.Models.ServerProjects.Requests;
+﻿using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
+using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -47,13 +48,13 @@ public class ObjectDataHandler : BaseInvocable, IAsyncDataSourceHandler
             resourceType == ResourceType.QASettings)
         {
             var targetLanguageDataHandler = new TargetLanguageDataHandler();
-            return targetLanguageDataHandler.GetData(context);
+            return targetLanguageDataHandler.GetData();
         }
 
         if (resourceType == ResourceType.SegRules)
         {
             var targetLanguageDataHandler = new TargetLanguageDataHandler();
-            return targetLanguageDataHandler.GetData(context);
+            return targetLanguageDataHandler.GetData();
         }
 
         if (resourceType == ResourceType.TMSettings)
