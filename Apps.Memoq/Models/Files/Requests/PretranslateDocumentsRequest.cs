@@ -52,7 +52,7 @@ public class PretranslateDocumentsRequest
     [Display("Coverage type", Description = "By default: Not full"), StaticDataSource(typeof(MatchCoverageTypeDataHandler))]
     public string? CoverageType { get; set; }
     
-    [Display("Only unambiguous matches", Description = "By default: false")]
+    [Display("Only unambiguous matches", Description = "By default: true")]
     public bool? OnlyUnambiguousMatches { get; set; }
 
     [Display("Final translation state", Description = "By default: No change"), StaticDataSource(typeof(FinalTranslationStateDataHandler))]
