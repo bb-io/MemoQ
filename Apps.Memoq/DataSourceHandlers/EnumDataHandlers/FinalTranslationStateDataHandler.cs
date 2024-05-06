@@ -12,7 +12,7 @@ public class FinalTranslationStateDataHandler : IStaticDataSourceHandler
             { "1", "Confirmed" },
             { "2", "Proofread" },
             { "3", "Pretranslated" },
-            { "4", "Reviewer1Confirmed" }
+            { "4", "Reviewer 1 confirmed" }
         };
     }
 }
