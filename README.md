@@ -70,9 +70,10 @@ Before you can connect you need to make sure that:
 - **Create project from package/template** creates a new project based on a specified template/package.
 - **Add target language to project** adds target language to a specific project.
 - **Pretranslate documents** This action allows you to pretranslate documents in a specific project. Pretranslation is a process where the system automatically fills in the translations for segments in a document based on certain criteria. This can significantly speed up the translation process. Parameters:  
-1. **Document GUIDs**: This parameter is used to specify the unique identifiers of the documents you want to pretranslate.  
-2. **Lock**: This optional parameter, when set to true, locks the pretranslated segments to prevent further editing.  
-3. **Confirm lock pretranslated**: This optional parameter determines the state of segments that should be confirmed and locked during pretranslation.  
+1. **Document GUIDs**: This parameter is used to specify the unique identifiers of the documents you want to pretranslate. If you don't specify any document GUIDs, the action will pretranslate all documents in the project.
+2. **Target languages**: This parameter is used to specify the target languages for pretranslation. If you don't specify any target languages, the action will pretranslate all target languages in the project.
+2. **Lock**: This optional parameter, when set to true, locks the pretranslated segments to prevent further editing. By default, this is set to true.
+3. **Confirm lock pretranslated**: This optional parameter determines the state of segments that should be confirmed and locked during pretranslation. By default, this is set to 'ExactMatch'.
 4. **Pretranslate lookup behavior**: This optional parameter determines the behavior of the pretranslation lookup process.  
 5. **Use MT**: This optional parameter, when set to true, enables the use of Machine Translation (MT) during pretranslation.  
 6. **Translation memories GUIDs**: This optional parameter is used to specify the unique identifiers of the translation memories to be used during pretranslation.  
@@ -84,6 +85,8 @@ Before you can connect you need to make sure that:
 12. **Include term bases**: This optional parameter, when set to true, includes term bases in the pretranslation. By default, this is set to true.  
 13. **Minimum coverage**: This optional parameter is used to specify the minimum coverage for pretranslation. By default, this is set to 50.  
 14. **Coverage type**: This optional parameter is used to specify the type of coverage for pretranslation. By default, this is set to 'Not full'.  
+15. **Only unambiguous matches**: This optional parameter, when set to true, only includes unambiguous matches in the pretranslation. By default, this is set to true.
+16. **Final translation state**: This optional parameter is used to specify the final translation state for pretranslated segments. By default, this is set to 'No change'.
 
 ### Translation memories
 
