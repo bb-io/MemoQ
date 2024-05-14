@@ -1,12 +1,17 @@
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
-public class XTranslateScenarioDataHandler : EnumDataHandler
+public class XTranslateScenarioDataHandler : IStaticDataSourceHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    protected Dictionary<string, string> EnumValues => new()
     {
         {"NewRevision", "New revision"},
         {"MidProjectUpdate", "Mid project update"},
     };
+
+    public Dictionary<string, string> GetData()
+    {
+        return EnumValues;
+    }
 }

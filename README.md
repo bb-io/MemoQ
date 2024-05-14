@@ -22,7 +22,7 @@ Before you can connect you need to make sure that:
 2.  Click _Add Connection_.
 3.  Name your connection for future reference e.g. 'My memoQ'.
 4.  Add the URL pointing to your memoQ instance API. Usually this is your instance URL, port with the added `/memoqservices` but this can be different (see image below).
-5.  Add your API key.
+5.  Add your API key. If your memoQ service doesn't require an API key, you can input 'NONE'. We will process it under the hood and exclude it from requests.
 6.  Click _Connect_.
 7.  Confirm that the connection has appeared and the status is _Connected_.
 
@@ -41,8 +41,18 @@ Before you can connect you need to make sure that:
 - **Assign document to user** assigns the document to a specific user.
 - **Get/delete/overwrite/deliver document**.
 - **Import/Export document** uploads/downloads file to the project. Make sure your file name contains extension, otherwise the action will fail.
-- **Export document as XLIFF** exports and downloads the translation document as XLIFF (MQXLIFF) bilingual.
 - **Apply translated content to updated source**.
+
+### XLIFFs
+
+1. **Export document as XLIFF**: Exports and downloads the translation document as XLIFF. If you set 'Use MQXLIFF' optional input to true, it will return an mqxliff file; if it's set to false, it will return an XLIFF 1.2 version file. By default, it is set to false.
+
+2. **Import document as XLIFF**: Uploads and imports a document to a project as XLIFF. This action allows you to upload and import a document to a project as XLIFF, which is a standard for exchanging localization data. Currently, it supports XLIFF versions 1.2 and 2.1, and you can also import mqxliff files.
+- 'Re-import document GUID': The unique identifier of the document you want to import. This is required if you want to reimport a document. If specified, the action will try to reimport the document instead of a simple import.
+
+- 'Update segment statuses': An optional input that indicates whether to update segment statuses during the import operation. If set to false, it will only reimport the existing document; if set to true, it will match the IDs of segments and update the segment status to 'Edited' if the target value of the segment is different, and also update the target text of the segment.
+
+- 'Path to set as import path': An optional input that represents the path to set as the import path. If you want to reimport document it's required, you can find this path from **Export document as XLIFF** action by exporting specific file, and you can use 'Export path' property here (it looks like: '\\en-uk_ukr.xliff')
 
 ### Groups
 
@@ -59,6 +69,24 @@ Before you can connect you need to make sure that:
 - **Get/create/delete/distribute project**.
 - **Create project from package/template** creates a new project based on a specified template/package.
 - **Add target language to project** adds target language to a specific project.
+- **Pretranslate documents** This action allows you to pretranslate documents in a specific project. Pretranslation is a process where the system automatically fills in the translations for segments in a document based on certain criteria. This can significantly speed up the translation process. Parameters:  
+1. **Document GUIDs**: This parameter is used to specify the unique identifiers of the documents you want to pretranslate. If you don't specify any document GUIDs, the action will pretranslate all documents in the project.
+2. **Target languages**: This parameter is used to specify the target languages for pretranslation. If you don't specify any target languages, the action will pretranslate all target languages in the project.
+2. **Lock**: This optional parameter, when set to true, locks the pretranslated segments to prevent further editing. By default, this is set to true.
+3. **Confirm lock pretranslated**: This optional parameter determines the state of segments that should be confirmed and locked during pretranslation. By default, this is set to 'ExactMatch'.
+4. **Pretranslate lookup behavior**: This optional parameter determines the behavior of the pretranslation lookup process.  
+5. **Use MT**: This optional parameter, when set to true, enables the use of Machine Translation (MT) during pretranslation.  
+6. **Translation memories GUIDs**: This optional parameter is used to specify the unique identifiers of the translation memories to be used during pretranslation.  
+7. **Include numbers**: This optional parameter, when set to true, includes numbers in the pretranslation. By default, this is set to true.  
+8. **Change case**: This optional parameter, when set to true, changes the case of the pretranslated text. By default, this is set to false.  
+9. **Include auto translations**: This optional parameter, when set to true, includes auto translations in the pretranslation. By default, this is set to true.  
+10. **Include fragments**: This optional parameter, when set to true, includes fragments in the pretranslation. By default, this is set to true.  
+11. **Include non-translatables**: This optional parameter, when set to true, includes non-translatable text in the pretranslation. By default, this is set to true.  
+12. **Include term bases**: This optional parameter, when set to true, includes term bases in the pretranslation. By default, this is set to true.  
+13. **Minimum coverage**: This optional parameter is used to specify the minimum coverage for pretranslation. By default, this is set to 50.  
+14. **Coverage type**: This optional parameter is used to specify the type of coverage for pretranslation. By default, this is set to 'Not full'.  
+15. **Only unambiguous matches**: This optional parameter, when set to true, only includes unambiguous matches in the pretranslation. By default, this is set to true.
+16. **Final translation state**: This optional parameter is used to specify the final translation state for pretranslated segments. By default, this is set to 'No change'.
 
 ### Translation memories
 

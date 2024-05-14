@@ -1,13 +1,18 @@
-using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 
 namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
-public class SlicingMeasurementUnitHandler : EnumDataHandler
+public class SlicingMeasurementUnitHandler : IStaticDataSourceHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    protected Dictionary<string, string> EnumValues => new()
     {
         { "Characters", "Characters" },
         { "Words", "Words" },
         { "Segments", "Segments" },
     };
+
+    public Dictionary<string, string> GetData()
+    {
+        return EnumValues;
+    }
 }

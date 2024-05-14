@@ -1,5 +1,6 @@
 using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.TranslationMemories.Requests;
@@ -13,7 +14,7 @@ public class UpdateTranslationMemoryPropertiesRequest
     public string? Project { get; set; }
 
     [Display("Optimization preference")]
-    [DataSource(typeof(OptimizationPreferenceDataHandler))]
+    [StaticDataSource(typeof(OptimizationPreferenceDataHandler))]
     public string? OptimizationPreference { get; set; }
 
     [Display("Store document full path")] public bool? StoreDocumentFullPath { get; set; }

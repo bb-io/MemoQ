@@ -13,6 +13,8 @@ public static class SoapConstants
     public const string TranslationMemoryServiceUrl = "/tm/tmservice";
     
     public const string TermBasesServiceUrl = "/tb/tbservice";
+    
+    public const string ResourceServiceUrl = "/Resource/ResourceService";
 
     public static readonly Guid AdminGuid = new("00000000-0000-0000-0001-000000000001");
 }
