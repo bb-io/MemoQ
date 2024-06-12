@@ -6,7 +6,7 @@ namespace Apps.Memoq.Models.ServerProjects.Requests;
 
 public class ProjectRequest
 {
-    [Display("Project")]
+    [Display("Project ID")]
     [DataSource(typeof(ProjectDataHandler))]
     public string ProjectGuid { get; set; }
 }
