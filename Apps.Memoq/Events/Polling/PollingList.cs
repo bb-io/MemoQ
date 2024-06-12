@@ -20,7 +20,7 @@ public class PollingList : BaseInvocable
     {
     }
 
-    [PollingEvent("On project created", "On a new project created")]
+    [PollingEvent("On projects created", "On new projects are created")]
     public async Task<PollingEventResponse<EntityCreatedMemory, ListAllProjectsResponse>> OnProjectCreated(
         PollingEventRequest<EntityCreatedMemory> request)
     {
