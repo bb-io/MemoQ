@@ -112,6 +112,8 @@ Another important consideration is that our glossaries implementation adheres to
 ## Events
 
 - **On document delivered** is triggered when any project document was delivered.
+- **On project created** is triggered when a new project is created.
+- **On project status changed** is triggered when status of a specific project has changed.
 
 ## Missing features
 

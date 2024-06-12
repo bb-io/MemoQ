@@ -16,11 +16,16 @@ public class ProjectDto
     public string? Domain { get; set; }
 
     public string? Subject { get; set; }
+    
+    public string Status { get; set; }
 
     public DateTime Deadline { get; set; }
 
     [Display("Last time changed")]
     public DateTime LastChanged { get; set; }
+
+    [Display("Created at")]
+    public DateTime CreatedAt { get; set; }
 
     [Display("Source language code")]
     public string SourceLanguageCode { get; set; }
@@ -40,5 +45,8 @@ public class ProjectDto
         LastChanged = project.LastChanged;
         SourceLanguageCode = project.SourceLanguageCode;
         TargetLanguageCodes = project.TargetLanguageCodes.ToList();
+        TargetLanguageCodes = project.TargetLanguageCodes.ToList();
+        CreatedAt = project.CreationTime;
+        Status = project.ProjectStatus.ToString();
     }
 }
