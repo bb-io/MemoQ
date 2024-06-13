@@ -13,8 +13,10 @@ memoQ offers flexible translation and localization management solutions tailored
 Before you can connect you need to make sure that:
 
 - You have access to a memoQ instance.
-- Your memoQ instance has the API enabled and you have an API key.
+- Your memoQ instance has the WS API enabled and you have an API key.
 - If your memoQ instance requires whitelisting then ask us about our Blackbird _sandbox_ IP addresses.
+
+You can read more about how to set up your WS API [here](https://docs.memoq.com/current/en/memoQ-server-deployment-tool/deptool-install-memoq-server.html) under the section 'Secure the Web Service API'.
 
 ## Connecting
 
