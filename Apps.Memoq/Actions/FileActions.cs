@@ -23,6 +23,7 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Parsers;
 using Blackbird.Xliff.Utils;
 using RestSharp;
+using System.Collections;
 
 namespace Apps.Memoq.Actions;
 
@@ -265,23 +266,24 @@ public class FileActions : BaseInvocable
             new DownloadXliffRequest
             {
                 FullVersionHistory = false,
-                UseMqxliff = false
+                UseMqxliff = true
             });
 
+        var file = await _fileManagementClient.DownloadAsync(request.File);
+        byte[] fileBytes =  await ProcessXliffFile(file, request.File.Name);
+
         var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
-        var fileStream = await _fileManagementClient.DownloadAsync(request.File);
         
-        var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, fileStream);
+        var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes));
         string mqXliffFileName = (request.FileName ?? request.File.Name) + ".mqxliff";
 
         var fileService = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds);
         var projectService = new MemoqServiceFactory<IServerProjectService>(SoapConstants.ProjectServiceUrl, Creds);
 
         updatedMqXliffFile.Position = 0;
+        var bytes = await updatedMqXliffFile.GetByteData();
 
-        var fileBytes = await updatedMqXliffFile.GetByteData();
-
-        var uploadFileResult = FileUploader.UploadFile(fileBytes, new FileUploadManager(fileService.Service), mqXliffFileName);
+        var uploadFileResult = FileUploader.UploadFile(bytes, new FileUploadManager(fileService.Service), mqXliffFileName);
 
         var result = await projectService.Service.UpdateTranslationDocumentFromBilingualAsync(Guid.Parse(request.ProjectGuid),
             uploadFileResult, BilingualDocFormat.XLIFF);
