@@ -23,6 +23,7 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Parsers;
 using Blackbird.Xliff.Utils;
 using RestSharp;
+using System.Collections;
 
 namespace Apps.Memoq.Actions;
 
@@ -251,7 +252,53 @@ public class FileActions : BaseInvocable
             DocumentGuid = first.DocumentGuids.Select(x => x.ToString()).First()
         };
     }
+    [Action ("Update document from XLIFF", Description = "Update translation document from exported XLIFF")]
+    public async Task<UploadFileResponse> UpdateDocumentFromXliff(
+        [ActionParameter] UploadDocumentToProjectRequest request,
+        [ActionParameter] UpdateFromXliffRequest XliffRequest)
+    {        
+        var mqXliffFileResponse = await DownloadFileAsXliff(
+            new GetDocumentRequest
+            {
+                ProjectGuid = request.ProjectGuid,
+                DocumentGuid = XliffRequest.DocumentGuid
+            },
+            new DownloadXliffRequest
+            {
+                FullVersionHistory = false,
+                UseMqxliff = true
+            });
 
+        var file = await _fileManagementClient.DownloadAsync(request.File);
+        byte[] fileBytes =  await ProcessXliffFile(file, request.File.Name);
+
+        var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
+        
+        var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes));
+        string mqXliffFileName = (request.FileName ?? request.File.Name) + ".mqxliff";
+
+        var fileService = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds);
+        var projectService = new MemoqServiceFactory<IServerProjectService>(SoapConstants.ProjectServiceUrl, Creds);
+
+        updatedMqXliffFile.Position = 0;
+        var bytes = await updatedMqXliffFile.GetByteData();
+
+        var uploadFileResult = FileUploader.UploadFile(bytes, new FileUploadManager(fileService.Service), mqXliffFileName);
+
+        var result = await projectService.Service.UpdateTranslationDocumentFromBilingualAsync(Guid.Parse(request.ProjectGuid),
+            uploadFileResult, BilingualDocFormat.XLIFF);
+
+        var first = result.FirstOrDefault(x => x.ResultStatus == ResultStatus.Success);
+        if (first is null)
+        {
+            throw new InvalidOperationException("No successful reimport found");
+        }
+
+        return new UploadFileResponse
+        {
+            DocumentGuid = first.DocumentGuids.Select(x => x.ToString()).First()
+        };
+    }
     [Action("Import document as XLIFF", Description = "Uploads and imports a document to a project as XLIFF")]
     public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
         [ActionParameter] UploadDocumentToProjectRequest request,
@@ -605,7 +652,7 @@ public class FileActions : BaseInvocable
 
             var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
             var fileStream = await _fileManagementClient.DownloadAsync(fileReference);
-
+            
             var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, fileStream);
             string mqXliffFileName = request.FileName ?? request.File.Name + ".mqxliff";
             fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml,
