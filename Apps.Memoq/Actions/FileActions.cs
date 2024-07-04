@@ -613,7 +613,8 @@ public class FileActions : BaseInvocable
 
         xliffStream.Position = 0;
         
-        string contentType = MediaTypeNames.Text.Xml;
+        string contentType = MediaTypeNames.Text.Plain;
+        
         return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
     }
     
