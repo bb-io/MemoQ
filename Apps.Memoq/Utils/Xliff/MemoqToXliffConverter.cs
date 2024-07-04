@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Apps.Memoq.Utils.Xliff;
@@ -60,10 +61,10 @@ public static class MemoqToXliffConverter
                 new XAttribute("id", transUnit.Attribute("id")?.Value ?? "unknown")
             );
 
-            var sourceElement = ProcessTransUnitElement(transUnit.Element(defaultNs + "source"), ignoreChildren);
+            var sourceElement = new XElement("source", Regex.Replace(transUnit.Element(defaultNs + "source").ToString(), @"</?source(.*?)>", ""));             
             if (sourceElement != null) newTransUnitElement.Add(sourceElement);
 
-            var targetElement = ProcessTransUnitElement(transUnit.Element(defaultNs + "target"), ignoreChildren);
+            var targetElement = new XElement("target", Regex.Replace(transUnit.Element(defaultNs + "target").ToString(), @"</?target(.*?)>", ""));
             if (targetElement != null) newTransUnitElement.Add(targetElement);
 
             body.Add(newTransUnitElement);
