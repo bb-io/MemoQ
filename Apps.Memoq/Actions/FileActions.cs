@@ -611,7 +611,7 @@ public class FileActions : BaseInvocable
         var xliffStream = new MemoryStream();
         xliffFile.Save(xliffStream);
 
-        //xliffStream.Position = 0;
+        xliffStream.Position = 0;
         //var xliffDocument = stream.ToXliffDocument();
         //var xliffStream = xliffDocument.ToStream(keepSingleAmpersands: true);
         
