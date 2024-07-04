@@ -607,7 +607,7 @@ public class FileActions : BaseInvocable
     private async Task<FileReference> ConvertMqXliffToXliff(Stream stream, string fileName, bool useSkeleton = false)
     {
         var xliffDocument = stream.ToXliffDocument();
-        var xliffStream = xliffDocument.ToStream(keepAmpersands: true);
+        var xliffStream = xliffDocument.ToStream(keepSingleAmpersands: true);
         
         string contentType = MediaTypeNames.Text.Xml;
         return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
