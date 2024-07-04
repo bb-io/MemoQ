@@ -277,6 +277,7 @@ public class FileActions : BaseInvocable
         var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
         
         var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes));
+        await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml, mqXliffFileResponse.File.Name);
         string mqXliffFileName = (request.FileName ?? request.File.Name) + ".mqxliff";
 
         var fileService = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds);
@@ -615,19 +616,8 @@ public class FileActions : BaseInvocable
     
     private async Task<byte[]> ProcessXliffFile(Stream file, string fileName)
     {
-        var xDocument = XDocument.Load(file);
-        string version = xDocument.GetXliffVersion();
-
-        if (version == "1.2")
-        {
-            return await ConvertTo2_1Xliff(xDocument, fileName);
-        }
-        else if (version == "2.1")
-        {
-            return await file.GetByteData();
-        }
-        
-        throw new("Unsupported XLIFF version. Currently only 1.2 and 2.1 are supported.");
+        var bytes = await file.GetByteData();
+        return bytes;
     }
 
     private async Task<UploadFileResponse> ReimportDocumentAsync(
@@ -675,34 +665,12 @@ public class FileActions : BaseInvocable
 
     private Stream UpdateMqxliffFile(Stream mqXliffFile, Stream xliffFile)
     {
-        XNamespace nsXliff = "urn:oasis:names:tc:xliff:document:1.2";
-        XNamespace nsXliff21 = "urn:oasis:names:tc:xliff:document:2.0";
+        var mqXliffDocument = mqXliffFile.ToXliffDocument();
+        var xliffDocument = xliffFile.ToXliffDocument();
 
-        var xliffDoc = XDocument.Load(xliffFile);
-        var mqXliffDoc = XDocument.Load(mqXliffFile);
-
-        var xliffUnits = xliffDoc.Descendants(nsXliff21 + "unit");
-
-        foreach (var mqTransUnit in mqXliffDoc.Descendants(nsXliff + "trans-unit"))
-        {
-            var id = mqTransUnit.Attribute("id")?.Value;
-            var mqTarget = mqTransUnit.Elements(nsXliff + "target").FirstOrDefault();
-
-            var xliffUnit = xliffUnits.FirstOrDefault(x => x.Attribute("id")?.Value == id);
-            var xliffTargetNodes = xliffUnit?.Elements(nsXliff21 + "segment").Elements(nsXliff21 + "target").Nodes();
-
-            if (mqTarget != null && xliffTargetNodes != null && !mqTarget.Nodes().SequenceEqual(xliffTargetNodes, new XNodeEqualityComparer()))
-            {
-                mqTarget.RemoveAll();
-                mqTarget.Add(xliffTargetNodes);
-                mqTransUnit.SetAttributeValue(XNamespace.Get("MQXliff") + "status", "Edited");
-            }
-        }
-
-        var updatedMqXliffStream = new MemoryStream();
-        mqXliffDoc.Save(updatedMqXliffStream);
-        updatedMqXliffStream.Position = 0;
-
+        var updatedMqXliffDocument = mqXliffDocument.UpdateTranslationUnits(xliffDocument.TranslationUnits);
+        var updatedMqXliffStream = updatedMqXliffDocument.ToStream(keepSingleAmpersands: true, replaceTags: false);
+        
         return updatedMqXliffStream;
     }
 }
