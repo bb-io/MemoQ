@@ -277,7 +277,6 @@ public class FileActions : BaseInvocable
         var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
         
         var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes));
-        await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml, mqXliffFileResponse.File.Name);
         string mqXliffFileName = (request.FileName ?? request.File.Name) + ".mqxliff";
 
         var fileService = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds);
