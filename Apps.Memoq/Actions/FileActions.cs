@@ -26,6 +26,7 @@ using RestSharp;
 using System.Collections;
 using Blackbird.Xliff.Utils.Extensions;
 using Blackbird.Xliff.Utils.Models;
+using System.Text;
 
 namespace Apps.Memoq.Actions;
 
@@ -606,13 +607,11 @@ public class FileActions : BaseInvocable
 
     private async Task<FileReference> ConvertMqXliffToXliff(Stream stream, string fileName, bool useSkeleton = false)
     {
-        XDocument xliffFile = stream.ConvertMqXliffToXliff(useSkeleton);
-        var xliffStream = new MemoryStream();
-        xliffFile.Save(xliffStream);
+        var xliffFile = stream.ConvertMqXliffToXliff(useSkeleton);
+        byte[] byteArray = Encoding.UTF8.GetBytes(xliffFile);
+        var xliffStream = new MemoryStream(byteArray);
 
         xliffStream.Position = 0;
-        //var xliffDocument = stream.ToXliffDocument();
-        //var xliffStream = xliffDocument.ToStream(keepSingleAmpersands: true);
         
         string contentType = MediaTypeNames.Text.Xml;
         return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
