@@ -705,7 +705,7 @@ public class FileActions : BaseInvocable
             }
         }
         
-        var updatedString = Regex.Replace(mqXliffDoc.ToString(), "(<(source(.*?)|\\/bpt|\\/ph|target(.*?))>)\\r?\\n\\s+(?!\\s?(<target|<\\/trans-unit>))", "${1}");
+        var updatedString = Regex.Replace(mqXliffDoc.ToString(), "(<(source(.*?)|\\/bpt|\\/ph|target(.*?))>)\\r?\\n\\s+(?!\\s?(<target|<\\/trans-unit>))", "${1}").Replace("& ","&amp; ");
         var updatedMqXliffStream = new MemoryStream(Encoding.UTF8.GetBytes(updatedString));
         updatedMqXliffStream.Position = 0;
         return updatedMqXliffStream;
