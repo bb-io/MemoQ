@@ -72,7 +72,7 @@ public static class MemoqToXliffConverter
             var source = RemoveExtraNewLines(Regex.Replace(tu.Element(ns + "source").ToString(), @"</?source(.*?)>", @""));
             var target = RemoveExtraNewLines(Regex.Replace(tu.Element(ns + "target").ToString(), @"</?target(.*?)>", @""));
             var tuid = tu.Attribute("id").Value;
-            body.Append($"  <trans-unit id=\"" + tuid + "\">" + Environment.NewLine + "\t\t<source>" + source + "</source>" + Environment.NewLine + "\t\t<target>" + target + "</target>" + Environment.NewLine + "	</trans-unit>" + Environment.NewLine);
+            body.Append($"  <trans-unit id=\"" + tuid + "\">" + Environment.NewLine + "\t\t<source xml:space=\"preserve\">" + source + "</source>" + Environment.NewLine + "\t\t<target>" + target + "</target>" + Environment.NewLine + "	</trans-unit>" + Environment.NewLine);
         }
         fileContent = fileContent.Replace("<body />", body.ToString());
         return fileContent;
