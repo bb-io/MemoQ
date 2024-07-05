@@ -74,7 +74,7 @@ public static class MemoqToXliffConverter
             var tuid = tu.Attribute("id").Value;
             body.Append($"  <trans-unit id=\"" + tuid + "\">" + Environment.NewLine + "\t\t<source xml:space=\"preserve\">" + source + "</source>" + Environment.NewLine + "\t\t<target>" + target + "</target>" + Environment.NewLine + "	</trans-unit>" + Environment.NewLine);
         }
-        fileContent = fileContent.Replace("<body />", body.ToString());
+        fileContent = fileContent.Replace("<body />", "<body>"+Environment.NewLine+body.ToString() + Environment.NewLine +"</body>");
         return fileContent;
 
     }
