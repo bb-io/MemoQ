@@ -27,6 +27,7 @@ using System.Collections;
 using Blackbird.Xliff.Utils.Extensions;
 using Blackbird.Xliff.Utils.Models;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Apps.Memoq.Actions;
 
@@ -703,9 +704,9 @@ public class FileActions : BaseInvocable
                 mqTransUnit.SetAttributeValue(XNamespace.Get("MQXliff") + "status", "Edited");
             }
         }
-
-        var updatedMqXliffStream = new MemoryStream();
-        mqXliffDoc.Save(updatedMqXliffStream);
+        
+        var updatedString = Regex.Replace(mqXliffDoc.ToString(), "(<(source(.*?)|\\/bpt|\\/ph|target(.*?))>)\\r?\\n\\s+(?!\\s?(<target|<\\/trans-unit>))", "${1}");
+        var updatedMqXliffStream = new MemoryStream(Encoding.UTF8.GetBytes(updatedString));
         updatedMqXliffStream.Position = 0;
         return updatedMqXliffStream;
     }
