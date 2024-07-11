@@ -1,4 +1,5 @@
 ﻿using Apps.Memoq.DataSourceHandlers;
+using Apps.MemoQ.DataSourceHandlers;
 using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
@@ -19,6 +20,7 @@ public class CreateProjectTemplateRequest
     public string ProjectName { get; set; }
 
     [Display("Template GUID")]
+    [DataSource(typeof(ProjectTemplateDataHandler))]
     public string TemplateGuid { get; set; }
     
     [Display("Client")]
