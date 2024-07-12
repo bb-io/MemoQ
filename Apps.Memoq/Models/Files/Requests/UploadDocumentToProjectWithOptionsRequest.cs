@@ -15,7 +15,7 @@ namespace Apps.MemoQ.Models.Files.Requests
 {
     public class UploadDocumentToProjectWithOptionsRequest : ProjectRequest
     {
-        [Display("Documents")]
+        [Display("Document")]
         public FileReference File { get; set; }
 
         [Display("Target languages"), StaticDataSource(typeof(TargetLanguageDataHandler))]
