@@ -28,6 +28,7 @@ using Blackbird.Xliff.Utils.Extensions;
 using Blackbird.Xliff.Utils.Models;
 using System.Text;
 using System.Text.RegularExpressions;
+using Apps.MemoQ.Models.Files.Requests;
 
 namespace Apps.Memoq.Actions;
 
@@ -160,7 +161,7 @@ public class FileActions : BaseInvocable
 
     [Action("Import document", Description = "Uploads and imports a document to a project")]
     public async Task<UploadFileResponse> UploadAndImportFileToProject(
-        [ActionParameter] UploadDocumentToProjectRequest request)
+        [ActionParameter] UploadDocumentToProjectWithOptionsRequest request)
     {
         using var fileService = new MemoqServiceFactory<IFileManagerService>(
             SoapConstants.FileServiceUrl, Creds);
@@ -181,31 +182,49 @@ public class FileActions : BaseInvocable
         var uploadFileResult =
             FileUploader.UploadFile(fileBytes, manager, fileName);
 
-        string? importSettings = null;
-        if (fileName.EndsWith(".xliff"))
+        var options = new ImportTranslationDocumentOptions
         {
-            file.Position = 0;
-            var reader = new StreamReader(file);
-            importSettings = reader.ReadToEnd();
+            FileGuid = uploadFileResult,
+            TargetLangCodes = request.TargetLanguageCodes?.ToArray(),
+            CreatePreview = request.PreviewCreation == null ? PreviewCreation.UseProjectPreference : (PreviewCreation) int.Parse(request.PreviewCreation),
+            ExternalDocumentId = request.ExternalDocumentId
+        };
+
+        if (request.ImportEmbeddedImages != null) options.ImportEmbeddedImages = (bool)request.ImportEmbeddedImages;
+        if (request.ImportEmbeddedObjects != null) options.ImportEmbeddedObjects = (bool)request.ImportEmbeddedObjects;
+        if (request.FilterConfigResGuid != null)
+        {
+            options.FilterConfigResGuid = Guid.Parse(request.FilterConfigResGuid);
+            string? importSettings = null;
+            if (fileName.EndsWith(".xliff"))
+            {
+                file.Position = 0;
+                var reader = new StreamReader(file);
+                importSettings = reader.ReadToEnd();
+            }
+            options.ImportSettingsXML = importSettings;
         }
 
-        var result = await projectService.Service
-            .ImportTranslationDocumentAsync(
+
+        var results = await projectService.Service
+            .ImportTranslationDocumentsWithOptionsAsync(
                 Guid.Parse(request.ProjectGuid),
-                uploadFileResult,
-                request.TargetLanguageCodes?.ToArray(),
-                importSettings);
+                new List<ImportTranslationDocumentOptions> { options }.ToArray());
 
-        if (result.ResultStatus == ResultStatus.Error)
+        foreach(var result in results)
         {
-            throw new InvalidOperationException(
-                $"Error while importing file, result status: {result.ResultStatus}, message: {result.DetailedMessage}");
+            if (result.ResultStatus == ResultStatus.Error)
+            {
+                throw new InvalidOperationException(
+                    $"Error while importing file, result status: {result.ResultStatus}, message: {result.DetailedMessage}");
+            }
         }
+        
 
         return new()
         {
             // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
-            DocumentGuid = result.DocumentGuids.Select(x => x.ToString()).First()
+            DocumentGuid = results.FirstOrDefault()?.DocumentGuids.Select(x => x.ToString()).FirstOrDefault()
         };
     }
 
@@ -322,7 +341,7 @@ public class FileActions : BaseInvocable
         var xliffFileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes), MediaTypeNames.Application.Xml, fileName);
 
         return string.IsNullOrEmpty(importDocumentAsXliffRequest.DocumentGuid) 
-            ? await UploadAndImportFileToProject(new UploadDocumentToProjectRequest { File = xliffFileReference, ProjectGuid = request.ProjectGuid, TargetLanguageCodes = request.TargetLanguageCodes, FileName = request.FileName }) 
+            ? await UploadAndImportFileToProject(new UploadDocumentToProjectWithOptionsRequest { File = xliffFileReference, ProjectGuid = request.ProjectGuid, TargetLanguageCodes = request.TargetLanguageCodes, FileName = request.FileName }) 
             : await ReimportDocumentAsync(importDocumentAsXliffRequest, xliffFileReference, request);
     }
 

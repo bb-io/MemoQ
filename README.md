@@ -42,7 +42,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **Slice document** slices specific document based on the specified options.
 - **Assign document to user** assigns the document to a specific user.
 - **Get/delete/overwrite/deliver document**.
-- **Import/Export document** uploads/downloads file to the project. Make sure your file name contains extension, otherwise the action will fail.
+- **Import/Export document** uploads/downloads file to the project. Make sure your file name contains extension, otherwise the action will fail. Also has optional inputs for external document ID, filter config, preview creation and importing embedded images and objects.
 - **Apply translated content to updated source**.
 
 ### XLIFFs
