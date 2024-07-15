@@ -67,8 +67,8 @@ public class FileActions : BaseInvocable
         };
     }
 
-    [Action("Get document", Description = "Get project file info by guid")]
-    public FileDto GetFile(
+    [Action("Get document info", Description = "Get project file info by guid")]
+    public FileInfoDto GetFile(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] [Display("File GUID")]
         string fileGuid)

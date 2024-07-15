@@ -82,5 +82,29 @@ namespace Apps.MemoQ.Models.Dto
             TotalSegmentCount = file.TotalSegmentCount;
             TotalWordCount = file.TotalWordCount;
         }
+
+        public FileInfoDto(FileInfoDto file)
+        {
+            Guid = file.Guid;
+            ParentDocumentId = file.ParentDocumentId;
+            Name = file.Name;
+            FileExtension = file.FileExtension;
+            Status = file.Status;
+            ExportPath = file.ExportPath;
+            ImportPath = file.ImportPath;
+            ExportPath = file.ExportPath;
+            TargetLanguageCode = file.TargetLanguageCode;
+            ConfirmedSegmentCount = file.ConfirmedSegmentCount;
+            ConfirmedWordCount = file.ConfirmedWordCount;
+            ExternalDocumentId = file.ExternalDocumentId;
+            IsImage = file.IsImage;
+            LockedCharacterCount = file.LockedCharacterCount;
+            LockedSegmentCount = file.LockedSegmentCount;
+            LockedWordCount = file.LockedWordCount;
+            WebTransUrl = file.WebTransUrl;
+            TotalCharacterCount = file.TotalCharacterCount;
+            TotalSegmentCount = file.TotalSegmentCount;
+            TotalWordCount = file.TotalWordCount;
+        }
     }
 }
