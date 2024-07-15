@@ -56,7 +56,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 
 	- 'Path to set as import path': An optional input that represents the path to set as the import path. If you want to reimport document it's required, you can find this path from **Export document as XLIFF** action by exporting specific file, and you can use 'Export path' property here (it looks like: '\\en-uk_ukr.xliff')
 
-- **Update document from XLIFF**: Update translation document from exported XLIFF
+- **Update document from XLIFF**: Update translation document from exported XLIFF. As optional input, you can choose whether locked or confirmed segments should be updated. By default, all segments with changes will be updated.
 
 ### Groups
 
