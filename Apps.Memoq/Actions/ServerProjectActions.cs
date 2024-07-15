@@ -230,13 +230,29 @@ public class ServerProjectActions : BaseInvocable
     [Action("Add resource to project",
         Description = "Add resource to a specific project by type and ID, optionally with object IDs")]
     public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
-        [ActionParameter] AddResourceToProjectRequest request)
+        [ActionParameter] AddResourceToProjectRequest request, [ActionParameter][Display("Overwrite?", Description = "Whether to overwrite the current resources, default to false")] bool? overwrite)
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
 
+        var projectId = Guid.Parse(project.ProjectGuid);
         var resourceType = (ResourceType)int.Parse(request.ResourceType);
         var assignments = CreateAssignmentsBasedOnResourceType(resourceType, request);
+
+        if (overwrite != true)
+        {
+            var currentResources = await projectService.Service.ListProjectResourceAssignmentsAsync(projectId, resourceType);
+            foreach ( var currentResource in currentResources)
+            {
+                assignments.Add(new ServerProjectResourceAssignment
+                {
+                    ResourceGuid = currentResource.ResourceInfo.Guid,
+                    ObjectId = currentResource.ObjectId,
+                    Primary = currentResource.Primary
+                });
+            }
+        }       
+        
         var array = new[]
         {
             new ServerProjectResourceAssignmentForResourceType
@@ -246,7 +262,7 @@ public class ServerProjectActions : BaseInvocable
             }
         };
 
-        await projectService.Service.SetProjectResourceAssignmentsAsync(Guid.Parse(project.ProjectGuid), array);
+        await projectService.Service.SetProjectResourceAssignmentsAsync(projectId, array);
     }
 
     [Action("Pretranslate documents", Description = "Pretranslate documents if document GUIDs are provided, otherwise pretranslate the whole project with all documents")]
