@@ -297,7 +297,7 @@ public class FileActions : BaseInvocable
 
         var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
         
-        var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes));
+        var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes), XliffRequest.UpdateLocked.GetValueOrDefault(true), XliffRequest.UpdateConfirmed.GetValueOrDefault(true));
         string mqXliffFileName = (request.FileName ?? request.File.Name) + ".mqxliff";
 
         var fileService = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds);
@@ -698,7 +698,7 @@ public class FileActions : BaseInvocable
         });
     }
 
-    private Stream UpdateMqxliffFile(Stream mqXliffFile, Stream xliffFile)
+    private Stream UpdateMqxliffFile(Stream mqXliffFile, Stream xliffFile, bool locked = true, bool confirmed = true)
     {
         XNamespace nsXliff = "urn:oasis:names:tc:xliff:document:1.2";
         XNamespace nsXliff21 = "urn:oasis:names:tc:xliff:document:2.0";
@@ -718,6 +718,8 @@ public class FileActions : BaseInvocable
 
             if (mqTarget != null && xliffTargetNodes != null && !mqTarget.Nodes().SequenceEqual(xliffTargetNodes, new XNodeEqualityComparer()))
             {
+                if (!locked && mqTransUnit.Attribute(XNamespace.Get("MQXliff") + "locked")?.Value == "locked") { continue; }
+                if (!confirmed && mqTransUnit.Attribute(XNamespace.Get("MQXliff") + "status")?.Value == "Proofread") { continue; }
                 mqTarget.RemoveAll();
                 mqTarget.Add(xliffTargetNodes);
                 mqTransUnit.SetAttributeValue(XNamespace.Get("MQXliff") + "status", "Edited");
