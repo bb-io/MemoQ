@@ -29,6 +29,7 @@ using Blackbird.Xliff.Utils.Models;
 using System.Text;
 using System.Text.RegularExpressions;
 using Apps.MemoQ.Models.Files.Requests;
+using Apps.MemoQ.Models.Dto;
 
 namespace Apps.Memoq.Actions;
 
@@ -46,7 +47,7 @@ public class FileActions : BaseInvocable
         _fileManagementClient = fileManagementClient;
     }
 
-    [Action("List project documents", Description = "List all project documents")]
+    [Action("List project translation documents", Description = "Returns the current translation documents of the specified project.")]
     public ListAllProjectFilesResponse ListAllProjectFiles(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] ListProjectFilesRequest input)
@@ -59,15 +60,15 @@ public class FileActions : BaseInvocable
                 FillInAssignmentInformation = input.FillInAssignmentInformation ?? default,
             });
 
-        var files = response.Select(x => new FileDto(x)).ToArray();
+        var files = response.Select(x => new FileInfoDto(x)).ToArray();
         return new()
         {
             Files = files
         };
     }
 
-    [Action("Get document", Description = "Get project file info by guid")]
-    public FileDto GetFile(
+    [Action("Get document info", Description = "Get project file info by guid")]
+    public FileInfoDto GetFile(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] [Display("File GUID")]
         string fileGuid)
