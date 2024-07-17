@@ -244,14 +244,18 @@ public class ServerProjectActions : BaseInvocable
             var currentResources = await projectService.Service.ListProjectResourceAssignmentsAsync(projectId, resourceType);
             foreach ( var currentResource in currentResources)
             {
-                assignments.Add(new ServerProjectResourceAssignment
+                // Resource type MT can only have 0 or 1 resource per language.
+                if (resourceType == ResourceType.MTSettings && assignments.All(x => x.ObjectId != currentResource.ObjectId))
                 {
-                    ResourceGuid = currentResource.ResourceInfo.Guid,
-                    ObjectId = currentResource.ObjectId,
-                    Primary = currentResource.Primary
-                });
+                    assignments.Add(new ServerProjectResourceAssignment
+                    {
+                        ResourceGuid = currentResource.ResourceInfo.Guid,
+                        ObjectId = currentResource.ObjectId,
+                        Primary = currentResource.Primary
+                    });
+                }
             }
-        }       
+        }
         
         var array = new[]
         {
