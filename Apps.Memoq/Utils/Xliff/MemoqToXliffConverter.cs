@@ -84,7 +84,7 @@ public static class MemoqToXliffConverter
         if (!string.IsNullOrWhiteSpace(originalString))
         {
             var to_modify = originalString;
-            to_modify = Regex.Replace(to_modify, @"\r\n(\s+)?", "", RegexOptions.Multiline);
+            to_modify = Regex.Replace(to_modify, @"\r?\n(\s+)?", "", RegexOptions.Multiline);
             return to_modify;
         }
         else
