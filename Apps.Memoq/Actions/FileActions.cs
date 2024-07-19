@@ -629,14 +629,20 @@ public class FileActions : BaseInvocable
     private async Task<FileReference> ConvertMqXliffToXliff(Stream stream, string fileName, bool useSkeleton = false)
     {
         var xliffFile = stream.ConvertMqXliffToXliff(useSkeleton);
-        byte[] byteArray = Encoding.UTF8.GetBytes(xliffFile);
-        var xliffStream = new MemoryStream(byteArray);
+        using (var xliffStream = new MemoryStream())
+        {
+            using (var writer = new StreamWriter(xliffStream))
+            {
+                writer.Write(xliffFile);
+                writer.Flush();
 
-        xliffStream.Position = 0;
-        
-        string contentType = MediaTypeNames.Text.Plain;
-        
-        return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
+                xliffStream.Position = 0;
+
+                string contentType = MediaTypeNames.Text.Plain;
+
+                return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
+            }
+        }
     }
     
     private async Task<byte[]> ProcessXliffFile(Stream file, string fileName)
