@@ -72,6 +72,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **List projects** returns a list of all projects.
 - **Get/create/delete/distribute project**.
 - **Create project from package/template** creates a new project based on a specified template/package.
+- **Update a project** updates details of a specified project.
 - **Add target language to project** adds target language to a specific project.
 - **Pretranslate documents** This action allows you to pretranslate documents in a specific project. Pretranslation is a process where the system automatically fills in the translations for segments in a document based on certain criteria. This can significantly speed up the translation process. Parameters:  
 1. **Document GUIDs**: This parameter is used to specify the unique identifiers of the documents you want to pretranslate. If you don't specify any document GUIDs, the action will pretranslate all documents in the project.
