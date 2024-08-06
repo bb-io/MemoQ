@@ -17,6 +17,9 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using MQS.ServerProject;
 using ResourceType = MQS.ServerProject.ResourceType;
+using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
+using DocumentFormat.OpenXml.Office2016.Excel;
+using Apps.MemoQ.Models.Files.Responses;
 
 namespace Apps.Memoq.Actions;
 
@@ -288,7 +291,26 @@ public class ServerProjectActions : BaseInvocable
         await projectService.Service.SetProjectResourceAssignmentsAsync(projectId, array);
     }
 
-    [Action("Pretranslate documents", Description = "Pretranslate documents if document GUIDs are provided, otherwise pretranslate the whole project with all documents")]
+    [Action("Get resources assigned to project",
+        Description = "Get a list of resources assigned to a project.")]
+    public async Task<ResourceListResponse> GetResourcesFromProject([ActionParameter] ProjectRequest project,
+        [ActionParameter][Display("Resource type"), StaticDataSource(typeof(ResourceTypeDataHandler))] string resourceType)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var projectId = Guid.Parse(project.ProjectGuid);
+        var type = (ResourceType)int.Parse(resourceType);
+
+        var result = await projectService.Service.ListProjectResourceAssignmentsAsync(projectId, type);
+
+        return new ResourceListResponse
+        {
+            ResourceIds = result.Select(x => x.ResourceInfo.Guid.ToString()),
+        };
+    }
+
+        [Action("Pretranslate documents", Description = "Pretranslate documents if document GUIDs are provided, otherwise pretranslate the whole project with all documents")]
     public async Task<PretranslateDocumentsResponse> PretranslateDocuments(
         [ActionParameter] ProjectRequest projectRequest,
         [ActionParameter] PretranslateDocumentsRequest request)
