@@ -313,7 +313,7 @@ public class ServerProjectActions : BaseInvocable
     [Action("Get term bases assigned to project",
         Description = "Get a list of term bases assigned to a project for a target language.")]
     public async Task<List<string>> GetTermbaseFromProject([ActionParameter] ProjectRequest project,
-       [ActionParameter][Display("Target language"), DataSource(typeof(TargetLanguageDataHandler))] string TargetLanguage )
+       [ActionParameter][Display("Target language"), StaticDataSource(typeof(TargetLanguageDataHandler))] string TargetLanguage )
     {
         var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
