@@ -310,7 +310,22 @@ public class ServerProjectActions : BaseInvocable
         };
     }
 
-        [Action("Pretranslate documents", Description = "Pretranslate documents if document GUIDs are provided, otherwise pretranslate the whole project with all documents")]
+    [Action("Get term bases assigned to project",
+        Description = "Get a list of term bases assigned to a project for a target language.")]
+    public async Task<List<string>> GetTermbaseFromProject([ActionParameter] ProjectRequest project,
+       [ActionParameter][Display("Target language"), StaticDataSource(typeof(TargetLanguageDataHandler))] string TargetLanguage )
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var projectId = Guid.Parse(project.ProjectGuid);
+
+        var result = await projectService.Service.ListProjectTBs3Async(projectId, TargetLanguage.ToArray());
+
+        return result.First().TBGuids.Select(x => x.ToString()).ToList();
+    }
+
+    [Action("Pretranslate documents", Description = "Pretranslate documents if document GUIDs are provided, otherwise pretranslate the whole project with all documents")]
     public async Task<PretranslateDocumentsResponse> PretranslateDocuments(
         [ActionParameter] ProjectRequest projectRequest,
         [ActionParameter] PretranslateDocumentsRequest request)

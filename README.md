@@ -104,6 +104,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 
 ### Term bases
 
+- **Get term bases assigned to project** Gets a list of term bases assigned to a project for a specific target language.
 - **Import glossary** imports a term base.
 - **Export glossary** exports an existing term base. This action accepts an optional input parameter called _Include forbidden terms_ which defaults to _False_. When set to _False_, terms with _Forbidden_ status are excluded from the resulting export.
 
