@@ -213,12 +213,12 @@ public class ServerProjectActions : BaseInvocable
     }
 
     [Action("Update a project", Description = "Update info of a specific project")]
-    public Task UpdateProject([ActionParameter] ProjectRequest project, [ActionParameter] UpdateProjectRequest request)
+    public async Task UpdateProject([ActionParameter] ProjectRequest project, [ActionParameter] UpdateProjectRequest request)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
-
-        return projectService.Service.UpdateProjectAsync(new()
+        
+        await projectService.Service.UpdateProjectAsync(new()
         {
             Deadline = request.Deadline.GetValueOrDefault(),
             CallbackWebServiceUrl = request.CallbackUrl,
@@ -229,6 +229,8 @@ public class ServerProjectActions : BaseInvocable
             Client = request.Client,
             ServerProjectGuid = Guid.Parse(project.ProjectGuid)
         });
+
+        return;
     }
 
     [Action("Delete project", Description = "Delete a specific project")]
