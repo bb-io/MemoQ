@@ -215,18 +215,18 @@ public class ServerProjectActions : BaseInvocable
     [Action("Update a project", Description = "Update info of a specific project")]
     public async Task UpdateProject([ActionParameter] ProjectRequest project, [ActionParameter] UpdateProjectRequest request)
     {
+        var currentProjectValues = GetProject(new ProjectRequest {ProjectGuid = project.ProjectGuid });
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
             SoapConstants.ProjectServiceUrl, Creds);
-        
+                
         await projectService.Service.UpdateProjectAsync(new()
         {
-            Deadline = request.Deadline.GetValueOrDefault(),
-            CallbackWebServiceUrl = request.CallbackUrl,
-            Description = request.Description,
-            Domain = request.Domain,
-            Subject = request.Subject,
-            CustomMetas = request.CustomMetas,
-            Client = request.Client,
+            Deadline = (DateTime)(request.Deadline.HasValue ? request.Deadline : currentProjectValues.Deadline),
+            Description = request.Description ?? currentProjectValues.Description,
+            Domain = request.Domain ?? currentProjectValues.Domain,
+            Subject = request.Subject ?? currentProjectValues.Subject,
+            CustomMetas = request.CustomMetas ?? currentProjectValues.CustomMetas,
+            Client = request.Client ?? currentProjectValues.Client,
             ServerProjectGuid = Guid.Parse(project.ProjectGuid)
         });
 
