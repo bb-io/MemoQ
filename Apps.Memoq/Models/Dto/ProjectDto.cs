@@ -30,7 +30,7 @@ public class ProjectDto
     [Display("Source language code")]
     public string SourceLanguageCode { get; set; }
 
-    [Display("Custom Metas")]
+    [Display("Custom metadata")]
     public string? CustomMetas { get; set; }
 
     [Display("Target language codes")]
