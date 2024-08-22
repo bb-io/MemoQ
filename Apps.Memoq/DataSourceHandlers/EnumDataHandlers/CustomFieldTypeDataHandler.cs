@@ -6,7 +6,7 @@ namespace Apps.MemoQ.DataSourceHandlers.EnumDataHandlers
     {
         protected Dictionary<string, string> EnumValues => new()
     {
-        {"Free text", "FreeText"},
+        {"FreeText", "Free text"},
         {"Number", "Number"}
     };
 
