@@ -20,6 +20,10 @@ using ResourceType = MQS.ServerProject.ResourceType;
 using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 using DocumentFormat.OpenXml.Office2016.Excel;
 using Apps.MemoQ.Models.Files.Responses;
+using Apps.MemoQ.Models.ServerProjects.Responses;
+using Apps.MemoQ.Models.Dto;
+using Apps.MemoQ.Models.ServerProjects.Requests;
+using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace Apps.Memoq.Actions;
 
@@ -68,6 +72,98 @@ public class ServerProjectActions : BaseInvocable
 
         var response = projectService.Service.GetProject(Guid.Parse(project.ProjectGuid));
         return new(response);
+    }
+
+    [Action("Get project custom fields", Description = "Get project custom metadata fields")]
+    public CustomFieldsResponse GetCustomFields([ActionParameter] ProjectRequest project)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        var response = projectService.Service.GetProject(Guid.Parse(project.ProjectGuid));
+
+        if (String.IsNullOrEmpty(response.CustomMetas)) 
+        {
+            return new CustomFieldsResponse();
+        }
+        if (response.CustomMetas.Contains("\r\n"))
+        {
+            var result = new List<CustomFieldDto>();
+            var rows = response.CustomMetas.Split("\r\n");
+            foreach (var row in rows)
+            {
+                if (String.IsNullOrEmpty(row)) { continue; }
+                var Values = row.Split("\t");
+                result.Add(new CustomFieldDto()
+                {
+                    Name = Values[0],
+                    Type = Values[1],
+                    Value = Values[2]
+                });
+            }
+            return new CustomFieldsResponse {CustomFields = result };
+        }
+
+        var values = response.CustomMetas.Split("\t");
+        return new CustomFieldsResponse() 
+        {
+            CustomFields = new List<CustomFieldDto>() 
+            {
+                new CustomFieldDto() {
+                    Name = values[0],
+                    Type = values[1],
+                    Value = values[2]
+                }
+            }
+        };
+
+    }
+
+    [Action("Get custom field value", Description = "Get value of a specific custom metadata field")]
+    public string GetCustomField([ActionParameter] ProjectRequest project, [ActionParameter] GetCustomFieldRequest field )
+    {
+        var allfields = GetCustomFields(project).CustomFields;
+        return allfields.FirstOrDefault(x => x.Name == field.Field)?.Value ?? "";
+    }
+
+    [Action("Set custom field value", Description = "Set the value of a specific custom metadata field")]
+    public async Task SetCustomField([ActionParameter] ProjectRequest project, [ActionParameter] GetCustomFieldRequest field,
+        [ActionParameter] string Value)
+    {
+        var allfields = GetCustomFields(project).CustomFields;
+        allfields.First(x => x.Name == field.Field).Value = Value;
+        var rows = allfields.Select(x => x.Name + "\t" + x.Type +"\t"+ x.Value);
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+
+        await projectService.Service.UpdateProjectAsync(new()
+        {
+            CustomMetas = String.Join("\r\n", rows),
+            ServerProjectGuid = Guid.Parse(project.ProjectGuid)
+        }) ;
+
+    }
+
+    [Action("Add new custom field", Description = "Adds a custom metadata field to the project")]
+    public async Task AddCustomField([ActionParameter] ProjectRequest project, [ActionParameter] AddCustomFieldRequest input)
+    {
+        string customMetas = "";
+        var allfields = GetCustomFields(project).CustomFields;
+        if (allfields != null && allfields.Count > 0)
+        {
+            var rows = allfields.Select(x => x.Name + "\t" + x.Type + "\t" + x.Value).ToList();
+            rows.Add(input.Name + "\t" + input.Type + "\t" + input.Value);
+            customMetas = String.Join("\r\n", rows);
+        }
+        else { customMetas = input.Name + "\t" + input.Type + "\t" + input.Value; }
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(
+           SoapConstants.ProjectServiceUrl, Creds);
+
+        await projectService.Service.UpdateProjectAsync(new()
+        {
+            CustomMetas = customMetas,
+            ServerProjectGuid = Guid.Parse(project.ProjectGuid)
+        });
     }
 
     [Action("Add target language to project", Description = "Add target language to project by code")]
@@ -225,7 +321,6 @@ public class ServerProjectActions : BaseInvocable
             Description = request.Description ?? currentProjectValues.Description,
             Domain = request.Domain ?? currentProjectValues.Domain,
             Subject = request.Subject ?? currentProjectValues.Subject,
-            CustomMetas = request.CustomMetas ?? currentProjectValues.CustomMetas,
             Client = request.Client ?? currentProjectValues.Client,
             ServerProjectGuid = Guid.Parse(project.ProjectGuid)
         });
