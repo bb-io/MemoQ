@@ -2,7 +2,6 @@
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.Files.Requests;
 

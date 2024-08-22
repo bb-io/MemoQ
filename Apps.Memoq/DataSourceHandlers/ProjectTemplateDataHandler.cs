@@ -1,16 +1,9 @@
 ﻿using Apps.Memoq.Contracts;
-using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common;
-using MQS.TM;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Apps.MemoQ.DataSourceHandlers
 {

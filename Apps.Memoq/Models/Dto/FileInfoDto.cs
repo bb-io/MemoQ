@@ -1,11 +1,5 @@
-﻿using Apps.Memoq.Models.Dto;
-using Blackbird.Applications.Sdk.Common;
+﻿using Blackbird.Applications.Sdk.Common;
 using MQS.ServerProject;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Apps.MemoQ.Models.Dto
 {

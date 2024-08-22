@@ -19,17 +19,12 @@ using MQS.TasksService;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
-using Blackbird.Applications.Sdk.Utils.Extensions.Http;
 using Blackbird.Applications.Sdk.Utils.Parsers;
-using Blackbird.Xliff.Utils;
-using RestSharp;
-using System.Collections;
-using Blackbird.Xliff.Utils.Extensions;
-using Blackbird.Xliff.Utils.Models;
 using System.Text;
 using System.Text.RegularExpressions;
 using Apps.MemoQ.Models.Files.Requests;
 using Apps.MemoQ.Models.Dto;
+using Apps.MemoQ.Models.Files.Responses;
 
 namespace Apps.Memoq.Actions;
 
@@ -47,7 +42,8 @@ public class FileActions : BaseInvocable
         _fileManagementClient = fileManagementClient;
     }
 
-    [Action("List project translation documents", Description = "Returns the current translation documents of the specified project.")]
+    [Action("List project translation documents",
+        Description = "Returns the current translation documents of the specified project.")]
     public ListAllProjectFilesResponse ListAllProjectFiles(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] ListProjectFilesRequest input)
@@ -76,6 +72,31 @@ public class FileActions : BaseInvocable
         var files = ListAllProjectFiles(project, new());
         return files.Files.FirstOrDefault(f => f.Guid == fileGuid)
                ?? throw new($"No file found with the provided ID: {fileGuid}");
+    }
+
+    [Action("Document exists", Description = "Check if document exists in a specified project")]
+    public async Task<DocumentExistsResponse> DocumentExists(
+        [ActionParameter] ProjectRequest project,
+        [ActionParameter] DocumentExistsRequest input)
+    {
+        if (!input.IsValid())
+            throw new("You should specify at least one of the optional inputs to search documents on");
+
+        using var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+        var response = await projectService.Service
+            .ListProjectTranslationDocuments2Async(Guid.Parse(project.ProjectGuid), new());
+
+        return new()
+        {
+            Result = response.Any(x =>
+                (input.Guid is null || x.DocumentGuid.ToString() == input.Guid) && (input.ExternalDocumentId is null ||
+                    x.ExternalDocumentId == input.ExternalDocumentId) && (input.TargetLanguageCode is null ||
+                                                                          x.TargetLangCode ==
+                                                                          input.TargetLanguageCode) &&
+                (input.DocumentName is null || x.DocumentName == input.DocumentName) &&
+                (input.WebTransUrl is null || x.WebTransUrl == input.WebTransUrl))
+        };
     }
 
     [Action("Delete document", Description = "Delete specific document from project")]
@@ -187,7 +208,9 @@ public class FileActions : BaseInvocable
         {
             FileGuid = uploadFileResult,
             TargetLangCodes = request.TargetLanguageCodes?.ToArray(),
-            CreatePreview = request.PreviewCreation == null ? PreviewCreation.UseProjectPreference : (PreviewCreation) int.Parse(request.PreviewCreation),
+            CreatePreview = request.PreviewCreation == null
+                ? PreviewCreation.UseProjectPreference
+                : (PreviewCreation)int.Parse(request.PreviewCreation),
             ExternalDocumentId = request.ExternalDocumentId
         };
 
@@ -203,6 +226,7 @@ public class FileActions : BaseInvocable
                 var reader = new StreamReader(file);
                 importSettings = reader.ReadToEnd();
             }
+
             options.ImportSettingsXML = importSettings;
         }
 
@@ -212,7 +236,7 @@ public class FileActions : BaseInvocable
                 Guid.Parse(request.ProjectGuid),
                 new List<ImportTranslationDocumentOptions> { options }.ToArray());
 
-        foreach(var result in results)
+        foreach (var result in results)
         {
             if (result.ResultStatus == ResultStatus.Error)
             {
@@ -220,7 +244,7 @@ public class FileActions : BaseInvocable
                     $"Error while importing file, result status: {result.ResultStatus}, message: {result.DetailedMessage}");
             }
         }
-        
+
 
         return new()
         {
@@ -241,10 +265,11 @@ public class FileActions : BaseInvocable
         var file = new MemoryStream();
         await fileStream.CopyToAsync(file);
         file.Position = 0;
-        
+
         var fileBytes = await file.GetByteData();
 
-        var uploadFileResult = FileUploader.UploadFile(fileBytes, new FileUploadManager(fileService.Service), request.FileName ?? request.File.Name);
+        var uploadFileResult = FileUploader.UploadFile(fileBytes, new FileUploadManager(fileService.Service),
+            request.FileName ?? request.File.Name);
 
         string? importSettings = null;
         if ((request.FileName ?? request.File.Name).EndsWith(".xliff"))
@@ -276,11 +301,12 @@ public class FileActions : BaseInvocable
             DocumentGuid = first.DocumentGuids.Select(x => x.ToString()).First()
         };
     }
-    [Action ("Update document from XLIFF", Description = "Update translation document from exported XLIFF")]
+
+    [Action("Update document from XLIFF", Description = "Update translation document from exported XLIFF")]
     public async Task<UploadFileResponse> UpdateDocumentFromXliff(
         [ActionParameter] UploadDocumentToProjectRequest request,
         [ActionParameter] UpdateFromXliffRequest XliffRequest)
-    {        
+    {
         var mqXliffFileResponse = await DownloadFileAsXliff(
             new GetDocumentRequest
             {
@@ -294,11 +320,12 @@ public class FileActions : BaseInvocable
             });
 
         var file = await _fileManagementClient.DownloadAsync(request.File);
-        byte[] fileBytes =  await ProcessXliffFile(file, request.File.Name);
+        byte[] fileBytes = await ProcessXliffFile(file, request.File.Name);
 
         var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
-        
-        var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes), XliffRequest.UpdateLocked.GetValueOrDefault(true), XliffRequest.UpdateConfirmed.GetValueOrDefault(true));
+
+        var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes),
+            XliffRequest.UpdateLocked.GetValueOrDefault(true), XliffRequest.UpdateConfirmed.GetValueOrDefault(true));
         string mqXliffFileName = (request.FileName ?? request.File.Name) + ".mqxliff";
 
         var fileService = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds);
@@ -307,9 +334,11 @@ public class FileActions : BaseInvocable
         updatedMqXliffFile.Position = 0;
         var bytes = await updatedMqXliffFile.GetByteData();
 
-        var uploadFileResult = FileUploader.UploadFile(bytes, new FileUploadManager(fileService.Service), mqXliffFileName);
+        var uploadFileResult =
+            FileUploader.UploadFile(bytes, new FileUploadManager(fileService.Service), mqXliffFileName);
 
-        var result = await projectService.Service.UpdateTranslationDocumentFromBilingualAsync(Guid.Parse(request.ProjectGuid),
+        var result = await projectService.Service.UpdateTranslationDocumentFromBilingualAsync(
+            Guid.Parse(request.ProjectGuid),
             uploadFileResult, BilingualDocFormat.XLIFF);
 
         var first = result.FirstOrDefault(x => x.ResultStatus == ResultStatus.Success);
@@ -323,26 +352,35 @@ public class FileActions : BaseInvocable
             DocumentGuid = first.DocumentGuids.Select(x => x.ToString()).First()
         };
     }
+
     [Action("Import document as XLIFF", Description = "Uploads and imports a document to a project as XLIFF")]
     public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
         [ActionParameter] UploadDocumentToProjectRequest request,
         [ActionParameter] ImportDocumentAsXliffRequest importDocumentAsXliffRequest)
     {
         var file = await _fileManagementClient.DownloadAsync(request.File);
-        byte[] fileBytes = request.File.Name.EndsWith(".xliff") ? await ProcessXliffFile(file, request.File.Name) : await file.GetByteData();
+        byte[] fileBytes = request.File.Name.EndsWith(".xliff")
+            ? await ProcessXliffFile(file, request.File.Name)
+            : await file.GetByteData();
 
         var fileName = request.FileName ?? request.File.Name;
         string fileReferenceName = string.Empty;
-        if(fileName.EndsWith(".xliff"))
+        if (fileName.EndsWith(".xliff"))
         {
             fileReferenceName = fileName.Replace(".xliff", "-2.1.xliff");
         }
-        
-        fileName = string.IsNullOrEmpty(fileReferenceName) ? fileName : fileReferenceName;
-        var xliffFileReference = await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes), MediaTypeNames.Application.Xml, fileName);
 
-        return string.IsNullOrEmpty(importDocumentAsXliffRequest.DocumentGuid) 
-            ? await UploadAndImportFileToProject(new UploadDocumentToProjectWithOptionsRequest { File = xliffFileReference, ProjectGuid = request.ProjectGuid, TargetLanguageCodes = request.TargetLanguageCodes, FileName = request.FileName }) 
+        fileName = string.IsNullOrEmpty(fileReferenceName) ? fileName : fileReferenceName;
+        var xliffFileReference =
+            await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes), MediaTypeNames.Application.Xml,
+                fileName);
+
+        return string.IsNullOrEmpty(importDocumentAsXliffRequest.DocumentGuid)
+            ? await UploadAndImportFileToProject(new UploadDocumentToProjectWithOptionsRequest
+            {
+                File = xliffFileReference, ProjectGuid = request.ProjectGuid,
+                TargetLanguageCodes = request.TargetLanguageCodes, FileName = request.FileName
+            })
             : await ReimportDocumentAsync(importDocumentAsXliffRequest, xliffFileReference, request);
     }
 
@@ -644,7 +682,7 @@ public class FileActions : BaseInvocable
             }
         }
     }
-    
+
     private async Task<byte[]> ProcessXliffFile(Stream file, string fileName)
     {
         var xDocument = XDocument.Load(file);
@@ -667,7 +705,8 @@ public class FileActions : BaseInvocable
         FileReference fileReference,
         UploadDocumentToProjectRequest request)
     {
-        if (importDocumentAsXliffRequest.UpdateSegmentStatuses != null && importDocumentAsXliffRequest.UpdateSegmentStatuses.Value)
+        if (importDocumentAsXliffRequest.UpdateSegmentStatuses != null &&
+            importDocumentAsXliffRequest.UpdateSegmentStatuses.Value)
         {
             var mqXliffFileResponse = await DownloadFileAsXliff(
                 new GetDocumentRequest
@@ -684,7 +723,7 @@ public class FileActions : BaseInvocable
 
             var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
             var fileStream = await _fileManagementClient.DownloadAsync(fileReference);
-            
+
             var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, fileStream);
             string mqXliffFileName = request.FileName ?? request.File.Name + ".mqxliff";
             fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml,
@@ -723,17 +762,28 @@ public class FileActions : BaseInvocable
             var xliffUnit = xliffUnits.FirstOrDefault(x => x.Attribute("id")?.Value == id);
             var xliffTargetNodes = xliffUnit?.Elements(nsXliff21 + "segment").Elements(nsXliff21 + "target").Nodes();
 
-            if (mqTarget != null && xliffTargetNodes != null && !mqTarget.Nodes().SequenceEqual(xliffTargetNodes, new XNodeEqualityComparer()))
+            if (mqTarget != null && xliffTargetNodes != null &&
+                !mqTarget.Nodes().SequenceEqual(xliffTargetNodes, new XNodeEqualityComparer()))
             {
-                if (!locked && mqTransUnit.Attribute(XNamespace.Get("MQXliff") + "locked")?.Value == "locked") { continue; }
-                if (!confirmed && mqTransUnit.Attribute(XNamespace.Get("MQXliff") + "status")?.Value == "Proofread") { continue; }
+                if (!locked && mqTransUnit.Attribute(XNamespace.Get("MQXliff") + "locked")?.Value == "locked")
+                {
+                    continue;
+                }
+
+                if (!confirmed && mqTransUnit.Attribute(XNamespace.Get("MQXliff") + "status")?.Value == "Proofread")
+                {
+                    continue;
+                }
+
                 mqTarget.RemoveAll();
                 mqTarget.Add(xliffTargetNodes);
                 mqTransUnit.SetAttributeValue(XNamespace.Get("MQXliff") + "status", "Edited");
             }
         }
-        
-        var updatedString = Regex.Replace(mqXliffDoc.ToString(), "(<(source(.*?)|\\/bpt|\\/ph|target(.*?))>)\\r?\\n\\s+(?!\\s?(<target|<\\/trans-unit>))", "${1}").Replace("& ","&amp; ");
+
+        var updatedString = Regex.Replace(mqXliffDoc.ToString(),
+                "(<(source(.*?)|\\/bpt|\\/ph|target(.*?))>)\\r?\\n\\s+(?!\\s?(<target|<\\/trans-unit>))", "${1}")
+            .Replace("& ", "&amp; ");
         var updatedMqXliffStream = new MemoryStream(Encoding.UTF8.GetBytes(updatedString));
         updatedMqXliffStream.Position = 0;
         return updatedMqXliffStream;

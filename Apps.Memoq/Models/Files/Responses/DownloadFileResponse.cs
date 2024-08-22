@@ -1,5 +1,4 @@
-﻿using Apps.Memoq.Models.Dto;
-using Apps.MemoQ.Models.Dto;
+﻿using Apps.MemoQ.Models.Dto;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Files;
 
