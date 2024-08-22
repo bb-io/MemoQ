@@ -1,5 +1,4 @@
-﻿using System.Runtime.Serialization;
-using Apps.Memoq.Contracts;
+﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;

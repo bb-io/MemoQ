@@ -1,5 +1,4 @@
 ﻿using Apps.Memoq.Contracts;
-using Apps.Memoq.DataSourceHandlers;
 using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Extensions;
 using Apps.Memoq.Models;
@@ -12,18 +11,15 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using MQS.ServerProject;
 using ResourceType = MQS.ServerProject.ResourceType;
 using Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
-using DocumentFormat.OpenXml.Office2016.Excel;
 using Apps.MemoQ.Models.Files.Responses;
 using Apps.MemoQ.Models.ServerProjects.Responses;
 using Apps.MemoQ.Models.Dto;
 using Apps.MemoQ.Models.ServerProjects.Requests;
-using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace Apps.Memoq.Actions;
 

@@ -1,9 +1,7 @@
-﻿using Apps.Memoq.DataSourceHandlers;
-using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
+﻿using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
-using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
 
 namespace Apps.Memoq.Models.Files.Requests;

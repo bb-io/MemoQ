@@ -44,6 +44,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **Get/delete/overwrite/deliver document**.
 - **Import/Export document** uploads/downloads file to the project. Make sure your file name contains extension, otherwise the action will fail. Also has optional inputs for external document ID, filter config, preview creation and importing embedded images and objects.
 - **Apply translated content to updated source**.
+- **Document exists** checks if a document with provided properties exists in the project.
 
 ### XLIFFs
 

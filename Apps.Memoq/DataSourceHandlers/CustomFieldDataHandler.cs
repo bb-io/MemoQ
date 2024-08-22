@@ -3,7 +3,6 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common;
-using MQS.ServerProject;
 using Apps.Memoq.Actions;
 
 namespace Apps.MemoQ.DataSourceHandlers
