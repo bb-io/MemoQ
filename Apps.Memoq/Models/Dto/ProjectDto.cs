@@ -30,9 +30,6 @@ public class ProjectDto
     [Display("Source language code")]
     public string SourceLanguageCode { get; set; }
 
-    [Display("Custom metadata")]
-    public string? CustomMetas { get; set; }
-
     [Display("Target language codes")]
     public List<string> TargetLanguageCodes { get; set; }
 
@@ -51,6 +48,5 @@ public class ProjectDto
         TargetLanguageCodes = project.TargetLanguageCodes.ToList();
         CreatedAt = project.CreationTime;
         Status = project.ProjectStatus.ToString();
-        CustomMetas = project.CustomMetas;
     }
 }

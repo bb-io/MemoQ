@@ -95,6 +95,12 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 15. **Only unambiguous matches**: This optional parameter, when set to true, only includes unambiguous matches in the pretranslation. By default, this is set to true.
 16. **Final translation state**: This optional parameter is used to specify the final translation state for pretranslated segments. By default, this is set to 'No change'.
 
+### Project Custom Fields
+- **Get project custom fields** Gets all custom metadata fields for a specific project
+- **Get custom field value** Gets value of a specific custom metadata field
+- **Set custom field value** Sets the value of a specific custom metadata field
+- **Add new custom field** Adds a custom metadata field to the specified project
+
 ### Translation memories
 
 - **List translation memories** returns a list of all translation memory.
