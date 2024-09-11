@@ -325,7 +325,7 @@ public class ServerProjectActions : BaseInvocable
         return;
     }
     
-    [Action("Add term base to project", Description = "Add term base to a specific project by GUID")]
+    [Action("Add glossary to project", Description = "Add termbase to a specific project by GUID")]
     public async Task AddTermbaseToProject([ActionParameter] ProjectRequest project, 
         [ActionParameter] AddTermbaseRequest request)
     {
