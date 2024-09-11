@@ -8,14 +8,11 @@ using MQS.TB;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class TermbaseDataHandler : BaseInvocable, IAsyncDataSourceHandler
+public class TermbaseDataHandler(InvocationContext invocationContext)
+    : BaseInvocable(invocationContext), IAsyncDataSourceHandler
 {
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
-
-    public TermbaseDataHandler(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
 
     public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, 
         CancellationToken cancellationToken)

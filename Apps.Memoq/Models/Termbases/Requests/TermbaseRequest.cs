@@ -6,7 +6,6 @@ namespace Apps.Memoq.Models.Termbases.Requests;
 
 public class TermbaseRequest
 {
-    [Display("Termbase ID")]
-    [DataSource(typeof(TermbaseDataHandler))]
+    [Display("Termbase ID"), DataSource(typeof(TermbaseDataHandler))]
     public string TermbaseId { get; set; }
 }

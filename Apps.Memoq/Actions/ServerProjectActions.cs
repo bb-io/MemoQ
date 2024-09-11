@@ -1,4 +1,5 @@
-﻿using Apps.Memoq.Contracts;
+﻿using System.Runtime.Serialization;
+using Apps.Memoq.Contracts;
 using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Extensions;
 using Apps.Memoq.Models;
@@ -300,7 +301,7 @@ public class ServerProjectActions : BaseInvocable
 
         var result = projectService.Service.CreateProjectFromPackage3(request, Guid.Parse(input.FileId), importOptions);
         var response = projectService.Service.GetProject(result);
-
+        
         return new(response);
     }
 
@@ -322,6 +323,25 @@ public class ServerProjectActions : BaseInvocable
         });
 
         return;
+    }
+    
+    [Action("Add term base to project", Description = "Add term base to a specific project by GUID")]
+    public async Task AddTermbaseToProject([ActionParameter] ProjectRequest project, 
+        [ActionParameter] AddTermbaseRequest request)
+    {
+        var projectService = new MemoqServiceFactory<IServerProjectService>(
+            SoapConstants.ProjectServiceUrl, Creds);
+        
+        await projectService.Service.SetProjectTBs3Async(Guid.Parse(project.ProjectGuid), new[]
+        {
+            new ServerProjectTBsForTargetLang
+            {
+                TargetLangCode = request.TargetLanguageCode,
+                TBGuids = [Guid.Parse(request.TermbaseId)],
+                TBGuidTargetForNewTerms = request.TargetTermbaseId != null ? Guid.Parse(request.TargetTermbaseId) : Guid.Empty,
+                ExcludedTBsFromQA = request.ExcludeTermBasesFromQa?.Select(Guid.Parse).ToArray() ?? Array.Empty<Guid>()
+            }
+        });
     }
 
     [Action("Delete project", Description = "Delete a specific project")]
