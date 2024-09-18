@@ -782,8 +782,8 @@ public class FileActions : BaseInvocable
         }
 
         var updatedString = Regex.Replace(mqXliffDoc.ToString(),
-                "(<(source(.*?)|\\/bpt|\\/ph|target(.*?))>)\\r?\\n\\s+(?!\\s?(<target|<\\/trans-unit>))", "${1}")
-            .Replace("& ", "&amp; ");
+                "(<(source(.*?)|\\/bpt|\\/ph|target(.*?))>)\\r?\\n\\s+(?!\\s?(<target|<\\/trans-unit>))", "${1}");
+        updatedString = Regex.Replace(updatedString,"&(?!(\\w+|#\\d+);)", "&amp;");
         var updatedMqXliffStream = new MemoryStream(Encoding.UTF8.GetBytes(updatedString));
         updatedMqXliffStream.Position = 0;
         return updatedMqXliffStream;
