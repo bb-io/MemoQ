@@ -178,7 +178,7 @@ public class ServerProjectActions : BaseInvocable
             });
     }
 
-    [Action("Create a project", Description = "Creates a new project in memoQ")]
+    [Action("Create project", Description = "Creates a new project in memoQ")]
     public ProjectDto CreateProject([ActionParameter] CreateProjectRequest request)
     {
         using var projectService = new MemoqServiceFactory<IServerProjectService>(
@@ -225,7 +225,7 @@ public class ServerProjectActions : BaseInvocable
         return new(response);
     }
 
-    [Action("Create a project from a template",
+    [Action("Create project from a template",
         Description = "Creates a new project based on an existing memoQ project template")]
     public ProjectDto CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
     {
@@ -251,7 +251,7 @@ public class ServerProjectActions : BaseInvocable
         return new(response);
     }
 
-    [Action("Create a project from a package",
+    [Action("Create project from a package",
         Description = "Creates a new project based on an existing memoQ package")]
     public ProjectDto CreateProjectPackage([ActionParameter] CreateProjectFromPackageRequest input)
     {
@@ -305,7 +305,7 @@ public class ServerProjectActions : BaseInvocable
         return new(response);
     }
 
-    [Action("Update a project", Description = "Update info of a specific project")]
+    [Action("Update project", Description = "Update info of a specific project")]
     public async Task UpdateProject([ActionParameter] ProjectRequest project, [ActionParameter] UpdateProjectRequest request)
     {
         var currentProjectValues = GetProject(new ProjectRequest {ProjectGuid = project.ProjectGuid });

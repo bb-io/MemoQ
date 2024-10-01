@@ -73,7 +73,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **List projects** returns a list of all projects.
 - **Get/create/delete/distribute project**.
 - **Create project from package/template** creates a new project based on a specified template/package.
-- **Update a project** updates details of a specified project.
+- **Update project** updates details of a specified project.
 - **Add target language to project** adds target language to a specific project.
 - **Get resources assigned to project** returns a list of all resources assigned to a project. You specify the type of resource you are looking for e.g. MT engine or TM.
 - **Add resource to project** add a new resource to a project.
