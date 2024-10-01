@@ -11,13 +11,13 @@ public class CreateProjectTemplateRequest
 {
     [Display("Source language")]
     [DataSource(typeof(SourceLanguageDataHandler))]
-    public string SourceLangCode { get; set; }
+    public string? SourceLangCode { get; set; }
 
     [Display("Target languages"), StaticDataSource(typeof(TargetLanguageDataHandler))]
-    public IEnumerable<string> TargetLangCodes { get; set; }
+    public IEnumerable<string>? TargetLangCodes { get; set; }
 
     [Display("Project name")]
-    public string ProjectName { get; set; }
+    public string? ProjectName { get; set; }
 
     [Display("Template GUID")]
     [DataSource(typeof(ProjectTemplateDataHandler))]
