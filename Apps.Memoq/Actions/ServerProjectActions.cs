@@ -225,7 +225,7 @@ public class ServerProjectActions : BaseInvocable
         return new(response);
     }
 
-    [Action("Create project from a template",
+    [Action("Create project from template",
         Description = "Creates a new project based on an existing memoQ project template")]
     public ProjectDto CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
     {
@@ -237,7 +237,7 @@ public class ServerProjectActions : BaseInvocable
             Name = request.ProjectName,
             CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
-            TargetLanguageCodes = request.TargetLangCodes.ToArray(),
+            TargetLanguageCodes = request.TargetLangCodes?.ToArray(),
             Description = request.Description,
             Domain = request.Domain,
             Subject = request.Subject,
