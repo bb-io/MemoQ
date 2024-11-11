@@ -11,7 +11,6 @@ public class ConnectionDefinition : IConnectionDefinition
         {
             Name = "Developer API token",
             AuthenticationType = ConnectionAuthenticationType.Undefined,
-            ConnectionUsage = ConnectionUsage.Actions,
             ConnectionProperties = new List<ConnectionProperty>
             {
                 new("url") { DisplayName = "URL" },
@@ -25,14 +24,12 @@ public class ConnectionDefinition : IConnectionDefinition
     {
         var url = values.First(v => v.Key == "url");
         yield return new AuthenticationCredentialsProvider(
-            AuthenticationCredentialsRequestLocation.None,
             url.Key,
             url.Value
         );
 
         var apiKey = values.First(v => v.Key == "apiKey");
         yield return new AuthenticationCredentialsProvider(
-            AuthenticationCredentialsRequestLocation.None,
             apiKey.Key,
             apiKey.Value
         );

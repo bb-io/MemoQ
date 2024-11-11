@@ -21,6 +21,7 @@ using Apps.MemoQ.Models.Files.Responses;
 using Apps.MemoQ.Models.ServerProjects.Responses;
 using Apps.MemoQ.Models.Dto;
 using Apps.MemoQ.Models.ServerProjects.Requests;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.Memoq.Actions;
 
@@ -245,10 +246,22 @@ public class ServerProjectActions : BaseInvocable
             TemplateGuid = Guid.Parse(request.TemplateGuid)
         };
 
-        var result = projectService.Service.CreateProjectFromTemplate(newProject);
-        var response = projectService.Service.GetProject(result.ProjectGuid);
+        try
+        {
+            var result = projectService.Service.CreateProjectFromTemplate(newProject);
+            var response = projectService.Service.GetProject(result.ProjectGuid);
 
-        return new(response);
+            return new(response);
+
+        } catch (System.ServiceModel.FaultException ex)
+        {
+            if (ex.Message == "Message.ResourceNotFound.ProjectTemplate")
+            {
+                throw new PluginMisconfigurationException("The selected project template does not exist.");
+            }
+        }
+
+        return null;
     }
 
     [Action("Create project from a package",
