@@ -259,9 +259,8 @@ public class ServerProjectActions : BaseInvocable
             {
                 throw new PluginMisconfigurationException("The selected project template does not exist.");
             }
+            throw;
         }
-
-        return null;
     }
 
     [Action("Create project from a package",
