@@ -233,7 +233,10 @@ public class ServerProjectActions : BaseInvocable
             {
                 throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
             }
-            throw;
+            else
+            {
+                throw new PluginApplicationException(ex.Message);
+            }
         }
         
     }
@@ -275,7 +278,10 @@ public class ServerProjectActions : BaseInvocable
             {
                 throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
             }
-            throw;
+            else
+            {
+                throw new PluginApplicationException(ex.Message);
+            }
         }
     }
 
