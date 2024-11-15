@@ -220,10 +220,22 @@ public class ServerProjectActions : BaseInvocable
             }
         };
 
-        var guid = projectService.Service.CreateProject2(newProject);
-        var response = projectService.Service.GetProject(guid);
+        try
+        {
+            var guid = projectService.Service.CreateProject2(newProject);
+            var response = projectService.Service.GetProject(guid);
 
-        return new(response);
+            return new(response);
+        }
+        catch (System.ServiceModel.FaultException ex)
+        {
+            if (ex.Message == "An online project with the same name already exists.")
+            {
+                throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
+            }
+            throw;
+        }
+        
     }
 
     [Action("Create project from template",
@@ -258,6 +270,10 @@ public class ServerProjectActions : BaseInvocable
             if (ex.Message == "Message.ResourceNotFound.ProjectTemplate")
             {
                 throw new PluginMisconfigurationException("The selected project template does not exist.");
+            }
+            else if (ex.Message == "An online project with the same name already exists.")
+            {
+                throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
             }
             throw;
         }
