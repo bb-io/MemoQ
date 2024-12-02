@@ -5,7 +5,7 @@ namespace Apps.Memoq.Models.Dto;
 
 public class GroupDto
 {
-    [Display("GUID")] public string Guid { get; set; }
+    [Display("Group GUID")] public string Guid { get; set; }
 
     [Display("Name")] public string Name { get; set; }
 

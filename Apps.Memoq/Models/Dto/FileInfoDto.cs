@@ -5,7 +5,7 @@ namespace Apps.MemoQ.Models.Dto
 {
     public class FileInfoDto
     {
-        [Display("GUID")] public string Guid { get; set; }
+        [Display("File GUID")] public string Guid { get; set; }
 
         [Display("Parent document GUID")] public string ParentDocumentId { get; set; }
 

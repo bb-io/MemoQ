@@ -5,7 +5,7 @@ namespace Apps.Memoq.Models.Dto;
 
 public class TmDto
 {
-    [Display("GUID")]
+    [Display("TM GUID")]
     public string Guid { get; set; }
     
     public string Client { get; set; }

@@ -5,7 +5,7 @@ namespace Apps.Memoq.Models.Dto;
 
 public class ProjectDto
 {
-    [Display("GUID")]
+    [Display("Project GUID")]
     public string Guid { get; set; }
     public string Name { get; set; }
 
