@@ -233,7 +233,14 @@ public class ServerProjectActions : BaseInvocable
             {
                 throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
             }
-            throw;
+            else if (ex.Message == "The name contains invalid characters, or the name is reserved by Windows.")
+            {
+                throw new PluginMisconfigurationException("The name contains invalid characters, or the name is reserved by Windows. Please check the characters you are using in the project name.");
+            }
+            else
+            {
+                throw new PluginApplicationException(ex.Message);
+            }
         }
         
     }
@@ -275,7 +282,14 @@ public class ServerProjectActions : BaseInvocable
             {
                 throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
             }
-            throw;
+            else if (ex.Message == "The name contains invalid characters, or the name is reserved by Windows.")
+            {
+                throw new PluginMisconfigurationException("The name contains invalid characters, or the name is reserved by Windows. Please check the characters you are using in the project name.");
+            }
+            else
+            {
+                throw new PluginApplicationException(ex.Message);
+            }
         }
     }
 
