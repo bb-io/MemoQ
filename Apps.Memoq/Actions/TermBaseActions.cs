@@ -972,16 +972,32 @@ public class TermBaseActions : BaseInvocable
 
         using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
 
-        Guid termbaseGuid;
+        Guid fileTermbaseGuid;
+        Guid? existingTermbaseGuid = null;
 
         if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
         {
-            termbaseGuid = Guid.Parse(input.ExistingTermbaseId);
+            existingTermbaseGuid = Guid.Parse(input.ExistingTermbaseId);
+
+            var termbaseName = input.Name ?? glossary.Title;
+            fileTermbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
+            {
+                IsQTerm = input.IsQTerm ?? false,
+                Name = termbaseName,
+                Description = input.Description ?? glossary.SourceDescription,
+                LanguageCodes = memoQLanguagesPresent,
+                IsModerated = input.IsModerated ?? false,
+                ModLateDisclosure = input.ModLateDisclosure ?? true,
+                Client = input.Client,
+                Project = input.Project,
+                Domain = input.Domain,
+                Subject = input.Subject
+            });
         }
         else
         {
             var termbaseName = input.Name ?? glossary.Title;
-            termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
+            fileTermbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
             {
                 IsQTerm = input.IsQTerm ?? false,
                 Name = termbaseName,
@@ -997,7 +1013,6 @@ public class TermBaseActions : BaseInvocable
         }
 
         var rowsToAdd = new List<List<string>>();
-        
 
         var languageRelatedColumns = GenerateCsvHeaders(memoQLanguagesPresent);
         rowsToAdd.Add(new List<string>(new[]
@@ -1039,8 +1054,7 @@ public class TermBaseActions : BaseInvocable
 
         await using var csvStream = await rowsToAdd.ConvertToCsv(Encoding.UTF8, ';');
 
-        var fileGuid = Guid.NewGuid();
-        var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(termbaseGuid, new CSVImportSettings());
+        var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(fileTermbaseGuid, new CSVImportSettings());
         CSVImportResult importStatus;
         try
         {
@@ -1061,9 +1075,8 @@ public class TermBaseActions : BaseInvocable
             importStatus = await tbService.Service.EndChunkedCSVImportAsync(sessionId);
         }
 
-        if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
+        if (existingTermbaseGuid.HasValue)
         {
-            var existingTermbaseGuid = Guid.Parse(input.ExistingTermbaseId);
             var csvImportSettings = new CSVImportIntoExistingSettings
             {
                 AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
@@ -1074,8 +1087,8 @@ public class TermBaseActions : BaseInvocable
             try
             {
                 var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-                    termbaseGuid,
-                    existingTermbaseGuid,
+                    fileTermbaseGuid,
+                    existingTermbaseGuid.Value,
                     csvImportSettings
                 );
 
@@ -1087,7 +1100,7 @@ public class TermBaseActions : BaseInvocable
 
                 return new ImportTermbaseResponse
                 {
-                    TermbaseGuid = termbaseGuid.ToString()
+                    TermbaseGuid = existingTermbaseGuid.Value.ToString()
                 };
             }
             catch (Exception ex)
@@ -1099,7 +1112,7 @@ public class TermBaseActions : BaseInvocable
         {
             return new ImportTermbaseResponse
             {
-                TermbaseGuid = termbaseGuid.ToString()
+                TermbaseGuid = fileTermbaseGuid.ToString()
             };
         }
     }
