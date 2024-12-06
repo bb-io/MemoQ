@@ -972,6 +972,30 @@ public class TermBaseActions : BaseInvocable
 
         using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
 
+        Guid termbaseGuid;
+
+        if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
+        {
+            termbaseGuid = Guid.Parse(input.ExistingTermbaseId);
+        }
+        else
+        {
+            var termbaseName = input.Name ?? glossary.Title;
+            termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
+            {
+                IsQTerm = input.IsQTerm ?? false,
+                Name = termbaseName,
+                Description = input.Description ?? glossary.SourceDescription,
+                LanguageCodes = memoQLanguagesPresent,
+                IsModerated = input.IsModerated ?? false,
+                ModLateDisclosure = input.ModLateDisclosure ?? true,
+                Client = input.Client,
+                Project = input.Project,
+                Domain = input.Domain,
+                Subject = input.Subject
+            });
+        }
+
         var rowsToAdd = new List<List<string>>();
         var fileGuid = Guid.NewGuid();
 
@@ -1015,7 +1039,7 @@ public class TermBaseActions : BaseInvocable
 
         await using var csvStream = await rowsToAdd.ConvertToCsv(Encoding.UTF8, ';');
 
-        var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(fileGuid, new CSVImportSettings());
+        var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(termbaseGuid, new CSVImportSettings());
         try
         {
             const int chunkSize = 500000;
@@ -1037,8 +1061,6 @@ public class TermBaseActions : BaseInvocable
 
         if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
         {
-            var termbaseGuid = Guid.Parse(input.ExistingTermbaseId);
-
             var csvImportSettings = new CSVImportIntoExistingSettings
             {
                 AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
@@ -1070,33 +1092,10 @@ public class TermBaseActions : BaseInvocable
         }
         else
         {
-            var termbaseName = input.Name ?? glossary.Title;
-
-            try
+            return new ImportTermbaseResponse
             {
-                var termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
-                {
-                    IsQTerm = input.IsQTerm ?? false,
-                    Name = termbaseName,
-                    Description = input.Description ?? glossary.SourceDescription,
-                    LanguageCodes = memoQLanguagesPresent,
-                    IsModerated = input.IsModerated ?? false,
-                    ModLateDisclosure = input.ModLateDisclosure ?? true,
-                    Client = input.Client,
-                    Project = input.Project,
-                    Domain = input.Domain,
-                    Subject = input.Subject
-                });
-
-                return new ImportTermbaseResponse
-                {
-                    TermbaseGuid = termbaseGuid.ToString()
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new PluginApplicationException($"Failed to create new glossary: {ex.Message}");
-            }
+                TermbaseGuid = termbaseGuid.ToString()
+            };
         }
     }
 }
