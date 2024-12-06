@@ -478,16 +478,25 @@ public class TermBaseActions : BaseInvocable
         var fileGuid = Guid.NewGuid();
         using (var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds))
         {
-            var uploadBuffer = new byte[500000];
-            int bytesRead;
-            while ((bytesRead = await glossaryStream.ReadAsync(uploadBuffer, 0, uploadBuffer.Length)) > 0)
+            try
             {
-                var chunk = new byte[bytesRead];
-                Array.Copy(uploadBuffer, chunk, bytesRead);
-                await tbService.Service.AddNextCSVChunkAsync(fileGuid, chunk);
-            }
+                const int chunkSize = 500000;
+                var buffer = new byte[chunkSize];
+                int bytesRead;
 
-            await tbService.Service.EndChunkedCSVImportAsync(fileGuid);
+                while ((bytesRead = await glossaryStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    var chunk = new byte[bytesRead];
+                    Array.Copy(buffer, chunk, bytesRead);
+                    await tbService.Service.AddNextCSVChunkAsync(fileGuid, chunk);
+                }
+
+                await tbService.Service.EndChunkedCSVImportAsync(fileGuid);
+            }
+            catch (Exception ex)
+            {
+                throw new PluginApplicationException($"Error during file upload: {ex.Message}");
+            }
         }
 
         var tbGuid = Guid.Parse(input.Id);
@@ -500,12 +509,12 @@ public class TermBaseActions : BaseInvocable
         };
 
         using (var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds))
-        {
-            var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(fileGuid, tbGuid, csvImportSettings);
-            var sessionId = taskInfo.TaskId;
-
+        {         
             try
             {
+                var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(fileGuid, tbGuid, csvImportSettings);
+                var sessionId = taskInfo.TaskId;
+
                 var importStatus = await tbService.Service.EndChunkedCSVImportAsync(sessionId);
                 if (importStatus.SuccessCount == 0)
                 {
