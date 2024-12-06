@@ -972,19 +972,61 @@ public class TermBaseActions : BaseInvocable
 
         using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
 
+        var rowsToAdd = new List<List<string>>();
         var fileGuid = Guid.NewGuid();
+
+        var languageRelatedColumns = GenerateCsvHeaders(memoQLanguagesPresent);
+        rowsToAdd.Add(new List<string>(new[]
+        {
+        EntryId, EntrySubject, EntryDomain, EntryClientId, EntryProjectId, EntryCreated, EntryCreator,
+        EntryLastModified, EntryModifier, EntryNote
+    }.Concat(languageRelatedColumns)));
+
+        foreach (var entry in glossary.ConceptEntries)
+        {
+            var languageRelatedValues = (IEnumerable<string>)languagesPresent
+                .SelectMany(languageCode =>
+                    languageRelatedColumns
+                        .Select(column => GetColumnValue(column, entry, languageCode)))
+                .Where(value => value != null);
+
+            rowsToAdd.Add(new List<string>(new[]
+            {
+            string.IsNullOrWhiteSpace(entry.Id) ? Guid.NewGuid().ToString() : entry.Id,
+            entry.SubjectField ?? string.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            string.Empty,
+            string.Join('|', entry.Notes ?? Enumerable.Empty<string>()).Replace("\n", "").Replace("\r", "")
+        }.Concat(languageRelatedValues)));
+        }
+
+        for (var i = 0; i < rowsToAdd[0].Count; i++)
+        {
+            var header = rowsToAdd[0][i];
+
+            if (header.StartsWith(TermInfo) || header.StartsWith(TermExample))
+                rowsToAdd[0][i] = header.Split('-')[0];
+        }
+
+        await using var csvStream = await rowsToAdd.ConvertToCsv(Encoding.UTF8, ';');
 
         var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(fileGuid, new CSVImportSettings());
         try
         {
             const int chunkSize = 500000;
-            var buffer = new byte[chunkSize];
             int bytesRead;
+            var buffer = new byte[chunkSize];
 
-            while ((bytesRead = await glossaryStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            while ((bytesRead = csvStream.Read(buffer, 0, buffer.Length)) > 0)
             {
                 var chunk = new byte[bytesRead];
                 Array.Copy(buffer, chunk, bytesRead);
+
                 await tbService.Service.AddNextCSVChunkAsync(sessionId, chunk);
             }
         }
@@ -1004,41 +1046,57 @@ public class TermBaseActions : BaseInvocable
                 Delimiter = ';'
             };
 
-            var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-                fileGuid,
-                termbaseGuid,
-                csvImportSettings
-            );
-
-            var importStatus = await tbService.Service.EndChunkedCSVImportAsync(taskInfo.TaskId);
-            if (importStatus.SuccessCount == 0)
+            try
             {
-                throw new PluginApplicationException("Import completed with no successful entries.");
+                var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
+                    fileGuid,
+                    termbaseGuid,
+                    csvImportSettings
+                );
+
+                var importStatus = await tbService.Service.EndChunkedCSVImportAsync(taskInfo.TaskId);
+                if (importStatus.SuccessCount == 0)
+                    throw new PluginApplicationException("Import completed with no successful entries.");
+
+                return new ImportTermbaseResponse
+                {
+                    TermbaseGuid = termbaseGuid.ToString()
+                };
             }
-
-            return new ImportTermbaseResponse
+            catch (Exception ex)
             {
-                TermbaseGuid = termbaseGuid.ToString()
-            };
+                throw new PluginApplicationException($"Failed to update existing glossary: {ex.Message}");
+            }
         }
         else
         {
             var termbaseName = input.Name ?? glossary.Title;
 
-            var termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
+            try
             {
-                IsQTerm = input.IsQTerm ?? false,
-                Name = termbaseName,
-                Description = input.Description ?? glossary.SourceDescription,
-                LanguageCodes = memoQLanguagesPresent,
-                IsModerated = input.IsModerated ?? false,
-                ModLateDisclosure = input.ModLateDisclosure ?? true
-            });
+                var termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
+                {
+                    IsQTerm = input.IsQTerm ?? false,
+                    Name = termbaseName,
+                    Description = input.Description ?? glossary.SourceDescription,
+                    LanguageCodes = memoQLanguagesPresent,
+                    IsModerated = input.IsModerated ?? false,
+                    ModLateDisclosure = input.ModLateDisclosure ?? true,
+                    Client = input.Client,
+                    Project = input.Project,
+                    Domain = input.Domain,
+                    Subject = input.Subject
+                });
 
-            return new ImportTermbaseResponse
+                return new ImportTermbaseResponse
+                {
+                    TermbaseGuid = termbaseGuid.ToString()
+                };
+            }
+            catch (Exception ex)
             {
-                TermbaseGuid = termbaseGuid.ToString()
-            };
+                throw new PluginApplicationException($"Failed to create new glossary: {ex.Message}");
+            }
         }
     }
 }
