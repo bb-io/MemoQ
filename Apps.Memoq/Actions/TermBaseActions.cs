@@ -997,7 +997,7 @@ public class TermBaseActions : BaseInvocable
         }
 
         var rowsToAdd = new List<List<string>>();
-        var fileGuid = Guid.NewGuid();
+        
 
         var languageRelatedColumns = GenerateCsvHeaders(memoQLanguagesPresent);
         rowsToAdd.Add(new List<string>(new[]
@@ -1039,7 +1039,9 @@ public class TermBaseActions : BaseInvocable
 
         await using var csvStream = await rowsToAdd.ConvertToCsv(Encoding.UTF8, ';');
 
+        var fileGuid = Guid.NewGuid();
         var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(termbaseGuid, new CSVImportSettings());
+        CSVImportResult importStatus;
         try
         {
             const int chunkSize = 500000;
@@ -1056,7 +1058,7 @@ public class TermBaseActions : BaseInvocable
         }
         finally
         {
-            await tbService.Service.EndChunkedCSVImportAsync(sessionId);
+            importStatus = await tbService.Service.EndChunkedCSVImportAsync(sessionId);
         }
 
         if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
@@ -1071,14 +1073,16 @@ public class TermBaseActions : BaseInvocable
             try
             {
                 var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-                    fileGuid,
+                    sessionId,
                     termbaseGuid,
                     csvImportSettings
                 );
 
-                var importStatus = await tbService.Service.EndChunkedCSVImportAsync(taskInfo.TaskId);
-                if (importStatus.SuccessCount == 0)
+                var finalImportStatus = await tbService.Service.EndChunkedCSVImportAsync(taskInfo.TaskId);
+                if (finalImportStatus.SuccessCount == 0)
+                {
                     throw new PluginApplicationException("Import completed with no successful entries.");
+                }
 
                 return new ImportTermbaseResponse
                 {
