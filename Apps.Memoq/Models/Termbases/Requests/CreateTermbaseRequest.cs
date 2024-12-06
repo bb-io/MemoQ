@@ -1,10 +1,14 @@
-﻿using Blackbird.Applications.Sdk.Common;
+﻿using Apps.Memoq.DataSourceHandlers;
+using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
+using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.Models.Termbases.Requests;
 
 public class CreateTermbaseRequest
 {
     [Display("Existing termbase ID", Description = "Provide an ID to update an existing glossary. Leave empty to create a new one.")]
+    [DataSource(typeof(TermbaseDataHandler))]
     public string? ExistingTermbaseId { get; set; }
 
     [Display("Is QTerm", Description = "Whether the termbase should be marked as QTerm.")]
@@ -32,9 +36,11 @@ public class CreateTermbaseRequest
     public bool? IsModerated { get; set; }
 
     [Display("Allow add new languages", Description = "Allow adding new languages during the update.")]
+    [DataSource(typeof(YesNoDataHandler))]
     public bool? AllowAddNewLanguages { get; set; }
 
     [Display("Overwrite entries with same ID", Description = "Overwrite entries with the same ID during the update.")]
+    [DataSource(typeof(YesNoDataHandler))]
     public bool? OverwriteEntriesWithSameId { get; set; }
 
     [Display("Late disclosure", Description = "Can be applied only when 'Is moderated' parameter set to 'True'. When set " +
