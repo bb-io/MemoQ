@@ -16,6 +16,7 @@ using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using MQS.TB;
 using Apps.MemoQ.Models.Termbases.Requests;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.Memoq.Actions;
 
@@ -469,10 +470,27 @@ public class TermBaseActions : BaseInvocable
 
 
     [Action("Update existing glossary", Description ="Update an existing termbase with a new")]    
-    public async Task UpdateExistingGlossary([ActionParameter] GlossaryWrapper glossaryWrapper,
+    public async Task<ImportTermbaseResponse> UpdateExistingGlossary([ActionParameter] GlossaryWrapper glossaryWrapper,
         [ActionParameter] UpdateExistingTermbaseRequest input)
     {
         await using var glossaryStream = await _fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
+
+        var fileGuid = Guid.NewGuid();
+        using (var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds))
+        {
+            var uploadBuffer = new byte[500000];
+            int bytesRead;
+            while ((bytesRead = await glossaryStream.ReadAsync(uploadBuffer, 0, uploadBuffer.Length)) > 0)
+            {
+                var chunk = new byte[bytesRead];
+                Array.Copy(uploadBuffer, chunk, bytesRead);
+                await tbService.Service.AddNextCSVChunkAsync(fileGuid, chunk);
+            }
+
+            await tbService.Service.EndChunkedCSVImportAsync(fileGuid);
+        }
+
+        var tbGuid = Guid.Parse(input.Id);
 
         var csvImportSettings = new CSVImportIntoExistingSettings
         {
@@ -481,49 +499,32 @@ public class TermBaseActions : BaseInvocable
             Delimiter = ';'
         };
 
-        using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
-
-        var tbGuid = Guid.Parse(input.Id);
-        var fileGuid = Guid.NewGuid();
-
-        var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(fileGuid, tbGuid, csvImportSettings);
-        var sessionId = taskInfo.TaskId;
-
-
-        try
+        using (var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds))
         {
-            const int chunkSize = 500000;
-            var buffer = new byte[chunkSize];
-            int bytesRead;
+            var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(fileGuid, tbGuid, csvImportSettings);
+            var sessionId = taskInfo.TaskId;
 
-            while((bytesRead = await glossaryStream.ReadAsync(buffer, 0, buffer.Length))>0)
-            {
-                var chunk = new byte[bytesRead];
-                Array.Copy(buffer, chunk, bytesRead);
-                await tbService.Service.AddNextCSVChunkAsync(sessionId, chunk);
-            }
-
-            await tbService.Service.EndChunkedCSVImportAsync(sessionId);
-
-        }
-        catch (Exception ex)
-        {
-            throw new Exception(ex.Message);
-        }
-        finally
-        {
             try
             {
-                await tbService.Service.EndChunkedCSVImportAsync(sessionId);
+                var importStatus = await tbService.Service.EndChunkedCSVImportAsync(sessionId);
+                if (importStatus.SuccessCount == 0)
+                {
+                    throw new PluginApplicationException("Import completed with no successful entries.");
+                }
             }
-            catch (Exception finalEx)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Failed to finalize the import session: {finalEx.Message}");
+                throw new PluginApplicationException($"Error during glossary update: {ex.Message}");
             }
         }
+
+        return new ImportTermbaseResponse
+        {
+            TermbaseGuid = tbGuid.ToString()
+        };
     }
 
-    
+
 
 
     #endregion
