@@ -484,8 +484,9 @@ public class TermBaseActions : BaseInvocable
         using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
 
         var tbGuid = Guid.Parse(input.Id);
+        var fileGuid = Guid.NewGuid();
 
-        var taskInfo= await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(tbGuid, tbGuid, csvImportSettings);
+        var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(fileGuid, tbGuid, csvImportSettings);
         var sessionId = taskInfo.TaskId;
 
 
