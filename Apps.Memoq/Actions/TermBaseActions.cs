@@ -15,6 +15,7 @@ using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using MQS.TB;
+using Apps.MemoQ.Models.Termbases.Requests;
 
 namespace Apps.Memoq.Actions;
 
@@ -465,6 +466,64 @@ public class TermBaseActions : BaseInvocable
 
         return glossary;
     }
+
+
+    [Action("Update existing glossary", Description ="Update an existing termbase with a new")]    
+    public async Task UpdateExistingGlossary([ActionParameter] GlossaryWrapper glossaryWrapper,
+        [ActionParameter] UpdateExistingTermbaseRequest input)
+    {
+        await using var glossaryStream = await _fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
+
+        var csvImportSettings = new CSVImportIntoExistingSettings
+        {
+            AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
+            OverwriteEntriesWithSameId = input.OverwriteEntiesWithSameId ?? false,
+            Delimiter = ';'
+        };
+
+        using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
+
+        var tbGuid = Guid.Parse(input.Id);
+
+        var taskInfo= await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(tbGuid, tbGuid, csvImportSettings);
+        var sessionId = taskInfo.TaskId;
+
+
+        try
+        {
+            const int chunkSize = 500000;
+            var buffer = new byte[chunkSize];
+            int bytesRead;
+
+            while((bytesRead = await glossaryStream.ReadAsync(buffer, 0, buffer.Length))>0)
+            {
+                var chunk = new byte[bytesRead];
+                Array.Copy(buffer, chunk, bytesRead);
+                await tbService.Service.AddNextCSVChunkAsync(sessionId, chunk);
+            }
+
+            await tbService.Service.EndChunkedCSVImportAsync(sessionId);
+
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(ex.Message);
+        }
+        finally
+        {
+            try
+            {
+                await tbService.Service.EndChunkedCSVImportAsync(sessionId);
+            }
+            catch (Exception finalEx)
+            {
+                Console.WriteLine($"Failed to finalize the import session: {finalEx.Message}");
+            }
+        }
+    }
+
     
+
+
     #endregion
 }
