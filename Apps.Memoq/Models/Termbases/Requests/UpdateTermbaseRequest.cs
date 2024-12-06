@@ -9,7 +9,7 @@ namespace Apps.MemoQ.Models.Termbases.Requests
     public class UpdateTermbaseRequest
     {
         [Display("File termbase ID", Description = "Provide File ID to update an existing glossary.")]
-        [DataSource(typeof(TermbaseDataHandler))]
+        //[DataSource(typeof(TermbaseDataHandler))]
         public string FileTermbaseGuid { get; set; }
 
         [Display("Existing termbase ID", Description = "Provide an ID of an existing glossary.")]

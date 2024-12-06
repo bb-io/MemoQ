@@ -1130,7 +1130,7 @@ public class TermBaseActions : BaseInvocable
 
         var csvImportSettings = new CSVImportIntoExistingSettings
         {
-            AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,        
+            AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
             OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false,
             Delimiter = ';'
         };
@@ -1138,15 +1138,17 @@ public class TermBaseActions : BaseInvocable
         try
         {
             var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-                fileTermbaseGuid,
-                existingTermbaseGuid,
-                csvImportSettings
+                fileTermbaseGuid,       
+                existingTermbaseGuid,    
+                csvImportSettings         
             );
 
             var finalImportStatus = await tbService.Service.EndChunkedCSVImportAsync(taskInfo.TaskId);
 
             if (finalImportStatus.SuccessCount == 0)
+            {
                 throw new PluginApplicationException("Import completed with no successful entries.");
+            }
 
             return new ImportTermbaseResponse
             {
