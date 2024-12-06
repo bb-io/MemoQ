@@ -6,6 +6,7 @@ using Apps.Memoq.Models;
 using Apps.Memoq.Models.Termbases;
 using Apps.Memoq.Models.Termbases.Requests;
 using Apps.Memoq.Models.Termbases.Responses;
+using Apps.MemoQ.Models.Termbases.Requests;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
@@ -1114,6 +1115,47 @@ public class TermBaseActions : BaseInvocable
             {
                 TermbaseGuid = fileTermbaseGuid.ToString()
             };
+        }
+    }
+
+
+    [Action("Update glossary", Description = "Update an existing termbase using previously imported CSV")]
+    public async Task<ImportTermbaseResponse> UpdateTermbase(
+    [ActionParameter] UpdateTermbaseRequest input)
+    {
+        using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
+
+        var fileTermbaseGuid = Guid.Parse(input.FileTermbaseGuid);
+        var existingTermbaseGuid = Guid.Parse(input.ExistingTermbaseGuid);
+
+        var csvImportSettings = new CSVImportIntoExistingSettings
+        {
+            AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,        
+            OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false,
+            Delimiter = ';'
+        };
+
+        try
+        {
+            var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
+                fileTermbaseGuid,
+                existingTermbaseGuid,
+                csvImportSettings
+            );
+
+            var finalImportStatus = await tbService.Service.EndChunkedCSVImportAsync(taskInfo.TaskId);
+
+            if (finalImportStatus.SuccessCount == 0)
+                throw new PluginApplicationException("Import completed with no successful entries.");
+
+            return new ImportTermbaseResponse
+            {
+                TermbaseGuid = existingTermbaseGuid.ToString()
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new PluginApplicationException($"Failed to update existing glossary: {ex.Message}");
         }
     }
 }
