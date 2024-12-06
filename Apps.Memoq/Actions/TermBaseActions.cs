@@ -1063,6 +1063,7 @@ public class TermBaseActions : BaseInvocable
 
         if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
         {
+            var existingTermbaseGuid = Guid.Parse(input.ExistingTermbaseId);
             var csvImportSettings = new CSVImportIntoExistingSettings
             {
                 AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
@@ -1073,8 +1074,8 @@ public class TermBaseActions : BaseInvocable
             try
             {
                 var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-                    sessionId,
                     termbaseGuid,
+                    existingTermbaseGuid,
                     csvImportSettings
                 );
 
