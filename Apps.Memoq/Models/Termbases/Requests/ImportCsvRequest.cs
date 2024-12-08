@@ -17,9 +17,6 @@ namespace Apps.MemoQ.Models.Termbases.Requests
         [DataSource(typeof(TermbaseDataHandler))]
         public string TbId { get; set; }
         
-        [Display("File ID")] 
-        public string FileId { get; set; }
-
         [Display("Allow add new languages", Description = "Allow adding new languages during the update.")]
         [StaticDataSource(typeof(YesNoDataHandler))]
         public bool? AllowAddNewLanguages { get; set; }
