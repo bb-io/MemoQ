@@ -26,6 +26,6 @@ namespace Apps.MemoQ.Models.Termbases.Requests
         public bool? OverwriteEntriesWithSameId { get; set; }
 
         [Display("Delimeter")]
-        public string? Delimiter { get; set; }
+        public char? Delimiter { get; set; }
     }
 }
