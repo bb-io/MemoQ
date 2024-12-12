@@ -28,14 +28,16 @@ namespace Apps.Memoq.Actions;
 public class TermBaseActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
+    private readonly IFileManagerService _fileManagerService;
 
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
 
-    public TermBaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
+    public TermBaseActions(InvocationContext invocationContext, IFileManagerService fileManagerService, IFileManagementClient fileManagementClient)
         : base(invocationContext)
     {
         _fileManagementClient = fileManagementClient;
+        _fileManagerService= fileManagerService;
     }
 
     #region Import
@@ -924,7 +926,6 @@ public class TermBaseActions : BaseInvocable
 
             return headers;
         }
-
         string? GetColumnValue(string columnName, GlossaryConceptEntry entry, string languageCode)
         {
             var languageSection = entry.LanguageSections.FirstOrDefault(ls => ls.LanguageCode == languageCode);
@@ -977,54 +978,38 @@ public class TermBaseActions : BaseInvocable
 
         using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
 
-        Guid fileTermbaseGuid;
-        Guid? existingTermbaseGuid = null;
 
-        if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
+        var termbaseName = input.Name ?? glossary.Title;
+
+        var termbases = await tbService.Service.ListTBs2Async(new TBFilter());
+
+        if (termbases.Any(tb => tb.Name.Equals(termbaseName, StringComparison.OrdinalIgnoreCase)))
+            termbaseName += $" {DateTime.Now.ToString("D")}";
+
+        var termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
         {
-            existingTermbaseGuid = Guid.Parse(input.ExistingTermbaseId);
-
-            var termbaseName = input.Name ?? glossary.Title;
-            fileTermbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
-            {
-                IsQTerm = input.IsQTerm ?? false,
-                Name = termbaseName,
-                Description = input.Description ?? glossary.SourceDescription,
-                LanguageCodes = memoQLanguagesPresent,
-                IsModerated = input.IsModerated ?? false,
-                ModLateDisclosure = input.ModLateDisclosure ?? true,
-                Client = input.Client,
-                Project = input.Project,
-                Domain = input.Domain,
-                Subject = input.Subject
-            });
-        }
-        else
-        {
-            var termbaseName = input.Name ?? glossary.Title;
-            fileTermbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
-            {
-                IsQTerm = input.IsQTerm ?? false,
-                Name = termbaseName,
-                Description = input.Description ?? glossary.SourceDescription,
-                LanguageCodes = memoQLanguagesPresent,
-                IsModerated = input.IsModerated ?? false,
-                ModLateDisclosure = input.ModLateDisclosure ?? true,
-                Client = input.Client,
-                Project = input.Project,
-                Domain = input.Domain,
-                Subject = input.Subject
-            });
-        }
-
-        var rowsToAdd = new List<List<string>>();
+            IsQTerm = input.IsQTerm ?? false,
+            Name = termbaseName,
+            Description = input.Description ?? glossary.SourceDescription,
+            LanguageCodes = memoQLanguagesPresent,
+            IsModerated = input.IsModerated ?? false,
+            ModLateDisclosure = input.ModLateDisclosure ?? true,
+            Client = input.Client,
+            Project = input.Project,
+            Domain = input.Domain,
+            Subject = input.Subject
+        });
 
         var languageRelatedColumns = GenerateCsvHeaders(memoQLanguagesPresent);
-        rowsToAdd.Add(new List<string>(new[]
+        var rowsToAdd = new List<List<string>>
         {
-        EntryId, EntrySubject, EntryDomain, EntryClientId, EntryProjectId, EntryCreated, EntryCreator,
-        EntryLastModified, EntryModifier, EntryNote
-    }.Concat(languageRelatedColumns)));
+            new List<string>(new[]
+            {
+                EntryId, EntrySubject, EntryDomain, EntryClientId, EntryProjectId, EntryCreated, EntryCreator,
+                EntryLastModified, EntryModifier, EntryNote
+            }.Concat(languageRelatedColumns))
+        };
+
 
         foreach (var entry in glossary.ConceptEntries)
         {
@@ -1036,17 +1021,17 @@ public class TermBaseActions : BaseInvocable
 
             rowsToAdd.Add(new List<string>(new[]
             {
-            string.IsNullOrWhiteSpace(entry.Id) ? Guid.NewGuid().ToString() : entry.Id,
-            entry.SubjectField ?? string.Empty,
-            string.Empty,
-            string.Empty,
-            string.Empty,
-            string.Empty,
-            string.Empty,
-            string.Empty,
-            string.Empty,
-            string.Join('|', entry.Notes ?? Enumerable.Empty<string>()).Replace("\n", "").Replace("\r", "")
-        }.Concat(languageRelatedValues)));
+                string.IsNullOrWhiteSpace(entry.Id) ? Guid.NewGuid().ToString() : entry.Id,
+                entry.SubjectField ?? string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Join('|', entry.Notes ?? Enumerable.Empty<string>()).Replace("\n", "").Replace("\r", "")
+            }.Concat(languageRelatedValues)));
         }
 
         for (var i = 0; i < rowsToAdd[0].Count; i++)
@@ -1059,101 +1044,23 @@ public class TermBaseActions : BaseInvocable
 
         await using var csvStream = await rowsToAdd.ConvertToCsv(Encoding.UTF8, ';');
 
-        var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(fileTermbaseGuid, new CSVImportSettings());
-        CSVImportResult importStatus;
-        try
-        {
-            const int chunkSize = 500000;
-            int bytesRead;
-            var buffer = new byte[chunkSize];
+        var sanitizedFileName = termbaseName.Replace(" ", "_") + ".csv";
+        var fileGuid = _fileManagerService.BeginChunkedFileUpload(sanitizedFileName, false);
 
-            while ((bytesRead = csvStream.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                var chunk = new byte[bytesRead];
-                Array.Copy(buffer, chunk, bytesRead);
-
-                await tbService.Service.AddNextCSVChunkAsync(sessionId, chunk);
-            }
-        }
-        finally
+        const int chunkSize = 500000;
+        byte[] buffer = new byte[chunkSize];
+        int bytesRead;
+        while ((bytesRead = csvStream.Read(buffer, 0, buffer.Length)) > 0)
         {
-            importStatus = await tbService.Service.EndChunkedCSVImportAsync(sessionId);
+            byte[] chunk = new byte[bytesRead];
+            Array.Copy(buffer, chunk, bytesRead);
+            _fileManagerService.AddNextFileChunk(fileGuid, chunk);
         }
 
-        if (existingTermbaseGuid.HasValue)
-        {
-            var csvImportSettings = new CSVImportIntoExistingSettings
-            {
-                AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
-                OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false,
-                Delimiter = ';'
-            };
+        _fileManagerService.EndChunkedFileUpload(fileGuid);
 
-            try
-            {
-                var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-                    fileTermbaseGuid,
-                    existingTermbaseGuid.Value,
-                    csvImportSettings
-                );
+        var taskInfo = tbService.Service.StartCSVImportIntoExistingTBTask(fileGuid, termbaseGuid, new CSVImportIntoExistingSettings());
 
-                var finalImportStatus = await tbService.Service.EndChunkedCSVImportAsync(taskInfo.TaskId);
-                if (finalImportStatus.SuccessCount == 0)
-                {
-                    throw new PluginApplicationException("Import completed with no successful entries.");
-                }
-
-                return new ImportTermbaseResponse
-                {
-                    TermbaseGuid = existingTermbaseGuid.Value.ToString()
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new PluginApplicationException($"Failed to update existing glossary: {ex.Message}");
-            }
-        }
-        else
-        {
-            return new ImportTermbaseResponse
-            {
-                TermbaseGuid = fileTermbaseGuid.ToString()
-            };
-        }
-    }
-
-
-    [Action("Update glossary(test)", Description = "Update an existing termbase using previously imported CSV")]
-    public async Task<ImportTermbaseResponse> UpdateTermbase(
-   [ActionParameter] UpdateTermbaseRequest input)
-    {
-        using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
-        var fileTermbaseGuid = Guid.Parse(input.FileTermbaseGuid);
-        var existingTermbaseGuid = Guid.Parse(input.ExistingTermbaseGuid);
-        var csvImportSettings = new CSVImportIntoExistingSettings
-        {
-            AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
-            OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false,
-            Delimiter = ';'
-        };
-        try
-        {
-            var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-                fileTermbaseGuid,
-                existingTermbaseGuid,
-                csvImportSettings
-            );
-            var finalImportStatus = await tbService.Service.EndChunkedCSVImportAsync(taskInfo.TaskId);
-            if (finalImportStatus.SuccessCount == 0)
-                throw new PluginApplicationException("Import completed with no successful entries.");
-            return new ImportTermbaseResponse
-            {
-                TermbaseGuid = existingTermbaseGuid.ToString()
-            };
-        }
-        catch (Exception ex)
-        {
-            throw new PluginApplicationException($"Failed to update existing glossary: {ex.Message}");
-        }
+        return new ImportTermbaseResponse { TermbaseGuid = termbaseGuid.ToString() };
     }
 }
