@@ -23,6 +23,7 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using DocumentFormat.OpenXml.Office2016.Excel;
 using MQS.FileManager;
+using MQS.TasksService;
 using MQS.TB;
 
 namespace Apps.Memoq.Actions;
@@ -912,8 +913,8 @@ public class TermBaseActions : BaseInvocable
     public async Task<ImportTermbaseResponse> ImportTermbaseTest([ActionParameter] GlossaryWrapper glossaryWrapper,
         [ActionParameter] CreateTermbaseRequest input)
     {
-        
         var glossaryStream = await _fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
+
         var memoryStream = new MemoryStream();
         await glossaryStream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
@@ -925,34 +926,52 @@ public class TermBaseActions : BaseInvocable
 
         memoryStream.Position = 0;
 
-        var fileGuid = await _fileManagerService.BeginChunkedFileUploadAsync(glossaryWrapper.Glossary.Name, false);
-
-        const int chunkSize = 500000;
-        byte[] buffer = new byte[chunkSize];
-        int bytesRead;
-
-        while ((bytesRead = memoryStream.Read(buffer, 0, buffer.Length)) > 0)
+        using (var fileManagerFactory = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds))
         {
-            byte[] chunk = new byte[bytesRead];
-            Array.Copy(buffer, chunk, bytesRead);
-            await _fileManagerService.AddNextFileChunkAsync(fileGuid, chunk);
-        }
+            var fileManagerService = fileManagerFactory.Service;
 
-        await _fileManagerService.EndChunkedFileUploadAsync(fileGuid);
+            var fileGuid = await fileManagerService.BeginChunkedFileUploadAsync(glossaryWrapper.Glossary.Name, false);
 
-        using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
+            const int chunkSize = 500000;
+            byte[] buffer = new byte[chunkSize];
+            int bytesRead;
 
-        var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-            fileGuid,
-            new Guid(input.ExistingTermbaseId),
-            new CSVImportIntoExistingSettings
+            while ((bytesRead = memoryStream.Read(buffer, 0, buffer.Length)) > 0)
             {
-                AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
-                OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false
-            });
-        return new ImportTermbaseResponse
-        {
-            TermbaseGuid = input.ExistingTermbaseId,
-        };
+                byte[] chunk = new byte[bytesRead];
+                Array.Copy(buffer, chunk, bytesRead);
+                await fileManagerService.AddNextFileChunkAsync(fileGuid, chunk);
+            }
+
+            await fileManagerService.EndChunkedFileUploadAsync(fileGuid);
+
+            using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
+           
+
+            var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
+                fileGuid,
+                new Guid(input.ExistingTermbaseId),
+                new CSVImportIntoExistingSettings
+                {
+                    AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
+                    OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false
+                });
+
+            Console.WriteLine("Task started with ID: " + taskInfo.TaskId);
+
+            using var check = new MemoqServiceFactory<ITasksService>(SoapConstants.TaskServiceUrl, Creds);
+
+            await Task.Delay(2000);
+
+            Console.WriteLine("Status "+ taskInfo.Status);
+
+            var checkResponse = check.Service.GetTaskStatus(taskInfo.TaskId);
+            Console.WriteLine("State " + checkResponse.ToString());
+
+            return new ImportTermbaseResponse
+            {
+                TermbaseGuid = input.ExistingTermbaseId,
+            };
+        }
     }
 }
