@@ -909,21 +909,15 @@ public class TermBaseActions : BaseInvocable
 
 
 
-    [Action("Import glossary(Test)", Description = "Import a termbase")]
-    public async Task<ImportTermbaseResponse> ImportTermbaseTest([ActionParameter] GlossaryWrapper glossaryWrapper,
+    [Action("Import glossary into existing termbase", Description = "Import CSV file into existing termbase")]
+    public async Task<ImportTermbaseResponse> ImportCsvIntoTermbase([ActionParameter] GlossaryWrapper glossaryWrapper,
         [ActionParameter] CreateTermbaseRequest input)
     {
         var glossaryStream = await _fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
 
         var memoryStream = new MemoryStream();
         await glossaryStream.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
-
-        using (var reader = new StreamReader(memoryStream, leaveOpen: true))
-        {
-            string fileContent = await reader.ReadToEndAsync();
-        }
-
+      
         memoryStream.Position = 0;
 
         using (var fileManagerFactory = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds))
@@ -946,7 +940,6 @@ public class TermBaseActions : BaseInvocable
             await fileManagerService.EndChunkedFileUploadAsync(fileGuid);
 
             using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
-           
 
             var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
                 fileGuid,
@@ -954,19 +947,11 @@ public class TermBaseActions : BaseInvocable
                 new CSVImportIntoExistingSettings
                 {
                     AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
-                    OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false
+                    OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false,
+                    Delimiter = ','
                 });
 
-            Console.WriteLine("Task started with ID: " + taskInfo.TaskId);
-
             using var check = new MemoqServiceFactory<ITasksService>(SoapConstants.TaskServiceUrl, Creds);
-
-            await Task.Delay(2000);
-
-            Console.WriteLine("Status "+ taskInfo.Status);
-
-            var checkResponse = check.Service.GetTaskStatus(taskInfo.TaskId);
-            Console.WriteLine("State " + checkResponse.ToString());
 
             return new ImportTermbaseResponse
             {
