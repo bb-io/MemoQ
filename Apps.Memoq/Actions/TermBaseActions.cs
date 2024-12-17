@@ -685,7 +685,6 @@ public class TermBaseActions : BaseInvocable
         if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
         {
             termbaseGuid = new Guid(input.ExistingTermbaseId);
-            Console.WriteLine($"Using existing Termbase ID: {termbaseGuid}");
         }
         else
         {
