@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using System.Net.Mime;
+﻿using System.Net.Mime;
 using System.Text;
 using System.Xml;
 using Apps.Memoq.Contracts;
@@ -7,24 +6,17 @@ using Apps.Memoq.Models;
 using Apps.Memoq.Models.Termbases;
 using Apps.Memoq.Models.Termbases.Requests;
 using Apps.Memoq.Models.Termbases.Responses;
-using Apps.Memoq.Utils.FileUploader.Managers;
-using Apps.MemoQ.Models.Termbases.Requests;
-using Apps.MemoQ.Models.Termbases.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using CsvHelper;
-using CsvHelper.Configuration;
-using DocumentFormat.OpenXml.Office2016.Excel;
+using MQS.TB;
 using MQS.FileManager;
 using MQS.TasksService;
-using MQS.TB;
 
 namespace Apps.Memoq.Actions;
 
@@ -32,16 +24,14 @@ namespace Apps.Memoq.Actions;
 public class TermBaseActions : BaseInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-    private readonly IFileManagerService _fileManagerService;
 
     private IEnumerable<AuthenticationCredentialsProvider> Creds =>
         InvocationContext.AuthenticationCredentialsProviders;
 
-    public TermBaseActions(InvocationContext invocationContext, IFileManagerService fileManagerService, IFileManagementClient fileManagementClient)
+    public TermBaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
         : base(invocationContext)
     {
         _fileManagementClient = fileManagementClient;
-        _fileManagerService= fileManagerService;
     }
 
     #region Import
@@ -617,7 +607,7 @@ public class TermBaseActions : BaseInvocable
         ["zu"] = "zul"
     };
 
-    [Action("Import glossary", Description = "Import a termbase")]
+    [Action("Import or update glossary", Description = "Import glossary to create or update termbase")]
     public async Task<ImportTermbaseResponse> ImportTermbase([ActionParameter] GlossaryWrapper glossaryWrapper,
         [ActionParameter] CreateTermbaseRequest input)
     {
@@ -691,6 +681,14 @@ public class TermBaseActions : BaseInvocable
 
         using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
 
+        Guid termbaseGuid;
+        if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
+        {
+            termbaseGuid = new Guid(input.ExistingTermbaseId);
+            Console.WriteLine($"Using existing Termbase ID: {termbaseGuid}");
+        }
+        else
+        {
         var termbaseName = input.Name ?? glossary.Title;
 
         var termbases = await tbService.Service.ListTBs2Async(new TBFilter());
@@ -698,7 +696,7 @@ public class TermBaseActions : BaseInvocable
         if (termbases.Any(tb => tb.Name.Equals(termbaseName, StringComparison.OrdinalIgnoreCase)))
             termbaseName += $" {DateTime.Now.ToString("D")}";
 
-        var termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
+        termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
         {
             IsQTerm = input.IsQTerm ?? false,
             Name = termbaseName,
@@ -711,7 +709,7 @@ public class TermBaseActions : BaseInvocable
             Domain = input.Domain,
             Subject = input.Subject
         });
-
+        }
         var languageRelatedColumns = GenerateCsvHeaders(memoQLanguagesPresent);
 
         var rowsToAdd = new List<List<string>>();
@@ -906,57 +904,4 @@ public class TermBaseActions : BaseInvocable
     }
 
     #endregion
-
-
-
-    [Action("Import glossary into existing termbase", Description = "Import CSV file into existing termbase")]
-    public async Task<ImportTermbaseResponse> ImportCsvIntoTermbase([ActionParameter] GlossaryWrapper glossaryWrapper,
-        [ActionParameter] CreateTermbaseRequest input)
-    {
-        var glossaryStream = await _fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
-
-        var memoryStream = new MemoryStream();
-        await glossaryStream.CopyToAsync(memoryStream);
-      
-        memoryStream.Position = 0;
-
-        using (var fileManagerFactory = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds))
-        {
-            var fileManagerService = fileManagerFactory.Service;
-
-            var fileGuid = await fileManagerService.BeginChunkedFileUploadAsync(glossaryWrapper.Glossary.Name, false);
-
-            const int chunkSize = 500000;
-            byte[] buffer = new byte[chunkSize];
-            int bytesRead;
-
-            while ((bytesRead = memoryStream.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                byte[] chunk = new byte[bytesRead];
-                Array.Copy(buffer, chunk, bytesRead);
-                await fileManagerService.AddNextFileChunkAsync(fileGuid, chunk);
-            }
-
-            await fileManagerService.EndChunkedFileUploadAsync(fileGuid);
-
-            using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
-
-            var taskInfo = await tbService.Service.StartCSVImportIntoExistingTBTaskAsync(
-                fileGuid,
-                new Guid(input.ExistingTermbaseId),
-                new CSVImportIntoExistingSettings
-                {
-                    AllowAddNewLanguages = input.AllowAddNewLanguages ?? true,
-                    OverwriteEntriesWithSameId = input.OverwriteEntriesWithSameId ?? false,
-                    Delimiter = ','
-                });
-
-            using var check = new MemoqServiceFactory<ITasksService>(SoapConstants.TaskServiceUrl, Creds);
-
-            return new ImportTermbaseResponse
-            {
-                TermbaseGuid = input.ExistingTermbaseId,
-            };
-        }
-    }
 }
