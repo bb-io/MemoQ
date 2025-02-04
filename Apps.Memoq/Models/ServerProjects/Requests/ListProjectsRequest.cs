@@ -1,4 +1,3 @@
-using Apps.Memoq.DataSourceHandlers;
 using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
@@ -17,7 +16,7 @@ public class ListProjectsRequest
     public string? Project { get; set; }
 
     [Display("Source language")]
-    [DataSource(typeof(SourceLanguageDataHandler))]
+    [StaticDataSource(typeof(SourceLanguageDataHandler))]
     public string? SourceLanguageCode { get; set; }
 
     [Display("Target language"), StaticDataSource(typeof(TargetLanguageDataHandler))]
