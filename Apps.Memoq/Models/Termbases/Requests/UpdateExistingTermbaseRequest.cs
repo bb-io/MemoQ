@@ -13,11 +13,9 @@ namespace Apps.MemoQ.Models.Termbases.Requests
         public string Id { get; set; }
 
         [Display("Allow add new languages")]
-        [StaticDataSource(typeof(YesNoDataHandler))]
         public bool? AllowAddNewLanguages { get; set; }
 
         [Display("Overwrite enties with same ID")]
-        [StaticDataSource(typeof(YesNoDataHandler))]
         public bool? OverwriteEntiesWithSameId { get; set; }
     }
 }

@@ -5,17 +5,12 @@ VisualStudioVersion = 17.5.33414.496
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apps.MemoQ", "Apps.Memoq\Apps.MemoQ.csproj", "{38216ED3-9402-42CC-AB3F-2D1F2EF89DD8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{3D2CD1A8-C870-4257-9DF0-49C66C027EAD}"
-	ProjectSection(ProjectDependencies) = postProject
-		{38216ED3-9402-42CC-AB3F-2D1F2EF89DD8} = {38216ED3-9402-42CC-AB3F-2D1F2EF89DD8}
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{583B7524-6974-4866-B702-3AC277A0C571}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.MemoQ", "Tests.MemoQ\Tests.MemoQ.csproj", "{5E432CA7-A616-489A-B152-229694369017}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.MemoQ", "Tests.MemoQ\Tests.MemoQ.csproj", "{5E432CA7-A616-489A-B152-229694369017}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,10 +22,6 @@ Global
 		{38216ED3-9402-42CC-AB3F-2D1F2EF89DD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38216ED3-9402-42CC-AB3F-2D1F2EF89DD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{38216ED3-9402-42CC-AB3F-2D1F2EF89DD8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3D2CD1A8-C870-4257-9DF0-49C66C027EAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3D2CD1A8-C870-4257-9DF0-49C66C027EAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3D2CD1A8-C870-4257-9DF0-49C66C027EAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3D2CD1A8-C870-4257-9DF0-49C66C027EAD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5E432CA7-A616-489A-B152-229694369017}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5E432CA7-A616-489A-B152-229694369017}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E432CA7-A616-489A-B152-229694369017}.Release|Any CPU.ActiveCfg = Release|Any CPU

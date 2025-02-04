@@ -37,11 +37,9 @@ public class CreateTermbaseRequest
     public bool? IsModerated { get; set; }
 
     [Display("Allow add new languages", Description = "Allow adding new languages during the update.")]
-    [StaticDataSource(typeof(YesNoDataHandler))]
     public bool? AllowAddNewLanguages { get; set; }
 
     [Display("Overwrite entries with same ID", Description = "Overwrite entries with the same ID during the update.")]
-    [StaticDataSource(typeof(YesNoDataHandler))]
     public bool? OverwriteEntriesWithSameId { get; set; }
 
     [Display("Late disclosure", Description = "Can be applied only when 'Is moderated' parameter set to 'True'. When set " +

@@ -17,11 +17,9 @@ namespace Apps.MemoQ.Models.Termbases.Requests
         public string ExistingTermbaseGuid { get; set; }
 
         [Display("Allow add new languages", Description = "Allow adding new languages during the update.")]
-        [StaticDataSource(typeof(YesNoDataHandler))]
         public bool? AllowAddNewLanguages { get; set; }
 
         [Display("Overwrite entries with same ID", Description = "Overwrite entries with the same ID during the update.")]
-        [StaticDataSource(typeof(YesNoDataHandler))]
         public bool? OverwriteEntriesWithSameId { get; set; }
     }
 }
