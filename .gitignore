@@ -357,3 +357,4 @@ healthchecksdb
 /Apps.Memoq/ApplicationConstants.cs
 /ConsoleApp1
 /ConsoleApp2
+/Tests.MemoQ/appsettings.json
