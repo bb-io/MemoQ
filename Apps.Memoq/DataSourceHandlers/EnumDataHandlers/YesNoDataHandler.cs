@@ -6,10 +6,10 @@ namespace Apps.MemoQ.DataSourceHandlers.EnumDataHandlers
     public class YesNoDataHandler : IStaticDataSourceItemHandler
     {
         protected Dictionary<string, string> EnumValues => new()
-    {
-        {"true", "Yes"},
-        {"false", "No"}
-    };
+        {
+            {"true", "Yes"},
+            {"false", "No"}
+        };
 
         public IEnumerable<DataSourceItem> GetData()
         {

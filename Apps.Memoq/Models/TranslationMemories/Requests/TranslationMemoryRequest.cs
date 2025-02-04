@@ -4,6 +4,6 @@ namespace Apps.Memoq.Models.TranslationMemories.Requests;
 
 public class TranslationMemoryRequest
 {
-    [Display("Translation memory GUID")]
+    [Display("Translation memory ID")]
     public string TmGuid { get; set; }
 }

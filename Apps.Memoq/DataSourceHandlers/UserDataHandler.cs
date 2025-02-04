@@ -1,5 +1,6 @@
 using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
+using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -8,24 +9,19 @@ using MQS.Security;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class UserDataHandler : BaseInvocable, IDataSourceHandler
+public class UserDataHandler : MemoqInvocable, IDataSourceItemHandler
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
-
     public UserDataHandler(InvocationContext invocationContext) : base(invocationContext)
     {
     }
 
-    public Dictionary<string, string> GetData(DataSourceContext context)
+    public IEnumerable<DataSourceItem> GetData(DataSourceContext context)
     {
-        var securityService = new MemoqServiceFactory<ISecurityService>(SoapConstants.SecurityServiceUrl,
-            Creds);
-        var users = securityService.Service.ListUsers();
+        var users = SecurityService.Service.ListUsers();
 
         if (users is null)
         {
-            return new();
+            return new List<DataSourceItem>();
         }
 
         return users
@@ -40,6 +36,6 @@ public class UserDataHandler : BaseInvocable, IDataSourceHandler
                 return name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase);
             })
             .Take(20)
-            .ToDictionary(x => x.UserGuid.ToString(), x => x.FullName ?? x.UserName);
+            .Select(x => new DataSourceItem(x.UserGuid.ToString(), x.FullName ?? x.UserName));
     }
 }

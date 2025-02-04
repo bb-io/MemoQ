@@ -11,7 +11,7 @@ public class DownloadFileResponse : FileInfoDto
         DocumentName = file.Name + file.FileExtension;
     }
 
-    [Display("Document")] public FileReference File { get; set; }
+    [Display("File")] public FileReference File { get; set; }
 
-    [Display("Document name")] public string DocumentName { get; set; }
+    [Display("File name")] public string DocumentName { get; set; }
 }

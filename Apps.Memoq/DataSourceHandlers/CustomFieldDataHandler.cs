@@ -7,11 +7,8 @@ using Apps.Memoq.Actions;
 
 namespace Apps.MemoQ.DataSourceHandlers
 {
-    public class CustomFieldDataHandler : BaseInvocable, IDataSourceHandler
+    public class CustomFieldDataHandler : MemoqInvocable, IAsyncDataSourceItemHandler
     {
-        private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-            InvocationContext.AuthenticationCredentialsProviders;
-
         private readonly string _projectGuid;
         private readonly InvocationContext _context;
 
@@ -22,7 +19,7 @@ namespace Apps.MemoQ.DataSourceHandlers
             _context = invocationContext;
         }
 
-        public Dictionary<string, string> GetData(DataSourceContext context)
+        public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(_projectGuid))
             {
@@ -30,15 +27,14 @@ namespace Apps.MemoQ.DataSourceHandlers
             }
 
             var actions = new ServerProjectActions(_context);
-            var response = actions.GetCustomFields(new Memoq.Models.ServerProjects.Requests.ProjectRequest 
-            {ProjectGuid = _projectGuid });
+            var response = await actions.GetCustomFields(new Memoq.Models.ServerProjects.Requests.ProjectRequest { ProjectGuid = _projectGuid });
 
             return response.CustomFields
                 .Where(x => context.SearchString is null ||
                             x.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(x => x.Name)
                 .Take(20)
-                .ToDictionary(x => x.Name, x => x.Name);
+                .Select(x => new DataSourceItem(x.Name, x.Value));
         }
     }
 }

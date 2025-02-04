@@ -5,19 +5,19 @@ namespace Apps.Memoq.Callbacks.Models.Response;
 
 public class DocumentDeliveredResponse
 {
-    [Display("Project GUID")]
+    [Display("Project ID")]
     public string ProjectGuid { get; set; }
 
     [Display("Project name")]
     public string ProjectName { get; set; }
 
-    [Display("Document GUID")]
+    [Display("File ID")]
     public string DocumentGuid { get; set; }
 
-    [Display("Document name")]
+    [Display("File name")]
     public string DocumentName { get; set; }
 
-    [Display("External document ID")]
+    [Display("External file ID")]
     public string ExternalDocumentId { get; set; }
 
     [Display("New assigned user ID")]

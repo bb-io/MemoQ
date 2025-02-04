@@ -8,7 +8,7 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class UploadDocumentToProjectRequest : ProjectRequest
 {
-    [Display("Document")]
+    [Display("File")]
     public FileReference File { get; set; }
 
     [Display("Target languages"), StaticDataSource(typeof(TargetLanguageDataHandler))]

@@ -1,4 +1,5 @@
 using Apps.Memoq.Utils.FileUploader.Managers.Base;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.Memoq.Utils.FileUploader;
 
@@ -11,24 +12,31 @@ public static class FileUploader
         int bytesRead;
 
         using var fileStream = new MemoryStream(file);
-        var guid = manager.BeginChunkedUpload(id);
-        while ((bytesRead = fileStream.Read(chunkBytes, 0, chunkSize)) != 0)
+        try
         {
-            byte[] dataToUpload;
-            if (bytesRead == chunkSize)
-                dataToUpload = chunkBytes;
-            else
+            var guid = manager.BeginChunkedUpload(id);
+            while ((bytesRead = fileStream.Read(chunkBytes, 0, chunkSize)) != 0)
             {
-                dataToUpload = new byte[bytesRead];
-                Array.Copy(chunkBytes, dataToUpload, bytesRead);
+                byte[] dataToUpload;
+                if (bytesRead == chunkSize)
+                    dataToUpload = chunkBytes;
+                else
+                {
+                    dataToUpload = new byte[bytesRead];
+                    Array.Copy(chunkBytes, dataToUpload, bytesRead);
+                }
+
+                manager.AddNextChunk(guid, dataToUpload);
             }
 
-            manager.AddNextChunk(guid, dataToUpload);
+            if (guid != Guid.Empty)
+                manager.EndChunkedUpload(guid);
+
+            return guid;
+        } catch (Exception ex)
+        {
+            throw new PluginApplicationException(ex.Message);
         }
-
-        if (guid != Guid.Empty)
-            manager.EndChunkedUpload(guid);
-
-        return guid;
+        
     }
 }

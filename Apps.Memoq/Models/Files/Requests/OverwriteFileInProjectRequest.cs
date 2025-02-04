@@ -6,7 +6,7 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class OverwriteFileInProjectRequest : ProjectRequest
 {
-    [Display("Document to replace GUID")]
+    [Display("Replacement file ID")]
     public string DocumentToReplaceGuid { get; set; }
         
     public FileReference File { get; set; }

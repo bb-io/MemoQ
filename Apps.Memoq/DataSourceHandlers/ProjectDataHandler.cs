@@ -1,5 +1,6 @@
 using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
+using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -8,26 +9,21 @@ using MQS.ServerProject;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class ProjectDataHandler : BaseInvocable, IDataSourceHandler
+public class ProjectDataHandler : MemoqInvocable, IAsyncDataSourceItemHandler
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
-
     public ProjectDataHandler(InvocationContext invocationContext) : base(invocationContext)
     {
     }
 
-    public Dictionary<string, string> GetData(DataSourceContext context)
+    public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(SoapConstants.ProjectServiceUrl,
-            Creds);
-        var projects = projectService.Service.ListProjects(new ServerProjectListFilter());
+        var projects = await ProjectService.Service.ListProjectsAsync(new ServerProjectListFilter());
 
         return projects
             .Where(x => context.SearchString is null ||
                         x.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(x => x.CreationTime)
             .Take(20)
-            .ToDictionary(x => x.ServerProjectGuid.ToString(), x => x.Name);
+            .Select(x => new DataSourceItem(x.ServerProjectGuid.ToString(), x.Name));
     }
 }

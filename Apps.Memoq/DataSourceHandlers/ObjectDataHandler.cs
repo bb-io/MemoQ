@@ -5,14 +5,12 @@ using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using ResourceType = MQS.ServerProject.ResourceType;
+using Apps.MemoQ;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class ObjectDataHandler : BaseInvocable, IAsyncDataSourceHandler
+public class ObjectDataHandler : MemoqInvocable, IAsyncDataSourceItemHandler
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
-
     private readonly string? _resourceType;
 
     public ObjectDataHandler(InvocationContext invocationContext, [ActionParameter] AddResourceToProjectRequest request)
@@ -21,7 +19,7 @@ public class ObjectDataHandler : BaseInvocable, IAsyncDataSourceHandler
         _resourceType = request.ResourceType;
     }
 
-    public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
+    public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context,
         CancellationToken cancellationToken)
     {
         if (_resourceType is null)
@@ -65,10 +63,10 @@ public class ObjectDataHandler : BaseInvocable, IAsyncDataSourceHandler
 
         if (resourceType == ResourceType.PathRules)
         {
-            return new Dictionary<string, string>()
+            return new List<DataSourceItem>
             {
-                { "File", "File" },
-                { "Folder", "Folder" }
+                new DataSourceItem("File", "File"),
+                new DataSourceItem("Folder", "Folder"),
             };
         }
         

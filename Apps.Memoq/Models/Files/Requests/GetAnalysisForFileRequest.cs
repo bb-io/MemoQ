@@ -4,5 +4,5 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class GetAnalysisForFileRequest : GetAnalysisForProjectRequest
 {
-    [Display("Document GUID")] public string DocumentGuid { get; set; }
+    [Display("File ID")] public string DocumentGuid { get; set; }
 }

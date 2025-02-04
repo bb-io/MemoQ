@@ -10,7 +10,7 @@ namespace Apps.MemoQ.Models.Files.Requests
 {
     public class UploadDocumentToProjectWithOptionsRequest : ProjectRequest
     {
-        [Display("Document")]
+        [Display("File")]
         public FileReference File { get; set; }
 
         [Display("Target languages"), StaticDataSource(typeof(TargetLanguageDataHandler))]
@@ -22,10 +22,10 @@ namespace Apps.MemoQ.Models.Files.Requests
         [Display("Preview creation"), StaticDataSource(typeof(PreviewCreationDataHandler))]
         public string? PreviewCreation { get; set; }
 
-        [Display("External document ID", Description = "An identifier of this document that is stored by memoQ. The value is not interpreted, only stored and can be used for delivery.")]
+        [Display("External file ID", Description = "An identifier of this file that is stored by memoQ. The value is not interpreted, only stored and can be used for delivery.")]
         public string? ExternalDocumentId { get; set; }
 
-        [Display("Filter config GUID")]
+        [Display("Filter config ID")]
         [DataSource(typeof(FilterConfigDataHandler))]
         public string? FilterConfigResGuid { get; set; }
 

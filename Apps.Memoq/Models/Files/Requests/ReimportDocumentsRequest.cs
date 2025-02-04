@@ -4,7 +4,7 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class ReimportDocumentsRequest
 {
-    [Display("Document GUID")] 
+    [Display("File ID")] 
     public string DocumentGuid { get; set; }
 
     [Display("Keep user assignments")]

@@ -11,12 +11,12 @@ public class CallbacksList
 {
     #region Deliver callbacks
 
-    [Webhook("On document delivered (manual)", Description = "On a specific document delivered (manual)")]
+    [Webhook("On file delivered (manual)", Description = "On a specific file delivered (manual)")]
     public Task<WebhookResponse<DocumentDeliveredResponse>> OnDocumentDeliveredManual(WebhookRequest webhookRequest)
         => HandleCallback(webhookRequest);
 
-    [Webhook("On document delivered", typeof(DocumentDeliveredHandler),
-        Description = "On a specific document delivered")]
+    [Webhook("On file delivered", typeof(DocumentDeliveredHandler),
+        Description = "On a specific file delivered")]
     public Task<WebhookResponse<DocumentDeliveredResponse>> OnDocumentDelivered(WebhookRequest webhookRequest)
         => HandleCallback(webhookRequest);
 

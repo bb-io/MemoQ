@@ -4,7 +4,7 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class UpdateFromXliffRequest
 {
-    [Display("Re-import document GUID", Description = "By providing a document, this action will overwrite the XLIFF")] 
+    [Display("Re-import file ID", Description = "By providing a file ID, this action will overwrite the XLIFF")] 
     public string DocumentGuid { get; set; }
 
     [Display("Update locked segments")]

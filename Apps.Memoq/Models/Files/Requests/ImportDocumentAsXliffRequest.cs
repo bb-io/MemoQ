@@ -4,7 +4,7 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class ImportDocumentAsXliffRequest
 {
-    [Display("Re-import document GUID", Description = "By providing a document, this action will overwrite the XLIFF")] 
+    [Display("Re-import file ID", Description = "By providing a file, this action will overwrite the XLIFF")] 
     public string? DocumentGuid { get; set; }
 
     [Display("Keep user assignments")]

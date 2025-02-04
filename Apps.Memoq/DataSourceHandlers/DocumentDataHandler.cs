@@ -1,6 +1,7 @@
 ﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Files.Requests;
+using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -9,11 +10,8 @@ using MQS.ServerProject;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class DocumentDataHandler : BaseInvocable, IDataSourceHandler
+public class DocumentDataHandler : MemoqInvocable, IDataSourceItemHandler
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
-
     private readonly string _projectGuid;
 
     public DocumentDataHandler(InvocationContext invocationContext, [ActionParameter] GetDocumentRequest request) :
@@ -22,17 +20,14 @@ public class DocumentDataHandler : BaseInvocable, IDataSourceHandler
         _projectGuid = request.ProjectGuid;
     }
 
-    public Dictionary<string, string> GetData(DataSourceContext context)
+    public IEnumerable<DataSourceItem> GetData(DataSourceContext context)
     {
         if (string.IsNullOrEmpty(_projectGuid))
         {
-            throw new InvalidOperationException("You should input a project guid first");
+            throw new InvalidOperationException("You should input a project GUID first");
         }
 
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var response = projectService.Service.ListProjectTranslationDocumentsGroupedBySourceFile(
+        var response = ProjectService.Service.ListProjectTranslationDocumentsGroupedBySourceFile(
             Guid.Parse(_projectGuid));
 
         var files = response
@@ -45,6 +40,6 @@ public class DocumentDataHandler : BaseInvocable, IDataSourceHandler
                         x.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(x => x.Name)
             .Take(20)
-            .ToDictionary(x => x.DocumentGuid.ToString(), x => x.Name);
+            .Select(x => new DataSourceItem(x.DocumentGuid.ToString(), x.Name));
     }
 }

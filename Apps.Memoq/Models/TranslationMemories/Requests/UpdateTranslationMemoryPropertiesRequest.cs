@@ -16,7 +16,7 @@ public class UpdateTranslationMemoryPropertiesRequest
     [StaticDataSource(typeof(OptimizationPreferenceDataHandler))]
     public string? OptimizationPreference { get; set; }
 
-    [Display("Store document full path")] public bool? StoreDocumentFullPath { get; set; }
+    [Display("Store file full path")] public bool? StoreDocumentFullPath { get; set; }
 
-    [Display("Store document name")] public bool? StoreDocumentName { get; set; }
+    [Display("Store file name")] public bool? StoreDocumentName { get; set; }
 }

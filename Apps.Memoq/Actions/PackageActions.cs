@@ -2,6 +2,7 @@ using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Package.Request;
 using Apps.Memoq.Models.Package.Response;
+using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
@@ -11,11 +12,8 @@ using MQS.ServerProject;
 namespace Apps.Memoq.Actions;
 
 [ActionList]
-public class PackageActions : BaseInvocable
+public class PackageActions : MemoqInvocable
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
-
     public PackageActions(InvocationContext invocationContext) : base(invocationContext)
     {
     }
@@ -23,14 +21,11 @@ public class PackageActions : BaseInvocable
     [Action("Create delivery package", Description = "Create a new delivery package")]
     public async Task<CreateDeliveryPackageResponse> CreateDeliveryPackage([ActionParameter] CreateDeliveryPackageRequest input)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var projectId = Guid.Parse(input.ProjectGuid);
         var docIds = input.DocumentIds.Select(Guid.Parse).ToArray();
 
-        var response = await projectService.Service.CreateDeliveryPackageAsync(projectId, docIds,
-            input.ReturnToPreviousActor ?? false);
+        var response = await ExecuteWithHandling(() => ProjectService.Service.CreateDeliveryPackageAsync(projectId, docIds,
+            input.ReturnToPreviousActor ?? false));
 
         return new()
         {
@@ -39,12 +34,9 @@ public class PackageActions : BaseInvocable
         };
     }
     
-    [Action("Deliver package", Description = "Deliver specific package")]
+    [Action("Deliver package", Description = "Deliver a specific package")]
     public async Task DeliverPackage([ActionParameter] PackageRequest input)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-         await projectService.Service.DeliverPackageAsync(Guid.Parse(input.FileId));
+         await ExecuteWithHandling(() => ProjectService.Service.DeliverPackageAsync(Guid.Parse(input.FileId)));
     }
 }

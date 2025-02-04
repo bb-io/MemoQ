@@ -6,9 +6,9 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class GetDocumentRequest
 {
-    [Display("Project"), DataSource(typeof(ProjectDataHandler))]
+    [Display("Project ID"), DataSource(typeof(ProjectDataHandler))]
     public string ProjectGuid { get; set; }
     
-    [Display("Document GUID"), DataSource(typeof(DocumentDataHandler))]
+    [Display("File ID"), DataSource(typeof(DocumentDataHandler))]
     public string DocumentGuid { get; set; }
 }

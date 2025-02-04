@@ -5,7 +5,7 @@ namespace Apps.Memoq.Models.TranslationMemories.Requests;
 
 public class ImportTmxFileRequest
 {
-    [Display("Translation memory GUID")]
+    [Display("Translation memory ID")]
     public string TmGuid { get; set; }
 
     public FileReference File { get; set; }
