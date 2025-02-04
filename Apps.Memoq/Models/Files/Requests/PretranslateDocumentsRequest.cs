@@ -7,10 +7,10 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class PretranslateDocumentsRequest
 {
-    [Display("Document GUIDs", Description = "If not provided, all documents in the project will be pretranslated")]
+    [Display("File IDs", Description = "If not provided, all files in the project will be pretranslated")]
     public IEnumerable<string>? DocumentGuids { get; set; }
     
-    [Display("Target languages", Description = "If not provided, documents with all target languages will be translated"), StaticDataSource(typeof(TargetLanguageDataHandler))]
+    [Display("Target languages", Description = "If not provided, files with all target languages will be translated"), StaticDataSource(typeof(TargetLanguageDataHandler))]
     public IEnumerable<string>? TargetLanguages { get; set; }
 
     [Display("Lock", Description = "By default: true")]
@@ -25,7 +25,7 @@ public class PretranslateDocumentsRequest
     [Display("Use MT", Description = "By default: true")] 
     public bool? UseMt { get; set; }
     
-    [Display("Translation memories GUIDs")]
+    [Display("Translation memories IDs")]
     public IEnumerable<string>? TranslationMemoriesGuids { get; set; }
     
     [Display("Include numbers", Description = "By default: true")]

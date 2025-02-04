@@ -4,6 +4,6 @@ namespace Apps.Memoq.Models.TranslationMemories.Responses;
 
 public class ImportTmxFileResponse
 {
-    [Display("File GUID")]
+    [Display("File ID")]
     public string Guid { get; set; }
 }

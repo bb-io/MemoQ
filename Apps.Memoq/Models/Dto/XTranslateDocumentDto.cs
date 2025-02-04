@@ -5,7 +5,7 @@ namespace Apps.Memoq.Models.Dto;
 
 public class XTranslateDocumentDto
 {
-    [Display("Document GUID")] public string Guid { get; set; }
+    [Display("File ID")] public string Guid { get; set; }
 
     [Display("Number of candidates")] public int NumberOfCandidates { get; set; }
 

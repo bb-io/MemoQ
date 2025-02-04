@@ -10,11 +10,12 @@ using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
 using MQS.ServerProject;
+using Apps.MemoQ;
 
 namespace Apps.Memoq.Events.Polling;
 
 [PollingEventList]
-public class PollingList : BaseInvocable
+public class PollingList : MemoqInvocable
 {
     public PollingList(InvocationContext invocationContext) : base(invocationContext)
     {
@@ -36,11 +37,8 @@ public class PollingList : BaseInvocable
             };
         }
 
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, InvocationContext.AuthenticationCredentialsProviders);
-
         var items =
-            (await ListProjects(projectService))
+            (await ListProjects(ProjectService))
             .Where(x => x.CreationTime > request.Memory.LastCreationDate)
             .ToArray();
 
@@ -77,10 +75,7 @@ public class PollingList : BaseInvocable
         [PollingEventParameter] [Display("Project status")] [StaticDataSource(typeof(ProjectStatusDataHandler))]
         string? projectStatus)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, InvocationContext.AuthenticationCredentialsProviders);
-
-        var project = new ProjectDto(await GetProject(projectService, projectRequest.ProjectGuid));
+        var project = new ProjectDto(await GetProject(ProjectService, projectRequest.ProjectGuid));
 
         if (request.Memory is null)
         {

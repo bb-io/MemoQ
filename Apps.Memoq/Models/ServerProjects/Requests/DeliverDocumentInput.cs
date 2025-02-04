@@ -10,9 +10,9 @@ public class DeliverDocumentInput
     [DataSource(typeof(UserDataHandler))]
     public string DeliveringUserGuid { get; set; }
     
-    [Display("Document GUID")]
+    [Display("File ID")]
     public string DocumentGuid { get; set; }
     
-    [Display("Return document to previous actor")]
+    [Display("Return file to previous actor")]
     public bool? ReturnDocToPreviousActorField { get; set; }
 }

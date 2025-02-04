@@ -5,7 +5,7 @@ namespace Apps.Memoq.Models.Dto;
 
 public class UserDto
 {
-    [Display("User GUID")] public string Guid { get; set; }
+    [Display("User ID")] public string Guid { get; set; }
 
     [Display("User name")] public string UserName { get; set; }
 

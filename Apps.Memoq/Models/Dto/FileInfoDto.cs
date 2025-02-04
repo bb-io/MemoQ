@@ -5,9 +5,9 @@ namespace Apps.MemoQ.Models.Dto
 {
     public class FileInfoDto
     {
-        [Display("File GUID")] public string Guid { get; set; }
+        [Display("File ID")] public string Guid { get; set; }
 
-        [Display("Parent document GUID")] public string ParentDocumentId { get; set; }
+        [Display("Parent file ID")] public string ParentDocumentId { get; set; }
 
         public string Name { get; set; }
 
@@ -27,7 +27,7 @@ namespace Apps.MemoQ.Models.Dto
         [Display("Confirmed word count")]
         public int ConfirmedWordCount { get; set; }
 
-        [Display("External document ID")]
+        [Display("External file ID")]
         public string ExternalDocumentId { get; set; }
 
         [Display("Is image?")]

@@ -4,6 +4,6 @@ namespace Apps.Memoq.Models.Files.Responses;
 
 public class UploadFileResponse
 {
-    [Display("Document GUID")]
-    public string DocumentGuid { get; set; }
+    [Display("File IDs")]
+    public IEnumerable<string> DocumentGuids { get; set; }
 }

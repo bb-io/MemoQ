@@ -18,16 +18,15 @@ using MQS.ServerProject;
 using MQS.TM;
 using TMEngineType = MQS.TM.TMEngineType;
 using TMOptimizationPreference = MQS.TM.TMOptimizationPreference;
+using Apps.MemoQ;
+using MQS.TB;
 
 namespace Apps.Memoq.Actions;
 
 [ActionList]
-public class TranslationMemoryActions : BaseInvocable
+public class TranslationMemoryActions : MemoqInvocable
 {
-    private readonly IFileManagementClient _fileManagementClient;
-    
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
+    private readonly IFileManagementClient _fileManagementClient;    
 
     public TranslationMemoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
         : base(invocationContext)
@@ -35,14 +34,11 @@ public class TranslationMemoryActions : BaseInvocable
         _fileManagementClient = fileManagementClient;
     }
 
-    [Action("List translation memories", Description = "List translation memories")]
-    public ListTranslationMemoriesResponse ListTranslationMemories(
+    [Action("Search translation memories", Description = "Search translation memories")]
+    public async Task<ListTranslationMemoriesResponse> ListTranslationMemories(
         [ActionParameter] LanguagesRequest input)
     {
-        using var tmService = new MemoqServiceFactory<ITMService>(
-            SoapConstants.TranslationMemoryServiceUrl, Creds);
-
-        var response = tmService.Service.ListTMs(input.SourceLanguage, input.TargetLanguage);
+        var response = await ExecuteWithHandling(() => TmService.Service.ListTMsAsync(input.SourceLanguage, input.TargetLanguage));
         var translationMemories = response.Select(x => new TmDto(x)).ToArray();
             
         return new()
@@ -52,12 +48,9 @@ public class TranslationMemoryActions : BaseInvocable
     }
 
     [Action("Create translation memory", Description = "Create translation memory")]
-    public TmDto CreateTranslationMemory([ActionParameter] CreateTranslationMemoryRequest input)
+    public async Task<TmDto> CreateTranslationMemory([ActionParameter] CreateTranslationMemoryRequest input)
     {
-        using var tmService = new MemoqServiceFactory<ITMService>(
-            SoapConstants.TranslationMemoryServiceUrl, Creds);
-
-        var tmGuid = tmService.Service.CreateAndPublish(new()
+        var tmGuid = await ExecuteWithHandling(() => TmService.Service.CreateAndPublishAsync(new()
         {
             Name = input.Name,
             SourceLanguageCode = input.SourceLanguage,
@@ -78,29 +71,23 @@ public class TranslationMemoryActions : BaseInvocable
                 EnumParser.Parse<TMEngineType>(input.TmEngineType, nameof(input.TmEngineType)) ?? default,
             UseContext = input.UseContext ?? default,
             UseIceSpiceContext = input.UseIceSpiceContext ?? default,
-        });
+        }));
 
-        var response = tmService.Service.GetTMInfo(tmGuid);
+        var response = await ExecuteWithHandling(() => TmService.Service.GetTMInfoAsync(tmGuid));
         return new(response);
     }
     
     [Action("Get translation memory", Description = "Get details of a specific translation memory")]
     public async Task<TmDto> GetTranslationMemory([ActionParameter] TranslationMemoryRequest input)
     {
-        using var tmService = new MemoqServiceFactory<ITMService>(
-            SoapConstants.TranslationMemoryServiceUrl, Creds);
-
-        var response = await tmService.Service.GetTMInfoAsync(Guid.Parse(input.TmGuid));
+        var response = await ExecuteWithHandling(() => TmService.Service.GetTMInfoAsync(Guid.Parse(input.TmGuid)));
         return new(response);
     }   
     
     [Action("Delete translation memory", Description = "Delete specific translation memory")]
     public async Task DeleteTranslationMemory([ActionParameter] TranslationMemoryRequest input)
     {
-        using var tmService = new MemoqServiceFactory<ITMService>(
-            SoapConstants.TranslationMemoryServiceUrl, Creds);
-
-        await tmService.Service.DeleteTMAsync(Guid.Parse(input.TmGuid));
+        await ExecuteWithHandling(() => TmService.Service.DeleteTMAsync(Guid.Parse(input.TmGuid)));
     }    
     
     [Action("Update translation memory properties", Description = "Update specific translation memory properties")]
@@ -108,10 +95,7 @@ public class TranslationMemoryActions : BaseInvocable
         [ActionParameter] TranslationMemoryRequest tm,
         [ActionParameter] UpdateTranslationMemoryPropertiesRequest input)
     {
-        using var tmService = new MemoqServiceFactory<ITMService>(
-            SoapConstants.TranslationMemoryServiceUrl, Creds);
-
-        await tmService.Service.UpdatePropertiesAsync(new()
+        await ExecuteWithHandling(() => TmService.Service.UpdatePropertiesAsync(new()
         {
             Guid = Guid.Parse(tm.TmGuid),
             Name = input.Name,
@@ -123,19 +107,15 @@ public class TranslationMemoryActions : BaseInvocable
                 nameof(input.OptimizationPreference)) ?? default,
             StoreDocumentFullPath = input.StoreDocumentFullPath ?? default,
             StoreDocumentName = input.StoreDocumentName ?? default,
-        });
+        }));
     }
 
     [Action("Import TMX file", Description = "Import TMX file")]
     public async Task<ImportTmxFileResponse> ImportTmxFile([ActionParameter] ImportTmxFileRequest input)
     {
-        using var tmService = new MemoqServiceFactory<ITMService>(
-            SoapConstants.TranslationMemoryServiceUrl, Creds);
-
-        var manager = new TmxUploadManager(tmService.Service);
         var file = await _fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
-        var result = FileUploader.UploadFile(fileBytes, manager, input.TmGuid);
+        var result = FileUploader.UploadFile(fileBytes, TmxUploadManager, input.TmGuid);
 
         return new()
         {
@@ -146,14 +126,10 @@ public class TranslationMemoryActions : BaseInvocable
     [Action("Import translation memory scheme from XML", Description = "Import specific translation memory's scheme from XML")]
     public async Task<ImportTmSchemeFromXmlResponse> ImportTmSchemeFromXml([ActionParameter] ImportTmSchemeRequest input)
     {
-        using var tmService = new MemoqServiceFactory<ITMService>(
-            SoapConstants.TranslationMemoryServiceUrl, Creds);
-
         var file = await _fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
         var xml = Encoding.UTF8.GetString(fileBytes);
-        var response = await tmService.Service
-            .ImportTMMetadataSchemeFromXMLAsync(Guid.Parse(input.TmGuid), xml);
+        var response = await ExecuteWithHandling(() => TmService.Service.ImportTMMetadataSchemeFromXMLAsync(Guid.Parse(input.TmGuid), xml));
 
         return new()
         {
@@ -165,11 +141,7 @@ public class TranslationMemoryActions : BaseInvocable
     public async Task AddTranslationMemoryToProject(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] AddTranslationMemoryToProjectRequest translationMemoryRequest)
-    {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-        
-        
+    {   
         Guid masterGuid = translationMemoryRequest.MasterTmGuid != null
             ? Guid.Parse(translationMemoryRequest.MasterTmGuid)
             : Guid.Empty;
@@ -188,7 +160,6 @@ public class TranslationMemoryActions : BaseInvocable
             PrimaryTMGuid = primaryGuid
         };
 
-        await projectService.Service
-            .SetProjectTMs2Async(Guid.Parse(project.ProjectGuid), new[] { tmAssignments });
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTMs2Async(Guid.Parse(project.ProjectGuid), new[] { tmAssignments }));
     }
 }

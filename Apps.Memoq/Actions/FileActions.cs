@@ -25,16 +25,15 @@ using System.Text.RegularExpressions;
 using Apps.MemoQ.Models.Files.Requests;
 using Apps.MemoQ.Models.Dto;
 using Apps.MemoQ.Models.Files.Responses;
+using Apps.MemoQ;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.Memoq.Actions;
 
 [ActionList]
-public class FileActions : BaseInvocable
+public class FileActions : MemoqInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
 
     public FileActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
         : base(invocationContext)
@@ -42,19 +41,17 @@ public class FileActions : BaseInvocable
         _fileManagementClient = fileManagementClient;
     }
 
-    [Action("List project translation documents",
-        Description = "Returns the current translation documents of the specified project.")]
-    public ListAllProjectFilesResponse ListAllProjectFiles(
+    [Action("Search translation files",
+        Description = "Returns the current translation files of the specified project.")]
+    public async Task<ListAllProjectFilesResponse> ListAllProjectFiles(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] ListProjectFilesRequest input)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-        var response = projectService.Service
-            .ListProjectTranslationDocuments2(Guid.Parse(project.ProjectGuid), new()
+        var response = await ExecuteWithHandling(() => ProjectService.Service
+            .ListProjectTranslationDocuments2Async(Guid.Parse(project.ProjectGuid), new()
             {
                 FillInAssignmentInformation = input.FillInAssignmentInformation ?? default,
-            });
+            }));
 
         var files = response.Select(x => new FileInfoDto(x)).ToArray();
         return new()
@@ -63,29 +60,27 @@ public class FileActions : BaseInvocable
         };
     }
 
-    [Action("Get document info", Description = "Get project file info by guid")]
-    public FileInfoDto GetFile(
+    [Action("Get file info", Description = "Get project file info")]
+    public async Task<FileInfoDto> GetFile(
         [ActionParameter] ProjectRequest project,
-        [ActionParameter] [Display("File GUID")]
+        [ActionParameter] [Display("File ID")]
         string fileGuid)
     {
-        var files = ListAllProjectFiles(project, new());
+        var files = await ListAllProjectFiles(project, new());
         return files.Files.FirstOrDefault(f => f.Guid == fileGuid)
-               ?? throw new($"No file found with the provided ID: {fileGuid}");
+               ?? throw new PluginMisconfigurationException ($"No file found with the provided ID: {fileGuid}");
     }
 
-    [Action("Document exists", Description = "Check if document exists in a specified project")]
+    [Action("File exists", Description = "Check if the file exists in a specified project")]
     public async Task<DocumentExistsResponse> DocumentExists(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] DocumentExistsRequest input)
     {
         if (!input.IsValid())
-            throw new("You should specify at least one of the optional inputs to search documents on");
+            throw new PluginMisconfigurationException("You should specify at least one of the optional inputs to search files on");
 
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-        var response = await projectService.Service
-            .ListProjectTranslationDocuments2Async(Guid.Parse(project.ProjectGuid), new());
+        var response = await ExecuteWithHandling(() => ProjectService.Service
+            .ListProjectTranslationDocuments2Async(Guid.Parse(project.ProjectGuid), new()));
 
         return new()
         {
@@ -99,22 +94,16 @@ public class FileActions : BaseInvocable
         };
     }
 
-    [Action("Delete document", Description = "Delete specific document from project")]
-    public void DeleteFile([ActionParameter] DeleteFileRequest input)
+    [Action("Delete file", Description = "Delete a file from a project")]
+    public async Task DeleteFile([ActionParameter] DeleteFileRequest input)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        projectService.Service
-            .DeleteTranslationDocument(Guid.Parse(input.ProjectGuid), Guid.Parse(input.FileGuid));
+        await ExecuteWithHandling(() => ProjectService.Service
+            .DeleteTranslationDocumentAsync(Guid.Parse(input.ProjectGuid), Guid.Parse(input.FileGuid)));
     }
 
-    [Action("Slice document", Description = "Slice specific document based on the specified options")]
+    [Action("Slice file", Description = "Slice a file based on the specified options")]
     public async Task SliceDocument([ActionParameter] ProjectRequest project, [ActionParameter] SliceFileRequest input)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var options = new SliceDocumentRequest()
         {
             DocumentGuid = Guid.Parse(input.DocumentGuid),
@@ -124,23 +113,16 @@ public class FileActions : BaseInvocable
                     nameof(input.SlicingMeasurementUnit))!.Value
         };
 
-        await projectService.Service
-            .SliceDocumentAsync(Guid.Parse(project.ProjectGuid), options);
+        await ExecuteWithHandling(() => ProjectService.Service.SliceDocumentAsync(Guid.Parse(project.ProjectGuid), options));
     }
 
-    [Action("Overwrite document", Description = "Overwrite specific document in project")]
+    [Action("Overwrite file", Description = "Overwrite a file in a project")]
     public async Task OverwriteFileInProject([ActionParameter] OverwriteFileInProjectRequest input)
     {
-        using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            SoapConstants.FileServiceUrl, Creds);
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var manager = new FileUploadManager(fileService.Service);
         var file = await _fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
-        var uploadFileResult = FileUploader.UploadFile(fileBytes, manager, input.Filename ?? input.File.Name);
-        await projectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(input.ProjectGuid),
+        var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, input.Filename ?? input.File.Name);
+        await ExecuteWithHandling(() => ProjectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(input.ProjectGuid),
             new ReimportDocumentOptions[]
             {
                 new()
@@ -152,14 +134,12 @@ public class FileActions : BaseInvocable
                 }
             },
             null
-        );
+        ));
     }
 
-    [Action("Assign document to user", Description = "Assign document to a specific user")]
-    public void AssignFileToUser([ActionParameter] AssignFileToUserRequest input)
+    [Action("Assign file to user", Description = "Assign a file to a specific user")]
+    public async Task AssignFileToUser([ActionParameter] AssignFileToUserRequest input)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
         var assignments = new ServerProjectTranslationDocumentUserAssignments[]
         {
             new()
@@ -177,22 +157,15 @@ public class FileActions : BaseInvocable
             }
         };
 
-        projectService.Service
-            .SetProjectTranslationDocumentUserAssignments(Guid.Parse(input.ProjectGuid), assignments);
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTranslationDocumentUserAssignmentsAsync(Guid.Parse(input.ProjectGuid), assignments));
     }
 
-    [Action("Import document", Description = "Uploads and imports a document to a project")]
+    [Action("Upload file", Description = "Uploads and imports a file to a project")]
     public async Task<UploadFileResponse> UploadAndImportFileToProject(
         [ActionParameter] UploadDocumentToProjectWithOptionsRequest request)
     {
-        using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            SoapConstants.FileServiceUrl, Creds);
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
 
         string fileName = request.FileName ?? request.File.Name;
-
-        var manager = new FileUploadManager(fileService.Service);
 
         var fileStream = await _fileManagementClient.DownloadAsync(request.File);
         var file = new MemoryStream();
@@ -201,8 +174,7 @@ public class FileActions : BaseInvocable
         file.Position = 0;
         var fileBytes = await file.GetByteData();
 
-        var uploadFileResult =
-            FileUploader.UploadFile(fileBytes, manager, fileName);
+        var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, fileName);
 
         var options = new ImportTranslationDocumentOptions
         {
@@ -231,35 +203,31 @@ public class FileActions : BaseInvocable
         }
 
 
-        var results = await projectService.Service
-            .ImportTranslationDocumentsWithOptionsAsync(
-                Guid.Parse(request.ProjectGuid),
-                new List<ImportTranslationDocumentOptions> { options }.ToArray());
+        var results = await ExecuteWithHandling(() => ProjectService.Service.ImportTranslationDocumentsWithOptionsAsync(
+            Guid.Parse(request.ProjectGuid),
+            new List<ImportTranslationDocumentOptions> { options }.ToArray())
+        );
 
         foreach (var result in results)
         {
             if (result.ResultStatus == ResultStatus.Error)
             {
-                throw new InvalidOperationException(
-                    $"Error while importing file, result status: {result.ResultStatus}, message: {result.DetailedMessage}");
+                throw new PluginApplicationException(
+                    $"Error while importing file, status: {result.ResultStatus}, message: {result.DetailedMessage}");
             }
         }
 
-
         return new()
         {
-            // Right now we have 1 target language, so 1 document GUID. If we have multiple target files, this should be changed as well or we need an extra action
-            DocumentGuid = results.FirstOrDefault()?.DocumentGuids.Select(x => x.ToString()).FirstOrDefault()
+            DocumentGuids = results.SelectMany(x => x.DocumentGuids.Select(x => x.ToString()))
         };
     }
 
-    [Action("Re-import document", Description = "Uploads and re-imports a document to a project")]
+    [Action("Re-import file", Description = "Uploads and re-imports a file to a project")]
     public async Task<UploadFileResponse> UploadAndReimportFileToProject(
         [ActionParameter] UploadDocumentToProjectRequest request,
         [ActionParameter] ReimportDocumentsRequest reimportDocumentsRequest)
     {
-        var fileService = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds);
-        var projectService = new MemoqServiceFactory<IServerProjectService>(SoapConstants.ProjectServiceUrl, Creds);
 
         var fileStream = await _fileManagementClient.DownloadAsync(request.File);
         var file = new MemoryStream();
@@ -267,9 +235,7 @@ public class FileActions : BaseInvocable
         file.Position = 0;
 
         var fileBytes = await file.GetByteData();
-
-        var uploadFileResult = FileUploader.UploadFile(fileBytes, new FileUploadManager(fileService.Service),
-            request.FileName ?? request.File.Name);
+        var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, request.FileName ?? request.File.Name);
 
         string? importSettings = null;
         if ((request.FileName ?? request.File.Name).EndsWith(".xliff"))
@@ -278,7 +244,7 @@ public class FileActions : BaseInvocable
             importSettings = await new StreamReader(file).ReadToEndAsync();
         }
 
-        var result = await projectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(request.ProjectGuid),
+        var results = await ExecuteWithHandling(() => ProjectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(request.ProjectGuid),
             new[]
             {
                 new ReimportDocumentOptions
@@ -288,21 +254,24 @@ public class FileActions : BaseInvocable
                     KeepUserAssignments = reimportDocumentsRequest.KeepUserAssignments ?? default,
                     PathToSetAsImportPath = reimportDocumentsRequest.PathToSetAsImportPath ?? string.Empty
                 },
-            }, importSettings);
+            }, importSettings));
 
-        var first = result.FirstOrDefault(x => x.ResultStatus == ResultStatus.Success);
-        if (first is null)
+        foreach (var result in results)
         {
-            throw new InvalidOperationException("No successful reimport found");
+            if (result.ResultStatus == ResultStatus.Error)
+            {
+                throw new PluginApplicationException(
+                    $"Error while importing file, status: {result.ResultStatus}, message: {result.DetailedMessage}");
+            }
         }
 
-        return new UploadFileResponse
+        return new()
         {
-            DocumentGuid = first.DocumentGuids.Select(x => x.ToString()).First()
+            DocumentGuids = results.SelectMany(x => x.DocumentGuids.Select(x => x.ToString()))
         };
     }
 
-    [Action("Update document from XLIFF", Description = "Update translation document from exported XLIFF")]
+    [Action("Update file from XLIFF", Description = "Update a project file by providing an XLIFF file")]
     public async Task<UploadFileResponse> UpdateDocumentFromXliff(
         [ActionParameter] UploadDocumentToProjectRequest request,
         [ActionParameter] UpdateFromXliffRequest XliffRequest)
@@ -328,32 +297,32 @@ public class FileActions : BaseInvocable
             XliffRequest.UpdateLocked.GetValueOrDefault(true), XliffRequest.UpdateConfirmed.GetValueOrDefault(true));
         string mqXliffFileName = (request.FileName ?? request.File.Name) + ".mqxliff";
 
-        var fileService = new MemoqServiceFactory<IFileManagerService>(SoapConstants.FileServiceUrl, Creds);
-        var projectService = new MemoqServiceFactory<IServerProjectService>(SoapConstants.ProjectServiceUrl, Creds);
-
         updatedMqXliffFile.Position = 0;
         var bytes = await updatedMqXliffFile.GetByteData();
 
         var uploadFileResult =
-            FileUploader.UploadFile(bytes, new FileUploadManager(fileService.Service), mqXliffFileName);
+            FileUploader.UploadFile(bytes, FileUploadManager, mqXliffFileName);
 
-        var result = await projectService.Service.UpdateTranslationDocumentFromBilingualAsync(
+        var results = await ExecuteWithHandling(() => ProjectService.Service.UpdateTranslationDocumentFromBilingualAsync(
             Guid.Parse(request.ProjectGuid),
-            uploadFileResult, BilingualDocFormat.XLIFF);
+            uploadFileResult, BilingualDocFormat.XLIFF));
 
-        var first = result.FirstOrDefault(x => x.ResultStatus == ResultStatus.Success);
-        if (first is null)
+        foreach (var result in results)
         {
-            throw new InvalidOperationException("No successful reimport found");
+            if (result.ResultStatus == ResultStatus.Error)
+            {
+                throw new PluginApplicationException(
+                    $"Error while importing file, status: {result.ResultStatus}, message: {result.DetailedMessage}");
+            }
         }
 
-        return new UploadFileResponse
+        return new()
         {
-            DocumentGuid = first.DocumentGuids.Select(x => x.ToString()).First()
+            DocumentGuids = results.SelectMany(x => x.DocumentGuids.Select(x => x.ToString()))
         };
     }
 
-    [Action("Import document as XLIFF", Description = "Uploads and imports a document to a project as XLIFF")]
+    [Action("Import XLIFF file", Description = "Uploads and imports an XLIFF file to a project")]
     public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
         [ActionParameter] UploadDocumentToProjectRequest request,
         [ActionParameter] ImportDocumentAsXliffRequest importDocumentAsXliffRequest)
@@ -384,16 +353,11 @@ public class FileActions : BaseInvocable
             : await ReimportDocumentAsync(importDocumentAsXliffRequest, xliffFileReference, request);
     }
 
-    [Action("Export document", Description = "Exports and downloads a document with options")]
+    [Action("Download file", Description = "Exports and downloads a file with options")]
     public async Task<DownloadFileResponse> DownloadFileByGuid(
         [ActionParameter] DownloadFileRequest request)
     {
-        using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            SoapConstants.FileServiceUrl, Creds);
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var exportResult = await projectService.Service
+        var exportResult = await ExecuteWithHandling(() => ProjectService.Service
             .ExportTranslationDocument2Async(Guid.Parse(request.ProjectGuid), Guid.Parse(request.DocumentGuid),
                 new DocumentExportOptions
                 {
@@ -401,44 +365,39 @@ public class FileActions : BaseInvocable
                     RevertFaultyTargetsToSource = request.RevertFaultyTargetsToSource ?? false,
                     CopySourceToEmptyTarget = request.CopySourceToEmptyTarget ?? false,
                     CopySourceToUnconfirmedRows = request.CopySourceToEmptyTarget ?? false,
-                });
+                }));
 
-        var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
-        var document = GetFile(new()
+        var data = DownloadFile(FileService.Service, exportResult.FileGuid, out var filename);
+        var document = await GetFile(new()
         {
             ProjectGuid = request.ProjectGuid
         }, request.DocumentGuid);
 
         using var stream = new MemoryStream(data);
-        var fileReference = await _fileManagementClient.UploadAsync(stream, MediaTypeNames.Application.Octet, filename);
-        return new(document) { File = fileReference };
+        var fileReference = await _fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
+        return new DownloadFileResponse(document) { File = fileReference };
     }
 
-    [Action("Export document as XLIFF",
-        Description = "Exports and downloads the translation document as XLIFF (MQXLIFF) bilingual")]
+    [Action("Export XLIFF file",
+        Description = "Exports and downloads the translation file as an XLIFF (MQXLIFF) bilingual")]
     public async Task<DownloadFileResponse> DownloadFileAsXliff(
         [ActionParameter] GetDocumentRequest documentRequest,
         [ActionParameter] DownloadXliffRequest request)
     {
-        using var fileService = new MemoqServiceFactory<IFileManagerService>(
-            SoapConstants.FileServiceUrl, Creds);
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var fullVersion = request.FullVersionHistory ?? false;
         var includeSkeleton = request.IncludeSkeleton ?? false;
 
-        var exportResult = await projectService.Service
+        var exportResult = await ExecuteWithHandling(() => ProjectService.Service
             .ExportTranslationDocumentAsXliffBilingualAsync(Guid.Parse(documentRequest.ProjectGuid),
                 Guid.Parse(documentRequest.DocumentGuid), new XliffBilingualExportOptions
                 {
                     FullVersionHistory = fullVersion,
                     IncludeSkeleton = includeSkeleton,
                     SaveCompressed = fullVersion || includeSkeleton || (request.SaveCompressed ?? false)
-                });
+                }));
 
-        var data = DownloadFile(fileService.Service, exportResult.FileGuid, out var filename);
-        var document = GetFile(new()
+        var data = DownloadFile(FileService.Service, exportResult.FileGuid, out var filename);
+        var document = await GetFile(new()
         {
             ProjectGuid = documentRequest.ProjectGuid
         }, documentRequest.DocumentGuid);
@@ -456,14 +415,11 @@ public class FileActions : BaseInvocable
         return new(document) { File = fileReferenceXliff };
     }
 
-    [Action("Get document analysis", Description = "Get analysis for a specific document")]
-    public GetAnalysisResponse GetAnalysisForFile(
+    [Action("Get file analysis", Description = "Get analysis for a specific file")]
+    public async Task<GetAnalysisResponse> GetAnalysisForFile(
         [ActionParameter] GetAnalysisForFileRequest input)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var task = projectService.Service.StartStatisticsOnTranslationDocumentsTask2(
+        var task = await ExecuteWithHandling(() => ProjectService.Service.StartStatisticsOnTranslationDocumentsTask2Async(
             new()
             {
                 ProjectGuid = Guid.Parse(input.ProjectGuid),
@@ -489,10 +445,10 @@ public class FileActions : BaseInvocable
                     TagCharWeight = input.TagCharWeight ?? default,
                     TagWordWeight = input.TagWordWeight ?? default,
                 }
-            });
+            }));
 
-        var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
-        var document = GetFile(input, input.DocumentGuid);
+        var taskResult = (StatisticsTaskResult) await WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
+        var document = await GetFile(input, input.DocumentGuid);
         var statistics = taskResult.ResultsForTargetLangs.First();
 
         return new(
@@ -502,13 +458,11 @@ public class FileActions : BaseInvocable
             MediaTypeNames.Text.Html);
     }
 
-    [Action("Get project analysis", Description = "Get analysis for all project documents")]
-    public GetAnalysesForAllDocumentsResponse GetAnalysesForAllDocuments(
+    [Action("Get project analysis", Description = "Get analysis for all project files")]
+    public async Task<GetAnalysesForAllDocumentsResponse> GetAnalysesForAllDocuments(
         [ActionParameter] GetAnalysisForProjectRequest input)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-        var task = projectService.Service.StartStatisticsOnProjectTask2(new()
+        var task = await ExecuteWithHandling(() => ProjectService.Service.StartStatisticsOnProjectTask2Async(new()
         {
             ProjectGuid = Guid.Parse(input.ProjectGuid),
             ResultFormat =
@@ -530,9 +484,9 @@ public class FileActions : BaseInvocable
                 TagCharWeight = input.TagCharWeight ?? default,
                 TagWordWeight = input.TagWordWeight ?? default,
             }
-        });
+        }));
 
-        var taskResult = (StatisticsTaskResult)WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
+        var taskResult = (StatisticsTaskResult) await WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
         var analysis = taskResult.ResultsForTargetLangs
             .Select(x => new GetAnalysisResponse(x, _fileManagementClient, $"Analysis_{x.TargetLangCode}.html",
                 MediaTypeNames.Text.Html))
@@ -544,15 +498,11 @@ public class FileActions : BaseInvocable
         };
     }
 
-    [Action("Apply translated content to updated source",
-        Description = "Apply translated content to updated source")]
-    public ApplyTranslatedContentToUpdatedSourceResponse ApplyTranslatedContentToUpdatedSource(
+    [Action("Apply translated content to updated source", Description = "Apply translated content to updated source")]
+    public async Task<ApplyTranslatedContentToUpdatedSourceResponse> ApplyTranslatedContentToUpdatedSource(
         [ActionParameter] ApplyTranslatedContentToUpdatedSourceRequest input)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var taskInfo = projectService.Service.StartXTranslateTask(Guid.Parse(input.ProjectGuid),
+        var taskInfo = await ExecuteWithHandling(() => ProjectService.Service.StartXTranslateTaskAsync(Guid.Parse(input.ProjectGuid),
             new()
             {
                 XTranslateScenario = EnumParser.Parse<XTranslateScenario>(input.XTranslateScenario,
@@ -576,9 +526,9 @@ public class FileActions : BaseInvocable
                     InsertEmptyTranslations = input.InsertEmptyTranslations ?? default,
                     LockXTranslatedRows = input.LockXTranslatedRows ?? default,
                 }
-            });
+            }));
 
-        var taskResult = (XTranslateTaskResult)WaitForAsyncTaskToFinishAndGetResult(taskInfo.TaskId);
+        var taskResult = (XTranslateTaskResult) await WaitForAsyncTaskToFinishAndGetResult(taskInfo.TaskId);
         var documents = taskResult.DocumentResults
             .Select(x => new XTranslateDocumentDto(x))
             .ToArray();
@@ -589,13 +539,10 @@ public class FileActions : BaseInvocable
         };
     }
 
-    [Action("Deliver document", Description = "Deliver a specific document")]
+    [Action("Deliver file", Description = "Deliver a specific file")]
     public async Task DeliverDocument([ActionParameter] ProjectRequest project,
         [ActionParameter] DeliverDocumentInput input)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var request = new DeliverDocumentRequest
         {
             DocumentGuid = Guid.Parse(input.DocumentGuid),
@@ -603,7 +550,7 @@ public class FileActions : BaseInvocable
             ReturnDocToPreviousActor = input.ReturnDocToPreviousActorField ?? default,
         };
 
-        await projectService.Service.DeliverDocumentAsync(Guid.Parse(project.ProjectGuid), request);
+        await ExecuteWithHandling(() => ProjectService.Service.DeliverDocumentAsync(Guid.Parse(project.ProjectGuid), request));
     }
 
     private byte[] DownloadFile(IFileManagerService fmService, Guid fileGuid, out string fileName)
@@ -611,46 +558,50 @@ public class FileActions : BaseInvocable
         const int chunkSize = 500000;
         byte[] chunkBytes;
 
-        var downloadResponse = fmService.BeginChunkedFileDownload(new(fileGuid, false));
-        fileName = downloadResponse.fileName;
-
-        var fileBytesLeft = downloadResponse.fileSize;
-        var result = new byte[fileBytesLeft];
-
-        while (fileBytesLeft > 0)
+        try
         {
-            chunkBytes = fmService.GetNextFileChunk(downloadResponse.BeginChunkedFileDownloadResult, chunkSize);
-            Array.Copy(chunkBytes, 0, result, downloadResponse.fileSize - fileBytesLeft, chunkBytes.Length);
-            fileBytesLeft -= chunkBytes.Length;
-        }
+            var downloadResponse = fmService.BeginChunkedFileDownload(new(fileGuid, false));
+            fileName = downloadResponse.fileName;
 
-        if (downloadResponse.BeginChunkedFileDownloadResult != Guid.Empty)
-            fmService.EndChunkedFileDownload(downloadResponse.BeginChunkedFileDownloadResult);
+            var fileBytesLeft = downloadResponse.fileSize;
+            var result = new byte[fileBytesLeft];
 
-        fmService.DeleteFile(fileGuid);
+            while (fileBytesLeft > 0)
+            {
+                chunkBytes = fmService.GetNextFileChunk(downloadResponse.BeginChunkedFileDownloadResult, chunkSize);
+                Array.Copy(chunkBytes, 0, result, downloadResponse.fileSize - fileBytesLeft, chunkBytes.Length);
+                fileBytesLeft -= chunkBytes.Length;
+            }
 
-        return result;
+            if (downloadResponse.BeginChunkedFileDownloadResult != Guid.Empty)
+                fmService.EndChunkedFileDownload(downloadResponse.BeginChunkedFileDownloadResult);
+
+            fmService.DeleteFile(fileGuid);
+
+            return result;
+        } catch(Exception ex)
+        {
+            throw new PluginApplicationException(ex.Message);
+        }        
     }
 
-    private TaskResult WaitForAsyncTaskToFinishAndGetResult(Guid taskId)
+    private async Task<TaskResult> WaitForAsyncTaskToFinishAndGetResult(Guid taskId)
     {
-        using var taskService = new MemoqServiceFactory<ITasksService>(
-            SoapConstants.TaskServiceUrl, Creds);
-        var taskStatus = taskService.Service.GetTaskStatus(taskId).Status;
+        var task = await ExecuteWithHandling(() => TaskService.Service.GetTaskStatusAsync(taskId));
         var i = 1;
-        while (taskStatus == MQS.TasksService.TaskStatus.Pending
-               || taskStatus == MQS.TasksService.TaskStatus.Executing)
+        while (task.Status == MQS.TasksService.TaskStatus.Pending
+               || task.Status == MQS.TasksService.TaskStatus.Executing)
         {
             if (i < 16)
                 i = 2 * i;
             Thread.Sleep(i * 1000);
-            taskStatus = taskService.Service.GetTaskStatus(taskId).Status;
+            task = await ExecuteWithHandling(() => TaskService.Service.GetTaskStatusAsync(taskId));
         }
 
-        if (taskStatus != MQS.TasksService.TaskStatus.Completed)
-            throw new Exception($"Task has status {taskStatus.ToString()}.");
+        if (task.Status != MQS.TasksService.TaskStatus.Completed)
+            throw new Exception($"Task has status {task.Status.ToString()}.");
 
-        return taskService.Service.GetTaskResult(taskId);
+        return await ExecuteWithHandling(() => TaskService.Service.GetTaskResultAsync(taskId));
     }
 
     private async Task<byte[]> ConvertTo2_1Xliff(XDocument xDocument, string fileName)
@@ -697,7 +648,7 @@ public class FileActions : BaseInvocable
             return await file.GetByteData();
         }
 
-        throw new("Unsupported XLIFF version. Currently only 1.2 and 2.1 are supported.");
+        throw new PluginMisconfigurationException("Unsupported XLIFF version. Currently only 1.2 and 2.1 are supported.");
     }
 
     private async Task<UploadFileResponse> ReimportDocumentAsync(
@@ -713,7 +664,7 @@ public class FileActions : BaseInvocable
                 {
                     ProjectGuid = request.ProjectGuid,
                     DocumentGuid = importDocumentAsXliffRequest.DocumentGuid ??
-                                   throw new("Can not reimport without document guid")
+                                   throw new PluginMisconfigurationException("Can not reimport without file ID")
                 },
                 new DownloadXliffRequest
                 {

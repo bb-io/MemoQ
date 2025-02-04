@@ -7,11 +7,8 @@ using Blackbird.Applications.Sdk.Common;
 
 namespace Apps.MemoQ.DataSourceHandlers
 {
-    public class ProjectTemplateDataHandler : BaseInvocable, IAsyncDataSourceHandler
+    public class ProjectTemplateDataHandler : MemoqInvocable, IAsyncDataSourceHandler
     {
-        private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-            InvocationContext.AuthenticationCredentialsProviders;
-
         public ProjectTemplateDataHandler(InvocationContext invocationContext) : base(invocationContext)
         {
         }
@@ -19,10 +16,7 @@ namespace Apps.MemoQ.DataSourceHandlers
         public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context,
             CancellationToken cancellationToken)
         {
-            using var resourceService = new MemoqServiceFactory<IResourceService>(
-                SoapConstants.ResourceServiceUrl, Creds);
-
-            var response = await resourceService.Service.ListResourcesAsync(MQS.Resource.ResourceType.ProjectTemplate, new MQS.Resource.LightResourceListFilter { });
+            var response = await ResourceService.Service.ListResourcesAsync(MQS.Resource.ResourceType.ProjectTemplate, new MQS.Resource.LightResourceListFilter { });
 
             return response
                 .Where(x => context.SearchString is null ||

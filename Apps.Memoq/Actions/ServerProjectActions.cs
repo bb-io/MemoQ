@@ -22,26 +22,21 @@ using Apps.MemoQ.Models.ServerProjects.Responses;
 using Apps.MemoQ.Models.Dto;
 using Apps.MemoQ.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Apps.MemoQ;
 
 namespace Apps.Memoq.Actions;
 
 [ActionList]
-public class ServerProjectActions : BaseInvocable
+public class ServerProjectActions : MemoqInvocable
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
-
     public ServerProjectActions(InvocationContext invocationContext) : base(invocationContext)
     {
     }
 
-    [Action("List projects", Description = "List all projects")]
-    public ListAllProjectsResponse ListAllProjects([ActionParameter] ListProjectsRequest input)
+    [Action("Search projects", Description = "Search through your memoQ projects")]
+    public async Task<ListAllProjectsResponse> ListAllProjects([ActionParameter] ListProjectsRequest input)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var response = projectService.Service.ListProjects(new()
+        var response = await ExecuteWithHandling(() => ProjectService.Service.ListProjectsAsync(new()
         {
             Client = input.Client,
             Domain = input.Domain,
@@ -52,7 +47,7 @@ public class ServerProjectActions : BaseInvocable
             TargetLanguageCode = input.TargetLanguageCode,
             Subject = input.Subject,
             TimeClosed = input.TimeClosed ?? default,
-        });
+        }));
 
         var projects = response.Select(x => new ProjectDto(x)).ToList();
 
@@ -63,22 +58,16 @@ public class ServerProjectActions : BaseInvocable
     }
 
     [Action("Get project", Description = "Get project by UId")]
-    public ProjectDto GetProject([ActionParameter] ProjectRequest project)
+    public async Task<ProjectDto> GetProject([ActionParameter] ProjectRequest project)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var response = projectService.Service.GetProject(Guid.Parse(project.ProjectGuid));
+        var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(Guid.Parse(project.ProjectGuid)));
         return new(response);
     }
 
     [Action("Get project custom fields", Description = "Get project custom metadata fields")]
-    public CustomFieldsResponse GetCustomFields([ActionParameter] ProjectRequest project)
+    public async Task<CustomFieldsResponse> GetCustomFields([ActionParameter] ProjectRequest project)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var response = projectService.Service.GetProject(Guid.Parse(project.ProjectGuid));
+        var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(Guid.Parse(project.ProjectGuid)));
 
         if (String.IsNullOrEmpty(response.CustomMetas)) 
         {
@@ -118,9 +107,9 @@ public class ServerProjectActions : BaseInvocable
     }
 
     [Action("Get custom field value", Description = "Get value of a specific custom metadata field")]
-    public string GetCustomField([ActionParameter] ProjectRequest project, [ActionParameter] GetCustomFieldRequest field )
+    public async Task<string> GetCustomField([ActionParameter] ProjectRequest project, [ActionParameter] GetCustomFieldRequest field )
     {
-        var allfields = GetCustomFields(project).CustomFields;
+        var allfields = (await GetCustomFields(project)).CustomFields;
         return allfields.FirstOrDefault(x => x.Name == field.Field)?.Value ?? "";
     }
 
@@ -128,17 +117,15 @@ public class ServerProjectActions : BaseInvocable
     public async Task SetCustomField([ActionParameter] ProjectRequest project, [ActionParameter] GetCustomFieldRequest field,
         [ActionParameter] string Value)
     {
-        var allfields = GetCustomFields(project).CustomFields;
+        var allfields = (await GetCustomFields(project)).CustomFields;
         allfields.First(x => x.Name == field.Field).Value = Value;
         var rows = allfields.Select(x => x.Name + "\t" + x.Type +"\t"+ x.Value);
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
 
-        await projectService.Service.UpdateProjectAsync(new()
+        await ExecuteWithHandling(() => ProjectService.Service.UpdateProjectAsync(new()
         {
             CustomMetas = String.Join("\r\n", rows),
             ServerProjectGuid = Guid.Parse(project.ProjectGuid)
-        }) ;
+        }));
 
     }
 
@@ -146,7 +133,7 @@ public class ServerProjectActions : BaseInvocable
     public async Task AddCustomField([ActionParameter] ProjectRequest project, [ActionParameter] AddCustomFieldRequest input)
     {
         string customMetas = "";
-        var allfields = GetCustomFields(project).CustomFields;
+        var allfields = (await GetCustomFields(project)).CustomFields;
         if (allfields != null && allfields.Count > 0)
         {
             var rows = allfields.Select(x => x.Name + "\t" + x.Type + "\t" + x.Value).ToList();
@@ -154,37 +141,29 @@ public class ServerProjectActions : BaseInvocable
             customMetas = String.Join("\r\n", rows);
         }
         else { customMetas = input.Name + "\t" + input.Type + "\t" + input.Value; }
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-           SoapConstants.ProjectServiceUrl, Creds);
 
-        await projectService.Service.UpdateProjectAsync(new()
+        await ExecuteWithHandling(() => ProjectService.Service.UpdateProjectAsync(new()
         {
             CustomMetas = customMetas,
             ServerProjectGuid = Guid.Parse(project.ProjectGuid)
-        });
+        }));
     }
 
     [Action("Add target language to project", Description = "Add target language to project by code")]
-    public void AddNewTargetLanguageToProject(
+    public async Task AddNewTargetLanguageToProject(
         [ActionParameter] ProjectRequest project,
         [ActionParameter, StaticDataSource(typeof(TargetLanguageDataHandler)), Display("Target language")] string targetLangCode)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        projectService.Service
-            .AddLanguageToProject(Guid.Parse(project.ProjectGuid), new()
+        await ExecuteWithHandling(() => ProjectService.Service.AddLanguageToProjectAsync(Guid.Parse(project.ProjectGuid), new()
             {
                 TargetLangCode = targetLangCode
-            });
+            }
+        ));
     }
 
     [Action("Create project", Description = "Creates a new project in memoQ")]
-    public ProjectDto CreateProject([ActionParameter] CreateProjectRequest request)
+    public async Task<ProjectDto> CreateProject([ActionParameter] CreateProjectRequest request)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var newProject = new ServerProjectDesktopDocsCreateInfo
         {
             Deadline = request.Deadline,
@@ -220,38 +199,20 @@ public class ServerProjectActions : BaseInvocable
             }
         };
 
-        try
-        {
-            var guid = projectService.Service.CreateProject2(newProject);
-            var response = projectService.Service.GetProject(guid);
 
-            return new(response);
-        }
-        catch (System.ServiceModel.FaultException ex)
+        return await ExecuteWithHandling(async () =>
         {
-            if (ex.Message == "An online project with the same name already exists.")
-            {
-                throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
-            }
-            else if (ex.Message == "The name contains invalid characters, or the name is reserved by Windows.")
-            {
-                throw new PluginMisconfigurationException("The name contains invalid characters, or the name is reserved by Windows. Please check the characters you are using in the project name.");
-            }
-            else
-            {
-                throw new PluginApplicationException(ex.Message);
-            }
-        }
-        
+            var guid = await ProjectService.Service.CreateProject2Async(newProject);
+            var response = await ProjectService.Service.GetProjectAsync(guid);
+
+            return new ProjectDto(response);
+        });        
     }
 
     [Action("Create project from template",
         Description = "Creates a new project based on an existing memoQ project template")]
-    public ProjectDto CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
+    public async Task<ProjectDto> CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var newProject = new TemplateBasedProjectCreateInfo
         {
             Name = request.ProjectName,
@@ -265,41 +226,19 @@ public class ServerProjectActions : BaseInvocable
             TemplateGuid = Guid.Parse(request.TemplateGuid)
         };
 
-        try
+        return await ExecuteWithHandling(async () =>
         {
-            var result = projectService.Service.CreateProjectFromTemplate(newProject);
-            var response = projectService.Service.GetProject(result.ProjectGuid);
+            var result = await ProjectService.Service.CreateProjectFromTemplateAsync(newProject);
+            var response = await ProjectService.Service.GetProjectAsync(result.ProjectGuid);
 
-            return new(response);
-
-        } catch (System.ServiceModel.FaultException ex)
-        {
-            if (ex.Message == "Message.ResourceNotFound.ProjectTemplate")
-            {
-                throw new PluginMisconfigurationException("The selected project template does not exist.");
-            }
-            else if (ex.Message == "An online project with the same name already exists.")
-            {
-                throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
-            }
-            else if (ex.Message == "The name contains invalid characters, or the name is reserved by Windows.")
-            {
-                throw new PluginMisconfigurationException("The name contains invalid characters, or the name is reserved by Windows. Please check the characters you are using in the project name.");
-            }
-            else
-            {
-                throw new PluginApplicationException(ex.Message);
-            }
-        }
+            return new ProjectDto(response);
+        });
     }
 
     [Action("Create project from a package",
         Description = "Creates a new project based on an existing memoQ package")]
-    public ProjectDto CreateProjectPackage([ActionParameter] CreateProjectFromPackageRequest input)
+    public async Task<ProjectDto> CreateProjectPackage([ActionParameter] CreateProjectFromPackageRequest input)
     {
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var request = new ServerProjectDesktopDocsCreateInfo
         {
             Deadline = input.Deadline,
@@ -341,20 +280,21 @@ public class ServerProjectActions : BaseInvocable
             ImportResources = input.ImportResources
         };
 
-        var result = projectService.Service.CreateProjectFromPackage3(request, Guid.Parse(input.FileId), importOptions);
-        var response = projectService.Service.GetProject(result);
-        
-        return new(response);
+        return await ExecuteWithHandling(async () =>
+        {
+            var result = await ProjectService.Service.CreateProjectFromPackage3Async(request, Guid.Parse(input.FileId), importOptions);
+            var response = await ProjectService.Service.GetProjectAsync(result);
+
+            return new ProjectDto(response);
+        });
     }
 
     [Action("Update project", Description = "Update info of a specific project")]
     public async Task UpdateProject([ActionParameter] ProjectRequest project, [ActionParameter] UpdateProjectRequest request)
     {
-        var currentProjectValues = GetProject(new ProjectRequest {ProjectGuid = project.ProjectGuid });
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
+        var currentProjectValues = await GetProject(new ProjectRequest {ProjectGuid = project.ProjectGuid });
                 
-        await projectService.Service.UpdateProjectAsync(new()
+        await ExecuteWithHandling(() => ProjectService.Service.UpdateProjectAsync(new()
         {
             Deadline = (DateTime)(request.Deadline.HasValue ? request.Deadline : currentProjectValues.Deadline),
             Description = request.Description ?? currentProjectValues.Description,
@@ -362,19 +302,14 @@ public class ServerProjectActions : BaseInvocable
             Subject = request.Subject ?? currentProjectValues.Subject,
             Client = request.Client ?? currentProjectValues.Client,
             ServerProjectGuid = Guid.Parse(project.ProjectGuid)
-        });
-
-        return;
+        }));
     }
     
-    [Action("Add glossary to project", Description = "Add termbase to a specific project by GUID")]
+    [Action("Add glossary to project", Description = "Add termbase to a specific project")]
     public async Task AddTermbaseToProject([ActionParameter] ProjectRequest project, 
         [ActionParameter] AddTermbaseRequest request)
-    {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-        
-        await projectService.Service.SetProjectTBs3Async(Guid.Parse(project.ProjectGuid), new[]
+    {        
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTBs3Async(Guid.Parse(project.ProjectGuid), new[]
         {
             new ServerProjectTBsForTargetLang
             {
@@ -383,25 +318,19 @@ public class ServerProjectActions : BaseInvocable
                 TBGuidTargetForNewTerms = request.TargetTermbaseId != null ? Guid.Parse(request.TargetTermbaseId) : Guid.Empty,
                 ExcludedTBsFromQA = request.ExcludeTermBasesFromQa?.Select(Guid.Parse).ToArray() ?? Array.Empty<Guid>()
             }
-        });
+        }));
     }
 
     [Action("Delete project", Description = "Delete a specific project")]
-    public void DeleteProject([ActionParameter] ProjectRequest project)
+    public async Task DeleteProject([ActionParameter] ProjectRequest project)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        projectService.Service.DeleteProject(Guid.Parse(project.ProjectGuid));
+        await ExecuteWithHandling(() => ProjectService.Service.DeleteProjectAsync(Guid.Parse(project.ProjectGuid)));
     }
 
     [Action("Distribute project", Description = "Distribute a specific project")]
     public async Task DistributeProject([ActionParameter] ProjectRequest project)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        await projectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid));
+        await ExecuteWithHandling(() => ProjectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid)));
     }
 
     [Action("Add resource to project",
@@ -409,16 +338,13 @@ public class ServerProjectActions : BaseInvocable
     public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
         [ActionParameter] AddResourceToProjectRequest request, [ActionParameter][Display("Overwrite?", Description = "Whether to overwrite the current resources, default to false")] bool? overwrite)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var projectId = Guid.Parse(project.ProjectGuid);
         var resourceType = (ResourceType)int.Parse(request.ResourceType);
         var assignments = CreateAssignmentsBasedOnResourceType(resourceType, request);
 
         if (overwrite != true)
         {
-            var currentResources = await projectService.Service.ListProjectResourceAssignmentsAsync(projectId, resourceType);
+            var currentResources = await ExecuteWithHandling(() => ProjectService.Service.ListProjectResourceAssignmentsAsync(projectId, resourceType));
             foreach ( var currentResource in currentResources)
             {
                 // Resource type MT can only have 0 or 1 resource per language.
@@ -443,7 +369,7 @@ public class ServerProjectActions : BaseInvocable
             }
         };
 
-        await projectService.Service.SetProjectResourceAssignmentsAsync(projectId, array);
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectResourceAssignmentsAsync(projectId, array));
     }
 
     [Action("Get resources assigned to project",
@@ -451,13 +377,10 @@ public class ServerProjectActions : BaseInvocable
     public async Task<ResourceListResponse> GetResourcesFromProject([ActionParameter] ProjectRequest project,
         [ActionParameter][Display("Resource type"), StaticDataSource(typeof(ResourceTypeDataHandler))] string resourceType)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var projectId = Guid.Parse(project.ProjectGuid);
         var type = (ResourceType)int.Parse(resourceType);
 
-        var result = await projectService.Service.ListProjectResourceAssignmentsAsync(projectId, type);
+        var result = await ExecuteWithHandling(() => ProjectService.Service.ListProjectResourceAssignmentsAsync(projectId, type));
 
         return new ResourceListResponse
         {
@@ -467,27 +390,23 @@ public class ServerProjectActions : BaseInvocable
 
     [Action("Get term bases assigned to project",
         Description = "Get a list of term bases assigned to a project for a target language.")]
-    public async Task<List<string>> GetTermbaseFromProject([ActionParameter] ProjectRequest project,
-       [ActionParameter][Display("Target language"), StaticDataSource(typeof(TargetLanguageDataHandler))] string TargetLanguage )
+    public async Task<TermbaseResponse> GetTermbaseFromProject([ActionParameter] ProjectRequest project,
+       [ActionParameter][Display("Target language"), StaticDataSource(typeof(TargetLanguageDataHandler))] string targetLanguage )
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
+        var result = await ExecuteWithHandling(() => ProjectService.Service.ListProjectTBs3Async(Guid.Parse(project.ProjectGuid), new[] { targetLanguage }));
+        var termbaseIds = result?.FirstOrDefault()?.TBGuids.Select(x => x.ToString()) ?? new List<string>();
 
-        var projectId = Guid.Parse(project.ProjectGuid);
-
-        var result = await projectService.Service.ListProjectTBs3Async(projectId, TargetLanguage.ToArray());
-
-        return result.First().TBGuids.Select(x => x.ToString()).ToList();
+        return new TermbaseResponse
+        {
+            TermbaseIds = termbaseIds,
+        };
     }
 
-    [Action("Pretranslate documents", Description = "Pretranslate documents if document GUIDs are provided, otherwise pretranslate the whole project with all documents")]
+    [Action("Pretranslate files", Description = "Pretranslate files if file IDs are provided, otherwise pretranslate the whole project with all files")]
     public async Task<PretranslateDocumentsResponse> PretranslateDocuments(
         [ActionParameter] ProjectRequest projectRequest,
         [ActionParameter] PretranslateDocumentsRequest request)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var options = new PretranslateOptions
         {
             OnlyUnambiguousMatches = request.OnlyUnambiguousMatches ?? true,
@@ -528,14 +447,12 @@ public class ServerProjectActions : BaseInvocable
         var guids = request.DocumentGuids?.Select(Guid.Parse).ToArray();
         if (guids != null && guids.Length != 0)
         {
-            var resultInfo = await projectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid),
-                guids, options);
-            
+            var resultInfo = await ExecuteWithHandling(() => ProjectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid), guids, options));            
             return new(resultInfo);
         }
         
         var targetLanguages = request.TargetLanguages?.ToArray();
-        var result = await projectService.Service.PretranslateProjectAsync(Guid.Parse(projectRequest.ProjectGuid), targetLanguages, options);
+        var result = await ExecuteWithHandling(() => ProjectService.Service.PretranslateProjectAsync(Guid.Parse(projectRequest.ProjectGuid), targetLanguages, options));
         return new(result);
     }
 

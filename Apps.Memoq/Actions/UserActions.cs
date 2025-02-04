@@ -4,9 +4,11 @@ using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.Users.Requests;
 using Apps.Memoq.Models.Users.Responses;
+using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using MQS.Security;
 using MQS.ServerProject;
@@ -15,36 +17,18 @@ using UserInfo = MQS.Security.UserInfo;
 namespace Apps.Memoq.Actions;
 
 [ActionList]
-public class UserActions : BaseInvocable
+public class UserActions : MemoqInvocable
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
-
     public UserActions(InvocationContext invocationContext) : base(invocationContext)
     {
-    }
-
-    [Action("List users", Description = "List all users")]
-    public ListAllUsersResponse ListAllUsers()
-    {
-        var securityService = new MemoqServiceFactory<ISecurityService>(
-            SoapConstants.SecurityServiceUrl, Creds);
-
-        var response = securityService.Service.ListUsers();
-        return new()
-        {
-            Users = response.Select(x => new UserDto(x)).ToArray()
-        };
     }
 
     [Action("Create user", Description = "Create a new user")]
     public async Task<UserDto> CreateUser([ActionParameter] CreateUserRequest input)
     {
         if (input.Password is null && input.PlainTextPassword is null)
-            throw new("You should specify either Password or Plain text password to create a user");
+            throw new PluginMisconfigurationException("You should specify either Password or Plain text password to create a user");
 
-        var securityService = new MemoqServiceFactory<ISecurityService>(
-            SoapConstants.SecurityServiceUrl, Creds);
 
         var request = new UserInfo()
         {
@@ -64,7 +48,7 @@ public class UserActions : BaseInvocable
             SecondarySID = input.SecondarySID is not null ? Guid.Parse(input.SecondarySID) : default,
             UserName = input.UserName,
         };
-        var response = await securityService.Service.CreateUserAsync(request);
+        var response = await ExecuteWithHandling(() => SecurityService.Service.CreateUserAsync(request));
 
         return await GetUser(new()
         {
@@ -72,36 +56,27 @@ public class UserActions : BaseInvocable
         });
     }
 
-    [Action("Get user", Description = "Get user by guid")]
+    [Action("Get user", Description = "Get user information")]
     public async Task<UserDto> GetUser([ActionParameter] UserRequest user)
     {
-        var securityService = new MemoqServiceFactory<ISecurityService>(
-            SoapConstants.SecurityServiceUrl, Creds);
-
-        var response = await securityService.Service.GetUserAsync(Guid.Parse(user.UserGuid));
+        var response = await ExecuteWithHandling(() => SecurityService.Service.GetUserAsync(Guid.Parse(user.UserGuid)));
         return new(response);
     }
 
-    [Action("Delete user", Description = "Delete user by guid")]
-    public void DeleteUser([ActionParameter] UserRequest user)
+    [Action("Delete user", Description = "Delete user")]
+    public async Task DeleteUser([ActionParameter] UserRequest user)
     {
-        var securityService = new MemoqServiceFactory<ISecurityService>(
-            SoapConstants.SecurityServiceUrl, Creds);
-
-        securityService.Service.DeleteUser(Guid.Parse(user.UserGuid));
+        await ExecuteWithHandling(() => SecurityService.Service.DeleteUserAsync(Guid.Parse(user.UserGuid)));
     }
 
     [Action("Add users to project", Description = "Add users to project")]
-    public void AddUserToProject([ActionParameter] UsersRequest request,
+    public async Task AddUserToProject([ActionParameter] UsersRequest request,
         [ActionParameter] ProjectRequest projectRequest)
     {
-        var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
         var users = request.UserGuids.Select(x => new ServerProjectUserInfo
         {
             UserGuid = Guid.Parse(x), PermForLicense = true, ProjectRoles = new ServerProjectRoles(),
         }).ToArray();
-        projectService.Service.SetProjectUsers(Guid.Parse(projectRequest.ProjectGuid), users);
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectUsersAsync(Guid.Parse(projectRequest.ProjectGuid), users));
     }
 }

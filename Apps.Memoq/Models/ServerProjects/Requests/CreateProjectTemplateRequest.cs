@@ -19,7 +19,7 @@ public class CreateProjectTemplateRequest
     [Display("Project name")]
     public string? ProjectName { get; set; }
 
-    [Display("Template GUID")]
+    [Display("Template ID")]
     [DataSource(typeof(ProjectTemplateDataHandler))]
     public string TemplateGuid { get; set; }
     

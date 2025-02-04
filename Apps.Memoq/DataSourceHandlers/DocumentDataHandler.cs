@@ -1,6 +1,7 @@
 ﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Files.Requests;
+using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -9,11 +10,8 @@ using MQS.ServerProject;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class DocumentDataHandler : BaseInvocable, IDataSourceHandler
+public class DocumentDataHandler : MemoqInvocable, IDataSourceHandler
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
-
     private readonly string _projectGuid;
 
     public DocumentDataHandler(InvocationContext invocationContext, [ActionParameter] GetDocumentRequest request) :
@@ -26,13 +24,10 @@ public class DocumentDataHandler : BaseInvocable, IDataSourceHandler
     {
         if (string.IsNullOrEmpty(_projectGuid))
         {
-            throw new InvalidOperationException("You should input a project guid first");
+            throw new InvalidOperationException("You should input a project GUID first");
         }
 
-        using var projectService = new MemoqServiceFactory<IServerProjectService>(
-            SoapConstants.ProjectServiceUrl, Creds);
-
-        var response = projectService.Service.ListProjectTranslationDocumentsGroupedBySourceFile(
+        var response = ProjectService.Service.ListProjectTranslationDocumentsGroupedBySourceFile(
             Guid.Parse(_projectGuid));
 
         var files = response

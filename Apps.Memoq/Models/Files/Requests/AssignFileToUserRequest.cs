@@ -9,7 +9,7 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class AssignFileToUserRequest : ProjectRequest
 {
-    [Display("File GUID")]
+    [Display("File ID")]
     public string FileGuid { get; set; }
         
     [Display("User")]

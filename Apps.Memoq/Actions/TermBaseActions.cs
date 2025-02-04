@@ -17,16 +17,15 @@ using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using MQS.TB;
 using MQS.FileManager;
 using MQS.TasksService;
+using Apps.MemoQ;
+using MQS.TM;
 
 namespace Apps.Memoq.Actions;
 
 [ActionList]
-public class TermBaseActions : BaseInvocable
+public class TermBaseActions : MemoqInvocable
 {
     private readonly IFileManagementClient _fileManagementClient;
-
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
 
     public TermBaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
         : base(invocationContext)
@@ -679,8 +678,6 @@ public class TermBaseActions : BaseInvocable
             .Select(language => _tbxMemoQLanguages[language])
             .ToArray();
 
-        using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
-
         Guid termbaseGuid;
         if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
         {
@@ -688,26 +685,26 @@ public class TermBaseActions : BaseInvocable
         }
         else
         {
-        var termbaseName = input.Name ?? glossary.Title;
+            var termbaseName = input.Name ?? glossary.Title;
 
-        var termbases = await tbService.Service.ListTBs2Async(new TBFilter());
+            var termbases = await ExecuteWithHandling(() => TbService.Service.ListTBs2Async(new TBFilter()));
 
-        if (termbases.Any(tb => tb.Name.Equals(termbaseName, StringComparison.OrdinalIgnoreCase)))
-            termbaseName += $" {DateTime.Now.ToString("D")}";
+            if (termbases.Any(tb => tb.Name.Equals(termbaseName, StringComparison.OrdinalIgnoreCase)))
+                termbaseName += $" {DateTime.Now.ToString("D")}";
 
-        termbaseGuid = await tbService.Service.CreateAndPublishAsync(new TBInfo
-        {
-            IsQTerm = input.IsQTerm ?? false,
-            Name = termbaseName,
-            Description = input.Description ?? glossary.SourceDescription,
-            LanguageCodes = memoQLanguagesPresent,
-            IsModerated = input.IsModerated ?? false,
-            ModLateDisclosure = input.ModLateDisclosure ?? true,
-            Client = input.Client,
-            Project = input.Project,
-            Domain = input.Domain,
-            Subject = input.Subject
-        });
+            termbaseGuid = await ExecuteWithHandling(() => TbService.Service.CreateAndPublishAsync(new TBInfo
+            {
+                IsQTerm = input.IsQTerm ?? false,
+                Name = termbaseName,
+                Description = input.Description ?? glossary.SourceDescription,
+                LanguageCodes = memoQLanguagesPresent,
+                IsModerated = input.IsModerated ?? false,
+                ModLateDisclosure = input.ModLateDisclosure ?? true,
+                Client = input.Client,
+                Project = input.Project,
+                Domain = input.Domain,
+                Subject = input.Subject
+            }));
         }
         var languageRelatedColumns = GenerateCsvHeaders(memoQLanguagesPresent);
 
@@ -751,7 +748,7 @@ public class TermBaseActions : BaseInvocable
 
         await using var csvStream = await rowsToAdd.ConvertToCsv(Encoding.UTF8, ';');
 
-        var sessionId = await tbService.Service.BeginChunkedCSVImportAsync(termbaseGuid, new CSVImportSettings());
+        var sessionId = await ExecuteWithHandling(() => TbService.Service.BeginChunkedCSVImportAsync(termbaseGuid, new CSVImportSettings()));
         try
         {
             const int chunkSize = 500000;
@@ -764,12 +761,12 @@ public class TermBaseActions : BaseInvocable
                 var chunk = new byte[bytesRead];
                 Array.Copy(buffer, chunk, bytesRead);
 
-                await tbService.Service.AddNextCSVChunkAsync(sessionId, chunk);
+                await ExecuteWithHandling(() => TbService.Service.AddNextCSVChunkAsync(sessionId, chunk));
             }
         }
         finally
         {
-            await tbService.Service.EndChunkedCSVImportAsync(sessionId);
+            await ExecuteWithHandling(() => TbService.Service.EndChunkedCSVImportAsync(sessionId));
         }
 
         return new() { TermbaseGuid = termbaseGuid.ToString() };
@@ -785,22 +782,21 @@ public class TermBaseActions : BaseInvocable
         [ActionParameter][Display("Title")] string? title,
         [ActionParameter][Display("Description")] string? description)
     {
-        using var tbService = new MemoqServiceFactory<ITBService>(SoapConstants.TermBasesServiceUrl, Creds);
         var termbaseGuid = new Guid(termbaseRequest.TermbaseId);
-        var termbase = await tbService.Service.GetTBInfoAsync(termbaseGuid);
+        var termbase = await ExecuteWithHandling(() => TbService.Service.GetTBInfoAsync(termbaseGuid));
 
         var xmlFileBytes = new List<byte>();
-        var sessionId = (await tbService.Service.BeginChunkedMultiTermExportAsync(new() { tbGuid = termbaseGuid }))
+        var sessionId = (await ExecuteWithHandling(() => TbService.Service.BeginChunkedMultiTermExportAsync(new() { tbGuid = termbaseGuid })))
             .BeginChunkedMultiTermExportResult;
 
         try
         {
-            var chunk = await tbService.Service.GetNextExportChunkAsync(sessionId);
+            var chunk = await ExecuteWithHandling(() => TbService.Service.GetNextExportChunkAsync(sessionId));
 
             while (chunk != null && chunk.Length != 0)
             {
                 xmlFileBytes.AddRange(chunk);
-                chunk = await tbService.Service.GetNextExportChunkAsync(sessionId);
+                chunk = await ExecuteWithHandling(() => TbService.Service.GetNextExportChunkAsync(sessionId));
             }
 
             var glossary = ConvertXmlTermbaseToGlossary(xmlFileBytes.ToArray(), includeForbiddenTerms ?? false,
@@ -815,7 +811,7 @@ public class TermBaseActions : BaseInvocable
         }
         finally
         {
-            await tbService.Service.EndChunkedExportAsync(sessionId);
+            await ExecuteWithHandling(() => TbService.Service.EndChunkedExportAsync(sessionId));
         }
     }
 

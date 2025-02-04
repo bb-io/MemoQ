@@ -5,7 +5,7 @@ namespace Apps.Memoq.Models.Package.Request;
 
 public class CreateDeliveryPackageRequest : ProjectRequest
 {
-    [Display("Document IDs")]
+    [Display("File IDs")]
     public IEnumerable<string> DocumentIds { get; set; }
     
     [Display("Return to previous actor")]

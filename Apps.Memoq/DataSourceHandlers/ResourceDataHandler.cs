@@ -1,6 +1,7 @@
 ﻿using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.ServerProjects.Requests;
+using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
@@ -9,10 +10,8 @@ using MQS.Resource;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class ResourceDataHandler : BaseInvocable, IAsyncDataSourceHandler
+public class ResourceDataHandler : MemoqInvocable, IAsyncDataSourceHandler
 {
-    private IEnumerable<AuthenticationCredentialsProvider> Creds =>
-        InvocationContext.AuthenticationCredentialsProviders;
     private readonly string? _resourceType;
 
     public ResourceDataHandler(InvocationContext invocationContext, [ActionParameter] AddResourceToProjectRequest request) : base(invocationContext)
@@ -26,12 +25,8 @@ public class ResourceDataHandler : BaseInvocable, IAsyncDataSourceHandler
         {
             throw new InvalidOperationException("You should specify resource type first");
         }
-        
-        var resourceService = new MemoqServiceFactory<IResourceService>(
-            SoapConstants.ResourceServiceUrl, Creds);
-
         var resourceType = (ResourceType)int.Parse(_resourceType);
-        var resources = await resourceService.Service.ListResourcesAsync(resourceType, new LightResourceListFilter());
+        var resources = await ResourceService.Service.ListResourcesAsync(resourceType, new LightResourceListFilter());
         
         return resources
             .Where(x => context.SearchString is null ||

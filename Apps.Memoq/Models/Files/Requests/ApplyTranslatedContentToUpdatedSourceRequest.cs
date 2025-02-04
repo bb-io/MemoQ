@@ -7,7 +7,7 @@ namespace Apps.Memoq.Models.Files.Requests;
 
 public class ApplyTranslatedContentToUpdatedSourceRequest : ProjectRequest
 {
-    [Display("Document GUID")] public string DocumentGuid { get; set; }
+    [Display("File ID")] public string DocumentGuid { get; set; }
 
     [Display("Work with context IDs")] public bool? WorkWithContextIds { get; set; }
 
