@@ -1,4 +1,5 @@
-﻿using System.Xml.Linq;
+﻿using Blackbird.Applications.Sdk.Common.Exceptions;
+using System.Xml.Linq;
 
 namespace Apps.Memoq.Utils.Xliff;
 
@@ -13,7 +14,7 @@ public static class XliffTwoPointOneToOnePointTwoConverter
         // Check for the root element and its 'version' attribute
         if (document?.Root == null)
         {
-            throw new InvalidOperationException("Document does not have a root element.");
+            throw new PluginMisconfigurationException("Invalid XLIFF document: does not have a root element.");
         }
 
         var srcLang =

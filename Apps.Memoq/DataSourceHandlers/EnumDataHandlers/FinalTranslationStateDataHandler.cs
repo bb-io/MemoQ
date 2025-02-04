@@ -1,18 +1,22 @@
 ﻿using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
+using DocumentFormat.OpenXml;
 
 namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
-public class FinalTranslationStateDataHandler : IStaticDataSourceHandler
+public class FinalTranslationStateDataHandler : IStaticDataSourceItemHandler
 {
-    public Dictionary<string, string> GetData()
+    protected Dictionary<string, string> EnumValues => new()
     {
-        return new Dictionary<string, string>
-        {
-            { "0", "No change" },
-            { "1", "Confirmed" },
-            { "2", "Proofread" },
-            { "3", "Pretranslated" },
-            { "4", "Reviewer 1 confirmed" }
-        };
+        { "0", "No change" },
+        { "1", "Confirmed" },
+        { "2", "Proofread" },
+        { "3", "Pretranslated" },
+        { "4", "Reviewer 1 confirmed" }
+    };
+
+    public IEnumerable<DataSourceItem> GetData()
+    {
+        return EnumValues.Select(x => new DataSourceItem(x.Key, x.Value));
     }
 }

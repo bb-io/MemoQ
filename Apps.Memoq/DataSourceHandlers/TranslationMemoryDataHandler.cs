@@ -10,13 +10,13 @@ using MQS.TM;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class TranslationMemoryDataHandler : MemoqInvocable, IAsyncDataSourceHandler
+public class TranslationMemoryDataHandler : MemoqInvocable, IAsyncDataSourceItemHandler
 {
     public TranslationMemoryDataHandler(InvocationContext invocationContext) : base(invocationContext)
     {
     }
 
-    public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, 
+    public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, 
         CancellationToken cancellationToken)
     {
         var response = await TmService.Service.ListTMs2Async(new TMListFilter());
@@ -27,7 +27,7 @@ public class TranslationMemoryDataHandler : MemoqInvocable, IAsyncDataSourceHand
                          BuildReadableName(tm).Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(tm => tm.LastModified)
             .Take(20)
-            .ToDictionary(tm => tm.Guid.ToString(), BuildReadableName);
+            .Select(tm => new DataSourceItem(tm.Guid.ToString(), BuildReadableName(tm)));
     }
     
     private string BuildReadableName(TmDto tm)

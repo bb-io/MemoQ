@@ -1,8 +1,9 @@
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 
 namespace Apps.Memoq.DataSourceHandlers.EnumDataHandlers;
 
-public class TmEngineTypeDataHandler : IStaticDataSourceHandler
+public class TmEngineTypeDataHandler : IStaticDataSourceItemHandler
 {
     protected Dictionary<string, string> EnumValues => new()
     {
@@ -10,8 +11,8 @@ public class TmEngineTypeDataHandler : IStaticDataSourceHandler
         {"NGTMEngine", "NG TM engine"},
     };
 
-    public Dictionary<string, string> GetData()
+    public IEnumerable<DataSourceItem> GetData()
     {
-        return EnumValues;
+        return EnumValues.Select(x => new DataSourceItem(x.Key, x.Value));
     }
 }

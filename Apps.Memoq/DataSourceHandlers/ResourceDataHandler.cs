@@ -10,7 +10,7 @@ using MQS.Resource;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class ResourceDataHandler : MemoqInvocable, IAsyncDataSourceHandler
+public class ResourceDataHandler : MemoqInvocable, IAsyncDataSourceItemHandler
 {
     private readonly string? _resourceType;
 
@@ -19,7 +19,7 @@ public class ResourceDataHandler : MemoqInvocable, IAsyncDataSourceHandler
         _resourceType = request.ResourceType;
     }
 
-    public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
+    public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
         if (_resourceType is null)
         {
@@ -32,6 +32,6 @@ public class ResourceDataHandler : MemoqInvocable, IAsyncDataSourceHandler
             .Where(x => context.SearchString is null ||
                         x.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .Take(20)
-            .ToDictionary(x => x.Guid.ToString(), x => x.Name);
+            .Select(x => new DataSourceItem(x.Guid.ToString(), x.Name));
     }
 }

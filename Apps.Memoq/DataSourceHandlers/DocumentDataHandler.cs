@@ -10,7 +10,7 @@ using MQS.ServerProject;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class DocumentDataHandler : MemoqInvocable, IDataSourceHandler
+public class DocumentDataHandler : MemoqInvocable, IDataSourceItemHandler
 {
     private readonly string _projectGuid;
 
@@ -20,7 +20,7 @@ public class DocumentDataHandler : MemoqInvocable, IDataSourceHandler
         _projectGuid = request.ProjectGuid;
     }
 
-    public Dictionary<string, string> GetData(DataSourceContext context)
+    public IEnumerable<DataSourceItem> GetData(DataSourceContext context)
     {
         if (string.IsNullOrEmpty(_projectGuid))
         {
@@ -40,6 +40,6 @@ public class DocumentDataHandler : MemoqInvocable, IDataSourceHandler
                         x.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(x => x.Name)
             .Take(20)
-            .ToDictionary(x => x.DocumentGuid.ToString(), x => x.Name);
+            .Select(x => new DataSourceItem(x.DocumentGuid.ToString(), x.Name));
     }
 }

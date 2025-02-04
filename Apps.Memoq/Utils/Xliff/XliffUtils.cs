@@ -1,4 +1,5 @@
-﻿using System.Xml.Linq;
+﻿using Blackbird.Applications.Sdk.Common.Exceptions;
+using System.Xml.Linq;
 
 namespace Apps.Memoq.Utils.Xliff;
 
@@ -8,13 +9,13 @@ public static class XliffUtils
     {
         if (document?.Root == null)
         {
-            throw new ArgumentNullException(nameof(document));
+            throw new PluginMisconfigurationException("Invalid XLIFF document: does not have a root element");
         }
 
         var versionAttr = document.Root.Attribute("version");
         if (versionAttr == null)
         {
-            throw new InvalidOperationException("The XLIFF version attribute is missing.");
+            throw new PluginMisconfigurationException("The XLIFF file's version attribute is missing.");
         }
 
         return versionAttr.Value.Trim();

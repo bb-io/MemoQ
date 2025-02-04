@@ -9,9 +9,9 @@ using MQS.TB;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class TermbaseDataHandler(InvocationContext invocationContext) : MemoqInvocable(invocationContext), IAsyncDataSourceHandler
+public class TermbaseDataHandler(InvocationContext invocationContext) : MemoqInvocable(invocationContext), IAsyncDataSourceItemHandler
 {
-    public async Task<Dictionary<string, string>> GetDataAsync(DataSourceContext context, 
+    public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, 
         CancellationToken cancellationToken)
     {
         var termbases = await TbService.Service.ListTBs2Async(null);
@@ -21,7 +21,6 @@ public class TermbaseDataHandler(InvocationContext invocationContext) : MemoqInv
                                termbase.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(termbase => termbase.LastModified)
             .Take(20)
-            .ToDictionary(termbase => termbase.Guid.ToString(),
-                termbase => termbase.IsQTerm ? $"{termbase.Name} (QTerm)" : termbase.Name);
+            .Select(termbase => new DataSourceItem(termbase.Guid.ToString(), termbase.IsQTerm ? $"{termbase.Name} (QTerm)" : termbase.Name));
     }
 }

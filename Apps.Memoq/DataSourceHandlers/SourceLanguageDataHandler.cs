@@ -1,10 +1,12 @@
+using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Utils.Sdk.DataSourceHandlers;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class SourceLanguageDataHandler : EnumDataHandler
+public class SourceLanguageDataHandler : IStaticDataSourceItemHandler
 {
-    protected override Dictionary<string, string> EnumValues => new()
+    private Dictionary<string, string> EnumValues => new()
     {
         ["afr"] = "Afrikaans", ["aka"] = "Akan", ["alb"] = "Albanian", ["alb-AL"] = "Albanian (Albania)",
         ["alb-XK"] = "Albanian (Kosovo)", ["alb-MK"] = "Albanian (Macedonia)", ["alb-ME"] = "Albanian (Montenegro)",
@@ -77,4 +79,9 @@ public class SourceLanguageDataHandler : EnumDataHandler
         ["uzb"] = "Uzbek (Latin)", ["vie"] = "Vietnamese", ["wel"] = "Welsh", ["wol"] = "Wolof", ["xho"] = "Xhosa",
         ["yid"] = "Yiddish", ["yor"] = "Yoruba", ["zul"] = "Zulu"
     };
+
+    public IEnumerable<DataSourceItem> GetData()
+    {
+        return EnumValues.Select(x => new DataSourceItem(x.Key, x.Value));
+    }
 }

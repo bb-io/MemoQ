@@ -41,8 +41,7 @@ public class FileActions : MemoqInvocable
         _fileManagementClient = fileManagementClient;
     }
 
-    [Action("Search translation files",
-        Description = "Returns the current translation files of the specified project.")]
+    [Action("Search project files", Description = "Returns the files currently in a project.")]
     public async Task<ListAllProjectFilesResponse> ListAllProjectFiles(
         [ActionParameter] ProjectRequest project,
         [ActionParameter] ListProjectFilesRequest input)
@@ -271,7 +270,7 @@ public class FileActions : MemoqInvocable
         };
     }
 
-    [Action("Update file from XLIFF", Description = "Update a project file by providing an XLIFF file")]
+    [Action("Update file from XLIFF file", Description = "Update a project file by providing an XLIFF file")]
     public async Task<UploadFileResponse> UpdateDocumentFromXliff(
         [ActionParameter] UploadDocumentToProjectRequest request,
         [ActionParameter] UpdateFromXliffRequest XliffRequest)
@@ -322,7 +321,7 @@ public class FileActions : MemoqInvocable
         };
     }
 
-    [Action("Import XLIFF file", Description = "Uploads and imports an XLIFF file to a project")]
+    [Action("Upload XLIFF file", Description = "Uploads and imports an XLIFF file to a project")]
     public async Task<UploadFileResponse> UploadAndImportFileToProjectAsXliff(
         [ActionParameter] UploadDocumentToProjectRequest request,
         [ActionParameter] ImportDocumentAsXliffRequest importDocumentAsXliffRequest)
@@ -378,7 +377,7 @@ public class FileActions : MemoqInvocable
         return new DownloadFileResponse(document) { File = fileReference };
     }
 
-    [Action("Export XLIFF file",
+    [Action("Download XLIFF file",
         Description = "Exports and downloads the translation file as an XLIFF (MQXLIFF) bilingual")]
     public async Task<DownloadFileResponse> DownloadFileAsXliff(
         [ActionParameter] GetDocumentRequest documentRequest,

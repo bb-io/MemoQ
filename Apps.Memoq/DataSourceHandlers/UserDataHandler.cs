@@ -9,19 +9,19 @@ using MQS.Security;
 
 namespace Apps.Memoq.DataSourceHandlers;
 
-public class UserDataHandler : MemoqInvocable, IDataSourceHandler
+public class UserDataHandler : MemoqInvocable, IDataSourceItemHandler
 {
     public UserDataHandler(InvocationContext invocationContext) : base(invocationContext)
     {
     }
 
-    public Dictionary<string, string> GetData(DataSourceContext context)
+    public IEnumerable<DataSourceItem> GetData(DataSourceContext context)
     {
         var users = SecurityService.Service.ListUsers();
 
         if (users is null)
         {
-            return new();
+            return new List<DataSourceItem>();
         }
 
         return users
@@ -36,6 +36,6 @@ public class UserDataHandler : MemoqInvocable, IDataSourceHandler
                 return name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase);
             })
             .Take(20)
-            .ToDictionary(x => x.UserGuid.ToString(), x => x.FullName ?? x.UserName);
+            .Select(x => new DataSourceItem(x.UserGuid.ToString(), x.FullName ?? x.UserName));
     }
 }
