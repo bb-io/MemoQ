@@ -19,6 +19,8 @@ using MQS.FileManager;
 using MQS.TasksService;
 using Apps.MemoQ;
 using MQS.TM;
+using System.Xml.XPath;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 
 namespace Apps.Memoq.Actions;
 
@@ -818,85 +820,95 @@ public class TermBaseActions : MemoqInvocable
     private Glossary ConvertXmlTermbaseToGlossary(byte[] xmlBytes, bool includeForbiddenTerms, string termbaseTitle,
         string? termbaseDescription)
     {
-        var xmlContent = Encoding.Unicode.GetString(xmlBytes);
-
-        var xmlDocument = new XmlDocument();
-        xmlDocument.LoadXml(xmlContent);
-
-        var conceptEntries = new List<GlossaryConceptEntry>();
-        var glossary = new Glossary(conceptEntries);
-        glossary.Title = termbaseTitle;
-        glossary.SourceDescription = termbaseDescription;
-
-        var conceptGroupNodes = xmlDocument.SelectNodes("//mtf/conceptGrp")!;
-
-        foreach (XmlElement conceptNode in conceptGroupNodes)
+        try
         {
-            var languageGroupNodes = conceptNode.SelectNodes("languageGrp")!;
-            var languageSections = new List<GlossaryLanguageSection>();
+            var xmlContent = Encoding.Unicode.GetString(xmlBytes);
 
-            foreach (XmlElement languageNode in languageGroupNodes)
+            var xmlDocument = new XmlDocument();
+            xmlDocument.LoadXml(xmlContent);
+
+            var conceptEntries = new List<GlossaryConceptEntry>();
+            var glossary = new Glossary(conceptEntries);
+            glossary.Title = termbaseTitle;
+            glossary.SourceDescription = termbaseDescription;
+
+            var conceptGroupNodes = xmlDocument.SelectNodes("//mtf/conceptGrp")!;
+
+            foreach (XmlElement conceptNode in conceptGroupNodes)
             {
-                if (!includeForbiddenTerms)
-                {
-                    var termStatus = languageNode
-                        .SelectNodes("termGrp/descripGrp/descrip")?
-                        .Cast<XmlElement>()
-                        .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Status")?
-                        .InnerText;
+                var languageGroupNodes = conceptNode.SelectNodes("languageGrp")!;
+                var languageSections = new List<GlossaryLanguageSection>();
 
-                    if (termStatus == "Forbidden")
-                        continue;
+                foreach (XmlElement languageNode in languageGroupNodes)
+                {
+                    if (!includeForbiddenTerms)
+                    {
+                        var termStatus = languageNode
+                            .SelectNodes("termGrp/descripGrp/descrip")?
+                            .Cast<XmlElement>()
+                            .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Status")?
+                            .InnerText;
+
+                        if (termStatus == "Forbidden")
+                            continue;
+                    }
+
+                    var language = languageNode!.SelectSingleNode("language")!.Attributes!["lang"]!.Value.ToLower();
+                    var term = languageNode.SelectSingleNode("termGrp/term")!.InnerText;
+                    var termSection = new GlossaryTermSection(term);
+                    languageSections.Add(new(language, new List<GlossaryTermSection> { termSection }));
                 }
 
-                var language = languageNode!.SelectSingleNode("language")!.Attributes!["lang"]!.Value.ToLower();
-                var term = languageNode.SelectSingleNode("termGrp/term")!.InnerText;
-                var termSection = new GlossaryTermSection(term);
-                languageSections.Add(new(language, new List<GlossaryTermSection> { termSection }));
-            }
-
-            if (languageSections.Any())
-            {
-                var conceptDescriptionNodes = conceptNode
-                    .SelectNodes("descripGrp/descrip")!
-                    .Cast<XmlElement>()
-                    .ToArray();
-                var id = conceptDescriptionNodes
-                    .First(descriptionNode => descriptionNode.Attributes["type"]?.Value == "ID").InnerText;
-                var subject = conceptDescriptionNodes
-                    .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Subject")
-                    ?.InnerText;
-                var note = conceptDescriptionNodes
-                    .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Note")?.InnerText;
-
-                var definition = languageGroupNodes.Cast<XmlElement>()
-                    .FirstOrDefault(node =>
-                    {
-                        var descriptionWithDefinition = node
-                            .SelectNodes("descripGrp/descrip")?
-                            .Cast<XmlElement>()
-                            .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Definition");
-
-                        if (descriptionWithDefinition == null)
-                            return false;
-
-                        return true;
-                    })?
-                    .SelectSingleNode("descripGrp/descrip")!.InnerText;
-
-                var entry = new GlossaryConceptEntry(id, languageSections)
+                if (languageSections.Any())
                 {
-                    SubjectField = subject,
-                    Definition = definition,
-                    Notes = new List<string> { note }
-                };
+                    var conceptDescriptionNodes = conceptNode
+                        .SelectNodes("descripGrp/descrip")!
+                        .Cast<XmlElement>()
+                        .ToArray();
+                    var id = conceptDescriptionNodes
+                        .First(descriptionNode => descriptionNode.Attributes["type"]?.Value == "ID").InnerText;
+                    var subject = conceptDescriptionNodes
+                        .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Subject")
+                        ?.InnerText;
+                    var note = conceptDescriptionNodes
+                        .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Note")?.InnerText;
 
-                conceptEntries.Add(entry);
+                    var definition = languageGroupNodes.Cast<XmlElement>()
+                        .FirstOrDefault(node =>
+                        {
+                            var descriptionWithDefinition = node
+                                .SelectNodes("descripGrp/descrip")?
+                                .Cast<XmlElement>()
+                                .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Definition");
+
+                            if (descriptionWithDefinition == null)
+                                return false;
+
+                            return true;
+                        })?
+                        .SelectSingleNode("descripGrp/descrip")!.InnerText;
+
+                    var entry = new GlossaryConceptEntry(id, languageSections)
+                    {
+                        SubjectField = subject,
+                        Definition = definition,
+                        Notes = new List<string> { note }
+                    };
+
+                    conceptEntries.Add(entry);
+                }
             }
+
+            return glossary;
         }
-
-        return glossary;
+        catch (XPathException e)
+        {
+            throw new PluginApplicationException("The server returned wrong file response. Please try again");
+        }
+        catch (Exception e)
+        {
+            throw new Exception("Failed to convert termbase to glossary", e);
+        }
     }
-
     #endregion
 }
