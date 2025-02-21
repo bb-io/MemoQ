@@ -683,7 +683,14 @@ public class TermBaseActions : MemoqInvocable
         Guid termbaseGuid;
         if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
         {
-            termbaseGuid = new Guid(input.ExistingTermbaseId);
+            try
+            {
+                termbaseGuid = Guid.Parse(input.ExistingTermbaseId);
+            }
+            catch (FormatException)
+            {
+                throw new PluginApplicationException("Invalid termbase id format. Please provide a valid GUID.");
+            }
         }
         else
         {
@@ -784,7 +791,16 @@ public class TermBaseActions : MemoqInvocable
         [ActionParameter][Display("Title")] string? title,
         [ActionParameter][Display("Description")] string? description)
     {
-        var termbaseGuid = new Guid(termbaseRequest.TermbaseId);
+        Guid termbaseGuid;
+        try
+        {
+            termbaseGuid = Guid.Parse(termbaseRequest.TermbaseId);    
+        }
+        catch (FormatException)
+        {
+            throw new PluginApplicationException("Invalid termbase id format. Please provide a valid GUID.");
+        }
+
         var termbase = await ExecuteWithHandling(() => TbService.Service.GetTBInfoAsync(termbaseGuid));
 
         var xmlFileBytes = new List<byte>();
