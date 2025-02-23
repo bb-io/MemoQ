@@ -28,7 +28,7 @@ public class DocumentDataHandler : MemoqInvocable, IDataSourceItemHandler
         }
 
         var response = ProjectService.Service.ListProjectTranslationDocumentsGroupedBySourceFile(
-            Guid.Parse(_projectGuid));
+            GuidExtensions.ParseWithErrorHandling(_projectGuid));
 
         var files = response
             .SelectMany(x => x.Groups)

@@ -21,6 +21,7 @@ using Apps.MemoQ;
 using MQS.TM;
 using System.Xml.XPath;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Actions;
 
@@ -683,14 +684,7 @@ public class TermBaseActions : MemoqInvocable
         Guid termbaseGuid;
         if (!string.IsNullOrWhiteSpace(input.ExistingTermbaseId))
         {
-            try
-            {
-                termbaseGuid = Guid.Parse(input.ExistingTermbaseId);
-            }
-            catch (FormatException)
-            {
-                throw new PluginApplicationException("Invalid termbase id format. Please provide a valid GUID.");
-            }
+            termbaseGuid = GuidExtensions.ParseWithErrorHandling(input.ExistingTermbaseId);
         }
         else
         {
@@ -791,15 +785,7 @@ public class TermBaseActions : MemoqInvocable
         [ActionParameter][Display("Title")] string? title,
         [ActionParameter][Display("Description")] string? description)
     {
-        Guid termbaseGuid;
-        try
-        {
-            termbaseGuid = Guid.Parse(termbaseRequest.TermbaseId);    
-        }
-        catch (FormatException)
-        {
-            throw new PluginApplicationException("Invalid termbase id format. Please provide a valid GUID.");
-        }
+        var termbaseGuid = GuidExtensions.ParseWithErrorHandling(termbaseRequest.TermbaseId);    
 
         var termbase = await ExecuteWithHandling(() => TbService.Service.GetTBInfoAsync(termbaseGuid));
 

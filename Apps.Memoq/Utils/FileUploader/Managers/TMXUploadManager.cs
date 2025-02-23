@@ -13,7 +13,7 @@ public class TmxUploadManager : IFileUploadManager
     }
 
     public Guid BeginChunkedUpload(string guid)
-        => Service.BeginChunkedTMXImport(Guid.Parse(guid));
+        => Service.BeginChunkedTMXImport(GuidExtensions.ParseWithErrorHandling(guid));
 
     public void AddNextChunk(Guid id, byte[] data)
         => Service.AddNextTMXChunk(id, data);

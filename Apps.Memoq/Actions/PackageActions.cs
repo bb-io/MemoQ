@@ -21,8 +21,8 @@ public class PackageActions : MemoqInvocable
     [Action("Create delivery package", Description = "Create a new delivery package")]
     public async Task<CreateDeliveryPackageResponse> CreateDeliveryPackage([ActionParameter] CreateDeliveryPackageRequest input)
     {
-        var projectId = Guid.Parse(input.ProjectGuid);
-        var docIds = input.DocumentIds.Select(Guid.Parse).ToArray();
+        var projectId = GuidExtensions.ParseWithErrorHandling(input.ProjectGuid);
+        var docIds = input.DocumentIds.Select(GuidExtensions.ParseWithErrorHandling).ToArray();
 
         var response = await ExecuteWithHandling(() => ProjectService.Service.CreateDeliveryPackageAsync(projectId, docIds,
             input.ReturnToPreviousActor ?? false));
@@ -37,6 +37,6 @@ public class PackageActions : MemoqInvocable
     [Action("Deliver package", Description = "Deliver a specific package")]
     public async Task DeliverPackage([ActionParameter] PackageRequest input)
     {
-         await ExecuteWithHandling(() => ProjectService.Service.DeliverPackageAsync(Guid.Parse(input.FileId)));
+         await ExecuteWithHandling(() => ProjectService.Service.DeliverPackageAsync(GuidExtensions.ParseWithErrorHandling(input.FileId)));
     }
 }

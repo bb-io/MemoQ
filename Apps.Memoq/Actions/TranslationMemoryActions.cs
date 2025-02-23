@@ -80,14 +80,14 @@ public class TranslationMemoryActions : MemoqInvocable
     [Action("Get translation memory", Description = "Get details of a specific translation memory")]
     public async Task<TmDto> GetTranslationMemory([ActionParameter] TranslationMemoryRequest input)
     {
-        var response = await ExecuteWithHandling(() => TmService.Service.GetTMInfoAsync(Guid.Parse(input.TmGuid)));
+        var response = await ExecuteWithHandling(() => TmService.Service.GetTMInfoAsync(GuidExtensions.ParseWithErrorHandling(input.TmGuid)));
         return new(response);
     }   
     
     [Action("Delete translation memory", Description = "Delete specific translation memory")]
     public async Task DeleteTranslationMemory([ActionParameter] TranslationMemoryRequest input)
     {
-        await ExecuteWithHandling(() => TmService.Service.DeleteTMAsync(Guid.Parse(input.TmGuid)));
+        await ExecuteWithHandling(() => TmService.Service.DeleteTMAsync(GuidExtensions.ParseWithErrorHandling(input.TmGuid)));
     }    
     
     [Action("Update translation memory properties", Description = "Update specific translation memory properties")]
@@ -97,7 +97,7 @@ public class TranslationMemoryActions : MemoqInvocable
     {
         await ExecuteWithHandling(() => TmService.Service.UpdatePropertiesAsync(new()
         {
-            Guid = Guid.Parse(tm.TmGuid),
+            Guid = GuidExtensions.ParseWithErrorHandling(tm.TmGuid),
             Name = input.Name,
             Client = input.Client,
             Domain = input.Domain,
@@ -129,7 +129,7 @@ public class TranslationMemoryActions : MemoqInvocable
         var file = await _fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
         var xml = Encoding.UTF8.GetString(fileBytes);
-        var response = await ExecuteWithHandling(() => TmService.Service.ImportTMMetadataSchemeFromXMLAsync(Guid.Parse(input.TmGuid), xml));
+        var response = await ExecuteWithHandling(() => TmService.Service.ImportTMMetadataSchemeFromXMLAsync(GuidExtensions.ParseWithErrorHandling(input.TmGuid), xml));
 
         return new()
         {
@@ -143,23 +143,23 @@ public class TranslationMemoryActions : MemoqInvocable
         [ActionParameter] AddTranslationMemoryToProjectRequest translationMemoryRequest)
     {   
         Guid masterGuid = translationMemoryRequest.MasterTmGuid != null
-            ? Guid.Parse(translationMemoryRequest.MasterTmGuid)
+            ? GuidExtensions.ParseWithErrorHandling(translationMemoryRequest.MasterTmGuid)
             : Guid.Empty;
         
         Guid primaryGuid = translationMemoryRequest.PrimaryTmGuid != null
-            ? Guid.Parse(translationMemoryRequest.PrimaryTmGuid)
+            ? GuidExtensions.ParseWithErrorHandling(translationMemoryRequest.PrimaryTmGuid)
             : Guid.Empty;
         
         var tmGuids = translationMemoryRequest.TmGuids ?? new List<string>();
 
         var tmAssignments = new ServerProjectTMAssignmentsForTargetLang
         {
-            TMGuids = tmGuids.Select(Guid.Parse).ToArray(),
+            TMGuids = tmGuids.Select(GuidExtensions.ParseWithErrorHandling).ToArray(),
             TargetLangCode = translationMemoryRequest.TargetLanguageCode,
             MasterTMGuid = masterGuid,
             PrimaryTMGuid = primaryGuid
         };
 
-        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTMs2Async(Guid.Parse(project.ProjectGuid), new[] { tmAssignments }));
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTMs2Async(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), new[] { tmAssignments }));
     }
 }

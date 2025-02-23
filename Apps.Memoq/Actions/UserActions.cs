@@ -45,7 +45,7 @@ public class UserActions : MemoqInvocable
             Password = input.Password,
             PhoneNumber = input.PhoneNumber,
             PlainTextPassword = input.PlainTextPassword,
-            SecondarySID = input.SecondarySID is not null ? Guid.Parse(input.SecondarySID) : default,
+            SecondarySID = input.SecondarySID is not null ? GuidExtensions.ParseWithErrorHandling(input.SecondarySID) : default,
             UserName = input.UserName,
         };
         var response = await ExecuteWithHandling(() => SecurityService.Service.CreateUserAsync(request));
@@ -59,14 +59,14 @@ public class UserActions : MemoqInvocable
     [Action("Get user", Description = "Get user information")]
     public async Task<UserDto> GetUser([ActionParameter] UserRequest user)
     {
-        var response = await ExecuteWithHandling(() => SecurityService.Service.GetUserAsync(Guid.Parse(user.UserGuid)));
+        var response = await ExecuteWithHandling(() => SecurityService.Service.GetUserAsync(GuidExtensions.ParseWithErrorHandling(user.UserGuid)));
         return new(response);
     }
 
     [Action("Delete user", Description = "Delete user")]
     public async Task DeleteUser([ActionParameter] UserRequest user)
     {
-        await ExecuteWithHandling(() => SecurityService.Service.DeleteUserAsync(Guid.Parse(user.UserGuid)));
+        await ExecuteWithHandling(() => SecurityService.Service.DeleteUserAsync(GuidExtensions.ParseWithErrorHandling(user.UserGuid)));
     }
 
     [Action("Add users to project", Description = "Add users to project")]
@@ -75,8 +75,8 @@ public class UserActions : MemoqInvocable
     {
         var users = request.UserGuids.Select(x => new ServerProjectUserInfo
         {
-            UserGuid = Guid.Parse(x), PermForLicense = true, ProjectRoles = new ServerProjectRoles(),
+            UserGuid = GuidExtensions.ParseWithErrorHandling(x), PermForLicense = true, ProjectRoles = new ServerProjectRoles(),
         }).ToArray();
-        await ExecuteWithHandling(() => ProjectService.Service.SetProjectUsersAsync(Guid.Parse(projectRequest.ProjectGuid), users));
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectUsersAsync(GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid), users));
     }
 }
