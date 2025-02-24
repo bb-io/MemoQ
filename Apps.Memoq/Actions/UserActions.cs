@@ -5,6 +5,7 @@ using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.Users.Requests;
 using Apps.Memoq.Models.Users.Responses;
 using Apps.MemoQ;
+using Apps.MemoQ.Extensions;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;

@@ -20,6 +20,7 @@ using TMEngineType = MQS.TM.TMEngineType;
 using TMOptimizationPreference = MQS.TM.TMOptimizationPreference;
 using Apps.MemoQ;
 using MQS.TB;
+using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Actions;
 
@@ -154,7 +155,7 @@ public class TranslationMemoryActions : MemoqInvocable
 
         var tmAssignments = new ServerProjectTMAssignmentsForTargetLang
         {
-            TMGuids = tmGuids.Select(GuidExtensions.ParseWithErrorHandling).ToArray(),
+            TMGuids = tmGuids.Select((x) => GuidExtensions.ParseWithErrorHandling(x)).ToArray(),
             TargetLangCode = translationMemoryRequest.TargetLanguageCode,
             MasterTMGuid = masterGuid,
             PrimaryTMGuid = primaryGuid

@@ -1,4 +1,5 @@
 using Apps.Memoq.Utils.FileUploader.Managers.Base;
+using Apps.MemoQ.Extensions;
 using MQS.TM;
 
 namespace Apps.Memoq.Utils.FileUploader.Managers;
