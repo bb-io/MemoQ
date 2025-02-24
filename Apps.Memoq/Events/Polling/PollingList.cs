@@ -120,5 +120,5 @@ public class PollingList : MemoqInvocable
         projectService.Service.ListProjectsAsync(new());
 
     private Task<ServerProjectInfo> GetProject(MemoqServiceFactory<IServerProjectService> projectService,
-        string projectId) => projectService.Service.GetProjectAsync(Guid.Parse(projectId));
+        string projectId) => projectService.Service.GetProjectAsync(GuidExtensions.ParseWithErrorHandling(projectId));
 }

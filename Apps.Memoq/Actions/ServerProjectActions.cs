@@ -60,14 +60,14 @@ public class ServerProjectActions : MemoqInvocable
     [Action("Get project", Description = "Get project by UId")]
     public async Task<ProjectDto> GetProject([ActionParameter] ProjectRequest project)
     {
-        var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(Guid.Parse(project.ProjectGuid)));
+        var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)));
         return new(response);
     }
 
     [Action("Get project custom fields", Description = "Get project custom metadata fields")]
     public async Task<CustomFieldsResponse> GetCustomFields([ActionParameter] ProjectRequest project)
     {
-        var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(Guid.Parse(project.ProjectGuid)));
+        var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)));
 
         if (String.IsNullOrEmpty(response.CustomMetas)) 
         {
@@ -124,7 +124,7 @@ public class ServerProjectActions : MemoqInvocable
         await ExecuteWithHandling(() => ProjectService.Service.UpdateProjectAsync(new()
         {
             CustomMetas = String.Join("\r\n", rows),
-            ServerProjectGuid = Guid.Parse(project.ProjectGuid)
+            ServerProjectGuid = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)
         }));
 
     }
@@ -145,7 +145,7 @@ public class ServerProjectActions : MemoqInvocable
         await ExecuteWithHandling(() => ProjectService.Service.UpdateProjectAsync(new()
         {
             CustomMetas = customMetas,
-            ServerProjectGuid = Guid.Parse(project.ProjectGuid)
+            ServerProjectGuid = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)
         }));
     }
 
@@ -154,7 +154,7 @@ public class ServerProjectActions : MemoqInvocable
         [ActionParameter] ProjectRequest project,
         [ActionParameter, StaticDataSource(typeof(TargetLanguageDataHandler)), Display("Target language")] string targetLangCode)
     {
-        await ExecuteWithHandling(() => ProjectService.Service.AddLanguageToProjectAsync(Guid.Parse(project.ProjectGuid), new()
+        await ExecuteWithHandling(() => ProjectService.Service.AddLanguageToProjectAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), new()
             {
                 TargetLangCode = targetLangCode
             }
@@ -223,7 +223,7 @@ public class ServerProjectActions : MemoqInvocable
             Domain = request.Domain,
             Subject = request.Subject,
             Client = request.Client,
-            TemplateGuid = Guid.Parse(request.TemplateGuid)
+            TemplateGuid = GuidExtensions.ParseWithErrorHandling(request.TemplateGuid)
         };
 
         return await ExecuteWithHandling(async () =>
@@ -282,7 +282,7 @@ public class ServerProjectActions : MemoqInvocable
 
         return await ExecuteWithHandling(async () =>
         {
-            var result = await ProjectService.Service.CreateProjectFromPackage3Async(request, Guid.Parse(input.FileId), importOptions);
+            var result = await ProjectService.Service.CreateProjectFromPackage3Async(request, GuidExtensions.ParseWithErrorHandling(input.FileId), importOptions);
             var response = await ProjectService.Service.GetProjectAsync(result);
 
             return new ProjectDto(response);
@@ -301,7 +301,7 @@ public class ServerProjectActions : MemoqInvocable
             Domain = request.Domain ?? currentProjectValues.Domain,
             Subject = request.Subject ?? currentProjectValues.Subject,
             Client = request.Client ?? currentProjectValues.Client,
-            ServerProjectGuid = Guid.Parse(project.ProjectGuid)
+            ServerProjectGuid = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)
         }));
     }
     
@@ -309,14 +309,14 @@ public class ServerProjectActions : MemoqInvocable
     public async Task AddTermbaseToProject([ActionParameter] ProjectRequest project, 
         [ActionParameter] AddTermbaseRequest request)
     {        
-        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTBs3Async(Guid.Parse(project.ProjectGuid), new[]
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTBs3Async(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), new[]
         {
             new ServerProjectTBsForTargetLang
             {
                 TargetLangCode = request.TargetLanguageCode,
-                TBGuids = [Guid.Parse(request.TermbaseId)],
-                TBGuidTargetForNewTerms = request.TargetTermbaseId != null ? Guid.Parse(request.TargetTermbaseId) : Guid.Empty,
-                ExcludedTBsFromQA = request.ExcludeTermBasesFromQa?.Select(Guid.Parse).ToArray() ?? Array.Empty<Guid>()
+                TBGuids = [GuidExtensions.ParseWithErrorHandling(request.TermbaseId)],
+                TBGuidTargetForNewTerms = request.TargetTermbaseId != null ? GuidExtensions.ParseWithErrorHandling(request.TargetTermbaseId) : Guid.Empty,
+                ExcludedTBsFromQA = request.ExcludeTermBasesFromQa?.Select(GuidExtensions.ParseWithErrorHandling).ToArray() ?? Array.Empty<Guid>()
             }
         }));
     }
@@ -324,13 +324,13 @@ public class ServerProjectActions : MemoqInvocable
     [Action("Delete project", Description = "Delete a specific project")]
     public async Task DeleteProject([ActionParameter] ProjectRequest project)
     {
-        await ExecuteWithHandling(() => ProjectService.Service.DeleteProjectAsync(Guid.Parse(project.ProjectGuid)));
+        await ExecuteWithHandling(() => ProjectService.Service.DeleteProjectAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)));
     }
 
     [Action("Distribute project", Description = "Distribute a specific project")]
     public async Task DistributeProject([ActionParameter] ProjectRequest project)
     {
-        await ExecuteWithHandling(() => ProjectService.Service.DistributeProjectAsync(Guid.Parse(project.ProjectGuid)));
+        await ExecuteWithHandling(() => ProjectService.Service.DistributeProjectAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)));
     }
 
     [Action("Add resource to project",
@@ -338,7 +338,7 @@ public class ServerProjectActions : MemoqInvocable
     public async Task AddResourceToProject([ActionParameter] ProjectRequest project,
         [ActionParameter] AddResourceToProjectRequest request, [ActionParameter][Display("Overwrite?", Description = "Whether to overwrite the current resources, default to false")] bool? overwrite)
     {
-        var projectId = Guid.Parse(project.ProjectGuid);
+        var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
         var resourceType = (ResourceType)int.Parse(request.ResourceType);
         var assignments = CreateAssignmentsBasedOnResourceType(resourceType, request);
 
@@ -377,7 +377,7 @@ public class ServerProjectActions : MemoqInvocable
     public async Task<ResourceListResponse> GetResourcesFromProject([ActionParameter] ProjectRequest project,
         [ActionParameter][Display("Resource type"), StaticDataSource(typeof(ResourceTypeDataHandler))] string resourceType)
     {
-        var projectId = Guid.Parse(project.ProjectGuid);
+        var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
         var type = (ResourceType)int.Parse(resourceType);
 
         var result = await ExecuteWithHandling(() => ProjectService.Service.ListProjectResourceAssignmentsAsync(projectId, type));
@@ -393,7 +393,7 @@ public class ServerProjectActions : MemoqInvocable
     public async Task<TermbaseResponse> GetTermbaseFromProject([ActionParameter] ProjectRequest project,
        [ActionParameter][Display("Target language"), StaticDataSource(typeof(TargetLanguageDataHandler))] string targetLanguage )
     {
-        var result = await ExecuteWithHandling(() => ProjectService.Service.ListProjectTBs3Async(Guid.Parse(project.ProjectGuid), new[] { targetLanguage }));
+        var result = await ExecuteWithHandling(() => ProjectService.Service.ListProjectTBs3Async(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), new[] { targetLanguage }));
         var termbaseIds = result?.FirstOrDefault()?.TBGuids.Select(x => x.ToString()) ?? new List<string>();
 
         return new TermbaseResponse
@@ -428,7 +428,7 @@ public class ServerProjectActions : MemoqInvocable
         {
             options.ResourceFilter = new PreTransFilter
             {
-                TMs = request.TranslationMemoriesGuids.Select(Guid.Parse).ToArray()
+                TMs = request.TranslationMemoriesGuids.Select(GuidExtensions.ParseWithErrorHandling).ToArray()
             };
         }
         
@@ -444,15 +444,15 @@ public class ServerProjectActions : MemoqInvocable
             CoverageType = (MatchCoverageType)int.Parse(request.CoverageType ?? "300"),
         };
 
-        var guids = request.DocumentGuids?.Select(Guid.Parse).ToArray();
+        var guids = request.DocumentGuids?.Select(GuidExtensions.ParseWithErrorHandling).ToArray();
         if (guids != null && guids.Length != 0)
         {
-            var resultInfo = await ExecuteWithHandling(() => ProjectService.Service.PretranslateDocumentsAsync(Guid.Parse(projectRequest.ProjectGuid), guids, options));            
+            var resultInfo = await ExecuteWithHandling(() => ProjectService.Service.PretranslateDocumentsAsync(GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid), guids, options));            
             return new(resultInfo);
         }
         
         var targetLanguages = request.TargetLanguages?.ToArray();
-        var result = await ExecuteWithHandling(() => ProjectService.Service.PretranslateProjectAsync(Guid.Parse(projectRequest.ProjectGuid), targetLanguages, options));
+        var result = await ExecuteWithHandling(() => ProjectService.Service.PretranslateProjectAsync(GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid), targetLanguages, options));
         return new(result);
     }
 
@@ -467,7 +467,7 @@ public class ServerProjectActions : MemoqInvocable
             {
                 assignments.Add(new ServerProjectResourceAssignment()
                 {
-                    ResourceGuid = Guid.Parse(request.ResourceGuid),
+                    ResourceGuid = GuidExtensions.ParseWithErrorHandling(request.ResourceGuid),
                     ObjectId = objectId,
                     Primary = request.Primary ?? false
                 });
@@ -477,7 +477,7 @@ public class ServerProjectActions : MemoqInvocable
         {
             assignments.Add(new ServerProjectResourceAssignment()
             {
-                ResourceGuid = Guid.Parse(request.ResourceGuid),
+                ResourceGuid = GuidExtensions.ParseWithErrorHandling(request.ResourceGuid),
                 Primary = request.Primary ?? false
             });
         }

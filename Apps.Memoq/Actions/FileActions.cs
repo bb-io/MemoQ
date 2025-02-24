@@ -27,6 +27,7 @@ using Apps.MemoQ.Models.Dto;
 using Apps.MemoQ.Models.Files.Responses;
 using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Actions;
 
@@ -47,7 +48,7 @@ public class FileActions : MemoqInvocable
         [ActionParameter] ListProjectFilesRequest input)
     {
         var response = await ExecuteWithHandling(() => ProjectService.Service
-            .ListProjectTranslationDocuments2Async(Guid.Parse(project.ProjectGuid), new()
+            .ListProjectTranslationDocuments2Async(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), new()
             {
                 FillInAssignmentInformation = input.FillInAssignmentInformation ?? default,
             }));
@@ -79,7 +80,7 @@ public class FileActions : MemoqInvocable
             throw new PluginMisconfigurationException("You should specify at least one of the optional inputs to search files on");
 
         var response = await ExecuteWithHandling(() => ProjectService.Service
-            .ListProjectTranslationDocuments2Async(Guid.Parse(project.ProjectGuid), new()));
+            .ListProjectTranslationDocuments2Async(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), new()));
 
         return new()
         {
@@ -97,7 +98,7 @@ public class FileActions : MemoqInvocable
     public async Task DeleteFile([ActionParameter] DeleteFileRequest input)
     {
         await ExecuteWithHandling(() => ProjectService.Service
-            .DeleteTranslationDocumentAsync(Guid.Parse(input.ProjectGuid), Guid.Parse(input.FileGuid)));
+            .DeleteTranslationDocumentAsync(GuidExtensions.ParseWithErrorHandling(input.ProjectGuid), GuidExtensions.ParseWithErrorHandling(input.FileGuid)));
     }
 
     [Action("Slice file", Description = "Slice a file based on the specified options")]
@@ -105,14 +106,14 @@ public class FileActions : MemoqInvocable
     {
         var options = new SliceDocumentRequest()
         {
-            DocumentGuid = Guid.Parse(input.DocumentGuid),
+            DocumentGuid = GuidExtensions.ParseWithErrorHandling(input.DocumentGuid),
             NumberOfParts = input.NumberOfParts,
             MeasurementUnit =
                 EnumParser.Parse<SlicingMeasurementUnit>(input.SlicingMeasurementUnit,
                     nameof(input.SlicingMeasurementUnit))!.Value
         };
 
-        await ExecuteWithHandling(() => ProjectService.Service.SliceDocumentAsync(Guid.Parse(project.ProjectGuid), options));
+        await ExecuteWithHandling(() => ProjectService.Service.SliceDocumentAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), options));
     }
 
     [Action("Overwrite file", Description = "Overwrite a file in a project")]
@@ -121,12 +122,12 @@ public class FileActions : MemoqInvocable
         var file = await _fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
         var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, input.Filename ?? input.File.Name);
-        await ExecuteWithHandling(() => ProjectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(input.ProjectGuid),
+        await ExecuteWithHandling(() => ProjectService.Service.ReImportTranslationDocumentsAsync(GuidExtensions.ParseWithErrorHandling(input.ProjectGuid),
             new ReimportDocumentOptions[]
             {
                 new()
                 {
-                    DocumentsToReplace = new[] { Guid.Parse(input.DocumentToReplaceGuid) },
+                    DocumentsToReplace = new[] { GuidExtensions.ParseWithErrorHandling(input.DocumentToReplaceGuid) },
                     FileGuid = uploadFileResult,
                     KeepUserAssignments = input.KeepAssignments ?? default,
                     PathToSetAsImportPath = input.PathToSetAsImportPath
@@ -143,12 +144,12 @@ public class FileActions : MemoqInvocable
         {
             new()
             {
-                DocumentGuid = Guid.Parse(input.FileGuid),
+                DocumentGuid = GuidExtensions.ParseWithErrorHandling(input.FileGuid),
                 UserRoleAssignments = new TranslationDocumentUserRoleAssignment[]
                 {
                     new()
                     {
-                        UserGuid = Guid.Parse(input.UserGuid),
+                        UserGuid = GuidExtensions.ParseWithErrorHandling(input.UserGuid),
                         DeadLine = input.Deadline,
                         DocumentAssignmentRole = input.Role is not null ? int.Parse(input.Role) : default
                     }
@@ -156,7 +157,7 @@ public class FileActions : MemoqInvocable
             }
         };
 
-        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTranslationDocumentUserAssignmentsAsync(Guid.Parse(input.ProjectGuid), assignments));
+        await ExecuteWithHandling(() => ProjectService.Service.SetProjectTranslationDocumentUserAssignmentsAsync(GuidExtensions.ParseWithErrorHandling(input.ProjectGuid), assignments));
     }
 
     [Action("Upload file", Description = "Uploads and imports a file to a project")]
@@ -189,7 +190,7 @@ public class FileActions : MemoqInvocable
         if (request.ImportEmbeddedObjects != null) options.ImportEmbeddedObjects = (bool)request.ImportEmbeddedObjects;
         if (request.FilterConfigResGuid != null)
         {
-            options.FilterConfigResGuid = Guid.Parse(request.FilterConfigResGuid);
+            options.FilterConfigResGuid = GuidExtensions.ParseWithErrorHandling(request.FilterConfigResGuid);
             string? importSettings = null;
             if (fileName.EndsWith(".xliff"))
             {
@@ -203,7 +204,7 @@ public class FileActions : MemoqInvocable
 
 
         var results = await ExecuteWithHandling(() => ProjectService.Service.ImportTranslationDocumentsWithOptionsAsync(
-            Guid.Parse(request.ProjectGuid),
+            GuidExtensions.ParseWithErrorHandling(request.ProjectGuid),
             new List<ImportTranslationDocumentOptions> { options }.ToArray())
         );
 
@@ -243,12 +244,12 @@ public class FileActions : MemoqInvocable
             importSettings = await new StreamReader(file).ReadToEndAsync();
         }
 
-        var results = await ExecuteWithHandling(() => ProjectService.Service.ReImportTranslationDocumentsAsync(Guid.Parse(request.ProjectGuid),
+        var results = await ExecuteWithHandling(() => ProjectService.Service.ReImportTranslationDocumentsAsync(GuidExtensions.ParseWithErrorHandling(request.ProjectGuid),
             new[]
             {
                 new ReimportDocumentOptions
                 {
-                    DocumentsToReplace = [Guid.Parse(reimportDocumentsRequest.DocumentGuid)],
+                    DocumentsToReplace = [GuidExtensions.ParseWithErrorHandling(reimportDocumentsRequest.DocumentGuid)],
                     FileGuid = uploadFileResult,
                     KeepUserAssignments = reimportDocumentsRequest.KeepUserAssignments ?? default,
                     PathToSetAsImportPath = reimportDocumentsRequest.PathToSetAsImportPath ?? string.Empty
@@ -303,7 +304,7 @@ public class FileActions : MemoqInvocable
             FileUploader.UploadFile(bytes, FileUploadManager, mqXliffFileName);
 
         var results = await ExecuteWithHandling(() => ProjectService.Service.UpdateTranslationDocumentFromBilingualAsync(
-            Guid.Parse(request.ProjectGuid),
+            GuidExtensions.ParseWithErrorHandling(request.ProjectGuid),
             uploadFileResult, BilingualDocFormat.XLIFF));
 
         foreach (var result in results)
@@ -357,7 +358,7 @@ public class FileActions : MemoqInvocable
         [ActionParameter] DownloadFileRequest request)
     {
         var exportResult = await ExecuteWithHandling(() => ProjectService.Service
-            .ExportTranslationDocument2Async(Guid.Parse(request.ProjectGuid), Guid.Parse(request.DocumentGuid),
+            .ExportTranslationDocument2Async(GuidExtensions.ParseWithErrorHandling(request.ProjectGuid), GuidExtensions.ParseWithErrorHandling(request.DocumentGuid),
                 new DocumentExportOptions
                 {
                     ExportAllMultilingualSiblings = request.ExportAllMultilingualSibling ?? true,
@@ -387,8 +388,8 @@ public class FileActions : MemoqInvocable
         var includeSkeleton = request.IncludeSkeleton ?? false;
 
         var exportResult = await ExecuteWithHandling(() => ProjectService.Service
-            .ExportTranslationDocumentAsXliffBilingualAsync(Guid.Parse(documentRequest.ProjectGuid),
-                Guid.Parse(documentRequest.DocumentGuid), new XliffBilingualExportOptions
+            .ExportTranslationDocumentAsXliffBilingualAsync(GuidExtensions.ParseWithErrorHandling(documentRequest.ProjectGuid),
+                GuidExtensions.ParseWithErrorHandling(documentRequest.DocumentGuid), new XliffBilingualExportOptions
                 {
                     FullVersionHistory = fullVersion,
                     IncludeSkeleton = includeSkeleton,
@@ -421,8 +422,8 @@ public class FileActions : MemoqInvocable
         var task = await ExecuteWithHandling(() => ProjectService.Service.StartStatisticsOnTranslationDocumentsTask2Async(
             new()
             {
-                ProjectGuid = Guid.Parse(input.ProjectGuid),
-                DocumentOrSliceGuids = new[] { Guid.Parse(input.DocumentGuid) },
+                ProjectGuid = GuidExtensions.ParseWithErrorHandling(input.ProjectGuid),
+                DocumentOrSliceGuids = new[] { GuidExtensions.ParseWithErrorHandling(input.DocumentGuid) },
                 ResultFormat =
                     EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format)) ?? default,
                 Options = new()
@@ -463,7 +464,7 @@ public class FileActions : MemoqInvocable
     {
         var task = await ExecuteWithHandling(() => ProjectService.Service.StartStatisticsOnProjectTask2Async(new()
         {
-            ProjectGuid = Guid.Parse(input.ProjectGuid),
+            ProjectGuid = GuidExtensions.ParseWithErrorHandling(input.ProjectGuid),
             ResultFormat =
                 EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format)) ?? default,
             Options = new()
@@ -501,7 +502,7 @@ public class FileActions : MemoqInvocable
     public async Task<ApplyTranslatedContentToUpdatedSourceResponse> ApplyTranslatedContentToUpdatedSource(
         [ActionParameter] ApplyTranslatedContentToUpdatedSourceRequest input)
     {
-        var taskInfo = await ExecuteWithHandling(() => ProjectService.Service.StartXTranslateTaskAsync(Guid.Parse(input.ProjectGuid),
+        var taskInfo = await ExecuteWithHandling(() => ProjectService.Service.StartXTranslateTaskAsync(GuidExtensions.ParseWithErrorHandling(input.ProjectGuid),
             new()
             {
                 XTranslateScenario = EnumParser.Parse<XTranslateScenario>(input.XTranslateScenario,
@@ -512,7 +513,7 @@ public class FileActions : MemoqInvocable
                 {
                     new()
                     {
-                        DocumentGuid = Guid.Parse(input.DocumentGuid)
+                        DocumentGuid = GuidExtensions.ParseWithErrorHandling(input.DocumentGuid)
                     }
                 },
                 NewRevisionOptions = new()
@@ -544,12 +545,12 @@ public class FileActions : MemoqInvocable
     {
         var request = new DeliverDocumentRequest
         {
-            DocumentGuid = Guid.Parse(input.DocumentGuid),
-            DeliveringUserGuid = Guid.Parse(input.DeliveringUserGuid),
+            DocumentGuid = GuidExtensions.ParseWithErrorHandling(input.DocumentGuid),
+            DeliveringUserGuid = GuidExtensions.ParseWithErrorHandling(input.DeliveringUserGuid),
             ReturnDocToPreviousActor = input.ReturnDocToPreviousActorField ?? default,
         };
 
-        await ExecuteWithHandling(() => ProjectService.Service.DeliverDocumentAsync(Guid.Parse(project.ProjectGuid), request));
+        await ExecuteWithHandling(() => ProjectService.Service.DeliverDocumentAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), request));
     }
 
     private byte[] DownloadFile(IFileManagerService fmService, Guid fileGuid, out string fileName)
