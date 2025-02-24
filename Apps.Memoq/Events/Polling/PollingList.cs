@@ -11,6 +11,7 @@ using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
 using MQS.ServerProject;
 using Apps.MemoQ;
+using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Events.Polling;
 

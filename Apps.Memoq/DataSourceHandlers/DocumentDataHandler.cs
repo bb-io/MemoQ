@@ -2,6 +2,7 @@
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Files.Requests;
 using Apps.MemoQ;
+using Apps.MemoQ.Extensions;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;

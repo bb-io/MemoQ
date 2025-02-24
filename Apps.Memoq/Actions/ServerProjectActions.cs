@@ -23,6 +23,7 @@ using Apps.MemoQ.Models.Dto;
 using Apps.MemoQ.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Apps.MemoQ;
+using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Actions;
 
@@ -316,7 +317,7 @@ public class ServerProjectActions : MemoqInvocable
                 TargetLangCode = request.TargetLanguageCode,
                 TBGuids = [GuidExtensions.ParseWithErrorHandling(request.TermbaseId)],
                 TBGuidTargetForNewTerms = request.TargetTermbaseId != null ? GuidExtensions.ParseWithErrorHandling(request.TargetTermbaseId) : Guid.Empty,
-                ExcludedTBsFromQA = request.ExcludeTermBasesFromQa?.Select(GuidExtensions.ParseWithErrorHandling).ToArray() ?? Array.Empty<Guid>()
+                ExcludedTBsFromQA = request.ExcludeTermBasesFromQa?.Select((x) => GuidExtensions.ParseWithErrorHandling(x)).ToArray() ?? Array.Empty<Guid>()
             }
         }));
     }
@@ -428,7 +429,7 @@ public class ServerProjectActions : MemoqInvocable
         {
             options.ResourceFilter = new PreTransFilter
             {
-                TMs = request.TranslationMemoriesGuids.Select(GuidExtensions.ParseWithErrorHandling).ToArray()
+                TMs = request.TranslationMemoriesGuids.Select((x) => GuidExtensions.ParseWithErrorHandling(x)).ToArray()
             };
         }
         
@@ -444,7 +445,7 @@ public class ServerProjectActions : MemoqInvocable
             CoverageType = (MatchCoverageType)int.Parse(request.CoverageType ?? "300"),
         };
 
-        var guids = request.DocumentGuids?.Select(GuidExtensions.ParseWithErrorHandling).ToArray();
+        var guids = request.DocumentGuids?.Select((x) => GuidExtensions.ParseWithErrorHandling(x)).ToArray();
         if (guids != null && guids.Length != 0)
         {
             var resultInfo = await ExecuteWithHandling(() => ProjectService.Service.PretranslateDocumentsAsync(GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid), guids, options));            
