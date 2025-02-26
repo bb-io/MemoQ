@@ -16,9 +16,6 @@ namespace Apps.MemoQ.Models.Files.Requests
         [Display("Target languages"), StaticDataSource(typeof(TargetLanguageDataHandler))]
         public IEnumerable<string>? TargetLanguageCodes { get; set; }
 
-        [Display("File name")]
-        public string? FileName {get; set;}
-
         [Display("Preview creation"), StaticDataSource(typeof(PreviewCreationDataHandler))]
         public string? PreviewCreation { get; set; }
 

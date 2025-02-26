@@ -165,8 +165,6 @@ public class FileActions : MemoqInvocable
         [ActionParameter] UploadDocumentToProjectWithOptionsRequest request)
     {
 
-        string fileName = request.FileName ?? request.File.Name;
-
         var fileStream = await _fileManagementClient.DownloadAsync(request.File);
         var file = new MemoryStream();
         await fileStream.CopyToAsync(file);
@@ -174,7 +172,7 @@ public class FileActions : MemoqInvocable
         file.Position = 0;
         var fileBytes = await file.GetByteData();
 
-        var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, fileName);
+        var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, request.File.Name);
 
         var options = new ImportTranslationDocumentOptions
         {
@@ -192,7 +190,7 @@ public class FileActions : MemoqInvocable
         {
             options.FilterConfigResGuid = GuidExtensions.ParseWithErrorHandling(request.FilterConfigResGuid);
             string? importSettings = null;
-            if (fileName.EndsWith(".xliff"))
+            if (request.File.Name.EndsWith(".xliff"))
             {
                 file.Position = 0;
                 var reader = new StreamReader(file);
@@ -235,10 +233,10 @@ public class FileActions : MemoqInvocable
         file.Position = 0;
 
         var fileBytes = await file.GetByteData();
-        var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, request.FileName ?? request.File.Name);
+        var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, request.File.Name);
 
         string? importSettings = null;
-        if ((request.FileName ?? request.File.Name).EndsWith(".xliff"))
+        if (request.File.Name.EndsWith(".xliff"))
         {
             file.Position = 0;
             importSettings = await new StreamReader(file).ReadToEndAsync();
@@ -295,7 +293,7 @@ public class FileActions : MemoqInvocable
 
         var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes),
             XliffRequest.UpdateLocked.GetValueOrDefault(true), XliffRequest.UpdateConfirmed.GetValueOrDefault(true));
-        string mqXliffFileName = (request.FileName ?? request.File.Name) + ".mqxliff";
+        string mqXliffFileName = request.File.Name + ".mqxliff";
 
         updatedMqXliffFile.Position = 0;
         var bytes = await updatedMqXliffFile.GetByteData();
@@ -332,7 +330,7 @@ public class FileActions : MemoqInvocable
             ? await ProcessXliffFile(file, request.File.Name)
             : await file.GetByteData();
 
-        var fileName = request.FileName ?? request.File.Name;
+        var fileName = request.File.Name;
         string fileReferenceName = string.Empty;
         if (fileName.EndsWith(".xliff"))
         {
@@ -347,8 +345,9 @@ public class FileActions : MemoqInvocable
         return string.IsNullOrEmpty(importDocumentAsXliffRequest.DocumentGuid)
             ? await UploadAndImportFileToProject(new UploadDocumentToProjectWithOptionsRequest
             {
-                File = xliffFileReference, ProjectGuid = request.ProjectGuid,
-                TargetLanguageCodes = request.TargetLanguageCodes, FileName = request.FileName
+                File = xliffFileReference, 
+                ProjectGuid = request.ProjectGuid,
+                TargetLanguageCodes = request.TargetLanguageCodes
             })
             : await ReimportDocumentAsync(importDocumentAsXliffRequest, xliffFileReference, request);
     }
@@ -676,7 +675,7 @@ public class FileActions : MemoqInvocable
             var fileStream = await _fileManagementClient.DownloadAsync(fileReference);
 
             var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, fileStream);
-            string mqXliffFileName = request.FileName ?? request.File.Name + ".mqxliff";
+            string mqXliffFileName = request.File.Name + ".mqxliff";
             fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml,
                 mqXliffFileName);
         }
@@ -686,7 +685,6 @@ public class FileActions : MemoqInvocable
             File = fileReference,
             ProjectGuid = request.ProjectGuid,
             TargetLanguageCodes = request.TargetLanguageCodes,
-            FileName = request.FileName
         }, new ReimportDocumentsRequest
         {
             DocumentGuid = importDocumentAsXliffRequest.DocumentGuid,
