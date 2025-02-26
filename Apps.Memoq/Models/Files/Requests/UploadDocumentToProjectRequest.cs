@@ -12,9 +12,6 @@ public class UploadDocumentToProjectRequest : ProjectRequest
     public FileReference File { get; set; }
 
     [Display("Target languages"), StaticDataSource(typeof(TargetLanguageDataHandler))]
-    public IEnumerable<string>? TargetLanguageCodes { get; set; }
-
-    [Display("File name")]
-    public string? FileName { get; set; }    
+    public IEnumerable<string>? TargetLanguageCodes { get; set; }   
 
 }
