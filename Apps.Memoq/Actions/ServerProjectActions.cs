@@ -24,12 +24,14 @@ using Apps.MemoQ.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 
 namespace Apps.Memoq.Actions;
 
 [ActionList]
 public class ServerProjectActions : MemoqInvocable
 {
+
     public ServerProjectActions(InvocationContext invocationContext) : base(invocationContext)
     {
     }
@@ -64,6 +66,19 @@ public class ServerProjectActions : MemoqInvocable
         var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)));
         return new(response);
     }
+
+    [Action("Search edit distance reports ", Description = "Lists edit distance reports created earlier.")]
+    public async Task<EditDistanceReportsResponse> SearchEditReports([ActionParameter] ProjectRequest project)
+    {
+        var response = await ExecuteWithHandling(() =>
+         ProjectService.Service.ListEditDistanceReportsAsync(
+             GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)
+         )
+     );
+        return new EditDistanceReportsResponse(response);
+    }
+
+   
 
     [Action("Get project custom fields", Description = "Get project custom metadata fields")]
     public async Task<CustomFieldsResponse> GetCustomFields([ActionParameter] ProjectRequest project)
