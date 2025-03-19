@@ -72,7 +72,7 @@ public class FileActions : MemoqInvocable
                ?? throw new PluginMisconfigurationException ($"No file found with the provided ID: {fileGuid}");
     }
 
-    [Action("Exports an edit distance report as a CSV", Description = "Exports an edit distance report as a CSV and gets the results.")]
+    [Action("Export an edit distance report as a CSV", Description = "Exports an edit distance report as a CSV and gets the results.")]
     public async Task<EditDistanceReportExportResponse> GetEditDistanceReport([ActionParameter] ProjectRequest project, [ActionParameter][Display("Report ID")] string reportId)
     {
         var projectGuid = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
