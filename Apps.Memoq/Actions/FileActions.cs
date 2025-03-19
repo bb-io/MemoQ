@@ -28,6 +28,7 @@ using Apps.MemoQ.Models.Files.Responses;
 using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Apps.MemoQ.Extensions;
+using Apps.MemoQ.Models.ServerProjects.Responses;
 
 namespace Apps.Memoq.Actions;
 
@@ -70,6 +71,24 @@ public class FileActions : MemoqInvocable
         return files.Files.FirstOrDefault(f => f.Guid == fileGuid)
                ?? throw new PluginMisconfigurationException ($"No file found with the provided ID: {fileGuid}");
     }
+
+    [Action("Export an edit distance report as a CSV", Description = "Exports an edit distance report as a CSV and gets the results.")]
+    public async Task<EditDistanceReportExportResponse> GetEditDistanceReport([ActionParameter] ProjectRequest project, [ActionParameter][Display("Report ID")] string reportId)
+    {
+        var projectGuid = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+        var reportGuid = GuidExtensions.ParseWithErrorHandling(reportId);
+
+        var csvResult = await ExecuteWithHandling(() =>
+            ProjectService.Service.GetEditDistanceReportAsCsvAsync(projectGuid, reportGuid)
+        );
+        var filename = $"EditDistanceReport_{reportId}.csv";
+
+        using var stream = new MemoryStream(csvResult.Content);
+        var fileReference = await _fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
+
+        return new EditDistanceReportExportResponse(reportGuid, fileReference);
+    }
+
 
     [Action("File exists", Description = "Check if the file exists in a specified project")]
     public async Task<DocumentExistsResponse> DocumentExists(

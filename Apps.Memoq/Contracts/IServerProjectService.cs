@@ -708,6 +708,8 @@ namespace MQS.ServerProject
         
         private System.Nullable<bool> DistributionInPackageProjectField;
         
+        private System.Nullable<bool> EmailNotificationsDisabledField;
+        
         private System.Nullable<bool> KeepPMsOnCCField;
         
         private System.Nullable<bool> MissedDeadlineField;
@@ -1139,6 +1141,19 @@ namespace MQS.ServerProject
             set
             {
                 this.DistributionInPackageProjectField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Nullable<bool> EmailNotificationsDisabled
+        {
+            get
+            {
+                return this.EmailNotificationsDisabledField;
+            }
+            set
+            {
+                this.EmailNotificationsDisabledField = value;
             }
         }
         
@@ -13774,6 +13789,9 @@ namespace MQS.ServerProject
         
         [System.Runtime.Serialization.EnumMemberAttribute()]
         DeliverToCustomerPortal = 33,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        PopulateNumberOnlySegments = 34,
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
@@ -14508,6 +14526,1450 @@ namespace MQS.ServerProject
                 this.TargetLanguageField = value;
             }
         }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="EditDistanceReportInfo", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class EditDistanceReportInfo : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private System.DateTime CreatedField;
+        
+        private string CreatedByField;
+        
+        private MQS.ServerProject.DistanceMeasurementMode DistanceMeasurementField;
+        
+        private string[] LanguagesField;
+        
+        private string NoteField;
+        
+        private System.Guid ReportIdField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.DateTime Created
+        {
+            get
+            {
+                return this.CreatedField;
+            }
+            set
+            {
+                this.CreatedField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string CreatedBy
+        {
+            get
+            {
+                return this.CreatedByField;
+            }
+            set
+            {
+                this.CreatedByField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.DistanceMeasurementMode DistanceMeasurement
+        {
+            get
+            {
+                return this.DistanceMeasurementField;
+            }
+            set
+            {
+                this.DistanceMeasurementField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string[] Languages
+        {
+            get
+            {
+                return this.LanguagesField;
+            }
+            set
+            {
+                this.LanguagesField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string Note
+        {
+            get
+            {
+                return this.NoteField;
+            }
+            set
+            {
+                this.NoteField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Guid ReportId
+        {
+            get
+            {
+                return this.ReportIdField;
+            }
+            set
+            {
+                this.ReportIdField = value;
+            }
+        }
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="DistanceMeasurementMode", Namespace="http://schemas.datacontract.org/2004/07/MemoQServices")]
+    public enum DistanceMeasurementMode : int
+    {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Levenshtein = 0,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Fuzzy = 1,
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="FuzzyEditDistanceReport", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class FuzzyEditDistanceReport : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResultForLang[] ByLanguageField;
+        
+        private System.Nullable<System.Guid> ReportIdField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult TotalField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResultForLang[] ByLanguage
+        {
+            get
+            {
+                return this.ByLanguageField;
+            }
+            set
+            {
+                this.ByLanguageField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Nullable<System.Guid> ReportId
+        {
+            get
+            {
+                return this.ReportIdField;
+            }
+            set
+            {
+                this.ReportIdField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Total
+        {
+            get
+            {
+                return this.TotalField;
+            }
+            set
+            {
+                this.TotalField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="FuzzyEditDistanceResult", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class FuzzyEditDistanceResult : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private int NoMatchField;
+        
+        private int Rate100Field;
+        
+        private int Rate50_74Field;
+        
+        private int Rate75_84Field;
+        
+        private int Rate85_94Field;
+        
+        private int Rate95_99Field;
+        
+        private int SegmentsField;
+        
+        private int WordsField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int NoMatch
+        {
+            get
+            {
+                return this.NoMatchField;
+            }
+            set
+            {
+                this.NoMatchField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Rate100
+        {
+            get
+            {
+                return this.Rate100Field;
+            }
+            set
+            {
+                this.Rate100Field = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Rate50_74
+        {
+            get
+            {
+                return this.Rate50_74Field;
+            }
+            set
+            {
+                this.Rate50_74Field = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Rate75_84
+        {
+            get
+            {
+                return this.Rate75_84Field;
+            }
+            set
+            {
+                this.Rate75_84Field = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Rate85_94
+        {
+            get
+            {
+                return this.Rate85_94Field;
+            }
+            set
+            {
+                this.Rate85_94Field = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Rate95_99
+        {
+            get
+            {
+                return this.Rate95_99Field;
+            }
+            set
+            {
+                this.Rate95_99Field = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Segments
+        {
+            get
+            {
+                return this.SegmentsField;
+            }
+            set
+            {
+                this.SegmentsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Words
+        {
+            get
+            {
+                return this.WordsField;
+            }
+            set
+            {
+                this.WordsField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="FuzzyEditDistanceResultForLang", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class FuzzyEditDistanceResultForLang : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResultForDocument[] ByDocumentField;
+        
+        private string TargetLangCodeField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult TotalField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResultForDocument[] ByDocument
+        {
+            get
+            {
+                return this.ByDocumentField;
+            }
+            set
+            {
+                this.ByDocumentField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string TargetLangCode
+        {
+            get
+            {
+                return this.TargetLangCodeField;
+            }
+            set
+            {
+                this.TargetLangCodeField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Total
+        {
+            get
+            {
+                return this.TotalField;
+            }
+            set
+            {
+                this.TotalField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="FuzzyEditDistanceResultForDocument", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class FuzzyEditDistanceResultForDocument : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private double AverageFuzzyDistanceField;
+        
+        private double AverageMatchRateField;
+        
+        private System.Guid DocumentGuidField;
+        
+        private string DocumentNameField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult MachineTranslatedStatsField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult NoMatchInsertedStatsField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult Rate100StatsField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult Rate101StatsField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult Rate50_74StatsField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult Rate75_84StatsField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult Rate85_94StatsField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult Rate95_99StatsField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult TotalField;
+        
+        private MQS.ServerProject.FuzzyEditDistanceResult XTranslatedStatsField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public double AverageFuzzyDistance
+        {
+            get
+            {
+                return this.AverageFuzzyDistanceField;
+            }
+            set
+            {
+                this.AverageFuzzyDistanceField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public double AverageMatchRate
+        {
+            get
+            {
+                return this.AverageMatchRateField;
+            }
+            set
+            {
+                this.AverageMatchRateField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Guid DocumentGuid
+        {
+            get
+            {
+                return this.DocumentGuidField;
+            }
+            set
+            {
+                this.DocumentGuidField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string DocumentName
+        {
+            get
+            {
+                return this.DocumentNameField;
+            }
+            set
+            {
+                this.DocumentNameField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult MachineTranslatedStats
+        {
+            get
+            {
+                return this.MachineTranslatedStatsField;
+            }
+            set
+            {
+                this.MachineTranslatedStatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult NoMatchInsertedStats
+        {
+            get
+            {
+                return this.NoMatchInsertedStatsField;
+            }
+            set
+            {
+                this.NoMatchInsertedStatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Rate100Stats
+        {
+            get
+            {
+                return this.Rate100StatsField;
+            }
+            set
+            {
+                this.Rate100StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Rate101Stats
+        {
+            get
+            {
+                return this.Rate101StatsField;
+            }
+            set
+            {
+                this.Rate101StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Rate50_74Stats
+        {
+            get
+            {
+                return this.Rate50_74StatsField;
+            }
+            set
+            {
+                this.Rate50_74StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Rate75_84Stats
+        {
+            get
+            {
+                return this.Rate75_84StatsField;
+            }
+            set
+            {
+                this.Rate75_84StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Rate85_94Stats
+        {
+            get
+            {
+                return this.Rate85_94StatsField;
+            }
+            set
+            {
+                this.Rate85_94StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Rate95_99Stats
+        {
+            get
+            {
+                return this.Rate95_99StatsField;
+            }
+            set
+            {
+                this.Rate95_99StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult Total
+        {
+            get
+            {
+                return this.TotalField;
+            }
+            set
+            {
+                this.TotalField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.FuzzyEditDistanceResult XTranslatedStats
+        {
+            get
+            {
+                return this.XTranslatedStatsField;
+            }
+            set
+            {
+                this.XTranslatedStatsField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LevenshteinEditDistanceReport", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class LevenshteinEditDistanceReport : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResultForLang[] ByLanguageField;
+        
+        private System.Nullable<System.Guid> ReportIdField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult TotalField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResultForLang[] ByLanguage
+        {
+            get
+            {
+                return this.ByLanguageField;
+            }
+            set
+            {
+                this.ByLanguageField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Nullable<System.Guid> ReportId
+        {
+            get
+            {
+                return this.ReportIdField;
+            }
+            set
+            {
+                this.ReportIdField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Total
+        {
+            get
+            {
+                return this.TotalField;
+            }
+            set
+            {
+                this.TotalField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LevenshteinEditDistanceResult", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class LevenshteinEditDistanceResult : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private int AbsoluteEditDistanceField;
+        
+        private int EditedSegmentsField;
+        
+        private double NormalizedEditDistanceField;
+        
+        private int SegmentsField;
+        
+        private int WordsField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int AbsoluteEditDistance
+        {
+            get
+            {
+                return this.AbsoluteEditDistanceField;
+            }
+            set
+            {
+                this.AbsoluteEditDistanceField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int EditedSegments
+        {
+            get
+            {
+                return this.EditedSegmentsField;
+            }
+            set
+            {
+                this.EditedSegmentsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public double NormalizedEditDistance
+        {
+            get
+            {
+                return this.NormalizedEditDistanceField;
+            }
+            set
+            {
+                this.NormalizedEditDistanceField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Segments
+        {
+            get
+            {
+                return this.SegmentsField;
+            }
+            set
+            {
+                this.SegmentsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int Words
+        {
+            get
+            {
+                return this.WordsField;
+            }
+            set
+            {
+                this.WordsField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LevenshteinEditDistanceResultForLang", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class LevenshteinEditDistanceResultForLang : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResultForDocument[] ByDocumentField;
+        
+        private string TargetLangCodeField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult TotalField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResultForDocument[] ByDocument
+        {
+            get
+            {
+                return this.ByDocumentField;
+            }
+            set
+            {
+                this.ByDocumentField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string TargetLangCode
+        {
+            get
+            {
+                return this.TargetLangCodeField;
+            }
+            set
+            {
+                this.TargetLangCodeField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Total
+        {
+            get
+            {
+                return this.TotalField;
+            }
+            set
+            {
+                this.TotalField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LevenshteinEditDistanceResultForDocument", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class LevenshteinEditDistanceResultForDocument : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private double AverageMatchRateField;
+        
+        private System.Guid DocumentGuidField;
+        
+        private string DocumentNameField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult MachineTranslatedStatsField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult NoMatchInsertedStatsField;
+        
+        private double NormalizedEditDistanceField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult Rate100StatsField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult Rate101StatsField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult Rate50_74StatsField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult Rate75_84StatsField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult Rate85_94StatsField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult Rate95_99StatsField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult TotalField;
+        
+        private MQS.ServerProject.LevenshteinEditDistanceResult XTranslatedStatsField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public double AverageMatchRate
+        {
+            get
+            {
+                return this.AverageMatchRateField;
+            }
+            set
+            {
+                this.AverageMatchRateField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Guid DocumentGuid
+        {
+            get
+            {
+                return this.DocumentGuidField;
+            }
+            set
+            {
+                this.DocumentGuidField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string DocumentName
+        {
+            get
+            {
+                return this.DocumentNameField;
+            }
+            set
+            {
+                this.DocumentNameField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult MachineTranslatedStats
+        {
+            get
+            {
+                return this.MachineTranslatedStatsField;
+            }
+            set
+            {
+                this.MachineTranslatedStatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult NoMatchInsertedStats
+        {
+            get
+            {
+                return this.NoMatchInsertedStatsField;
+            }
+            set
+            {
+                this.NoMatchInsertedStatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public double NormalizedEditDistance
+        {
+            get
+            {
+                return this.NormalizedEditDistanceField;
+            }
+            set
+            {
+                this.NormalizedEditDistanceField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Rate100Stats
+        {
+            get
+            {
+                return this.Rate100StatsField;
+            }
+            set
+            {
+                this.Rate100StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Rate101Stats
+        {
+            get
+            {
+                return this.Rate101StatsField;
+            }
+            set
+            {
+                this.Rate101StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Rate50_74Stats
+        {
+            get
+            {
+                return this.Rate50_74StatsField;
+            }
+            set
+            {
+                this.Rate50_74StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Rate75_84Stats
+        {
+            get
+            {
+                return this.Rate75_84StatsField;
+            }
+            set
+            {
+                this.Rate75_84StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Rate85_94Stats
+        {
+            get
+            {
+                return this.Rate85_94StatsField;
+            }
+            set
+            {
+                this.Rate85_94StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Rate95_99Stats
+        {
+            get
+            {
+                return this.Rate95_99StatsField;
+            }
+            set
+            {
+                this.Rate95_99StatsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult Total
+        {
+            get
+            {
+                return this.TotalField;
+            }
+            set
+            {
+                this.TotalField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LevenshteinEditDistanceResult XTranslatedStats
+        {
+            get
+            {
+                return this.XTranslatedStatsField;
+            }
+            set
+            {
+                this.XTranslatedStatsField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="EditDistanceStatisticsOptions", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class EditDistanceStatisticsOptions : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private bool CalculateForSlicesField;
+        
+        private System.Guid[] DocumentGuidsField;
+        
+        private string[] LanguageCodesField;
+        
+        private string NoteField;
+        
+        private bool StoreReportInProjectField;
+        
+        private MQS.ServerProject.WordCountMode WordCountModeField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool CalculateForSlices
+        {
+            get
+            {
+                return this.CalculateForSlicesField;
+            }
+            set
+            {
+                this.CalculateForSlicesField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public System.Guid[] DocumentGuids
+        {
+            get
+            {
+                return this.DocumentGuidsField;
+            }
+            set
+            {
+                this.DocumentGuidsField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string[] LanguageCodes
+        {
+            get
+            {
+                return this.LanguageCodesField;
+            }
+            set
+            {
+                this.LanguageCodesField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public string Note
+        {
+            get
+            {
+                return this.NoteField;
+            }
+            set
+            {
+                this.NoteField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public bool StoreReportInProject
+        {
+            get
+            {
+                return this.StoreReportInProjectField;
+            }
+            set
+            {
+                this.StoreReportInProjectField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.WordCountMode WordCountMode
+        {
+            get
+            {
+                return this.WordCountModeField;
+            }
+            set
+            {
+                this.WordCountModeField = value;
+            }
+        }
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="WordCountMode", Namespace="http://schemas.datacontract.org/2004/07/MemoQServices")]
+    public enum WordCountMode : int
+    {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        MemoQ = 0,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Trados = 1,
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="EditDistanceCsvResult", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class EditDistanceCsvResult : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private byte[] ContentField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public byte[] Content
+        {
+            get
+            {
+                return this.ContentField;
+            }
+            set
+            {
+                this.ContentField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LockUnlockSegmentsOptions", Namespace="http://kilgray.com/memoqservices/2007")]
+    public partial class LockUnlockSegmentsOptions : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private MQS.ServerProject.LockUnlockSegmentsAction ActionField;
+        
+        private MQS.ServerProject.OptionsForAllRowsThatMatchACertainCondition ConditionsOfTheSegmentField;
+        
+        private MQS.ServerProject.OptionsForRowsInDifferentLanguage ConditionsOfTheSegmentInDifferentLanguageField;
+        
+        private MQS.ServerProject.LockUnlockSegmentsCondition LockUnlockSegmentsConditionField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LockUnlockSegmentsAction Action
+        {
+            get
+            {
+                return this.ActionField;
+            }
+            set
+            {
+                this.ActionField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.OptionsForAllRowsThatMatchACertainCondition ConditionsOfTheSegment
+        {
+            get
+            {
+                return this.ConditionsOfTheSegmentField;
+            }
+            set
+            {
+                this.ConditionsOfTheSegmentField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.OptionsForRowsInDifferentLanguage ConditionsOfTheSegmentInDifferentLanguage
+        {
+            get
+            {
+                return this.ConditionsOfTheSegmentInDifferentLanguageField;
+            }
+            set
+            {
+                this.ConditionsOfTheSegmentInDifferentLanguageField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.LockUnlockSegmentsCondition LockUnlockSegmentsCondition
+        {
+            get
+            {
+                return this.LockUnlockSegmentsConditionField;
+            }
+            set
+            {
+                this.LockUnlockSegmentsConditionField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="OptionsForAllRowsThatMatchACertainCondition", Namespace="http://schemas.datacontract.org/2004/07/MemoQServices")]
+    public partial class OptionsForAllRowsThatMatchACertainCondition : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private MQS.ServerProject.SegmentStatuses SegmentStatusField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public MQS.ServerProject.SegmentStatuses SegmentStatus
+        {
+            get
+            {
+                return this.SegmentStatusField;
+            }
+            set
+            {
+                this.SegmentStatusField = value;
+            }
+        }
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute()]
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="OptionsForRowsInDifferentLanguage", Namespace="http://schemas.datacontract.org/2004/07/MemoQServices")]
+    public partial class OptionsForRowsInDifferentLanguage : object, System.Runtime.Serialization.IExtensibleDataObject
+    {
+        
+        private System.Runtime.Serialization.ExtensionDataObject extensionDataField;
+        
+        private int MinimumSegmentLengthInWordsField;
+        
+        public System.Runtime.Serialization.ExtensionDataObject ExtensionData
+        {
+            get
+            {
+                return this.extensionDataField;
+            }
+            set
+            {
+                this.extensionDataField = value;
+            }
+        }
+        
+        [System.Runtime.Serialization.DataMemberAttribute()]
+        public int MinimumSegmentLengthInWords
+        {
+            get
+            {
+                return this.MinimumSegmentLengthInWordsField;
+            }
+            set
+            {
+                this.MinimumSegmentLengthInWordsField = value;
+            }
+        }
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LockUnlockSegmentsAction", Namespace="http://schemas.datacontract.org/2004/07/MemoQServices")]
+    public enum LockUnlockSegmentsAction : int
+    {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Lock = 0,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Unlock = 1,
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.Runtime.Serialization.DataContractAttribute(Name="LockUnlockSegmentsCondition", Namespace="http://schemas.datacontract.org/2004/07/MemoQServices")]
+    public enum LockUnlockSegmentsCondition : int
+    {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        AllRows = 0,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        AllRowsThatMatchACertainCondition = 1,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        RowsInDifferentLanguage = 2,
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
+    [System.FlagsAttribute()]
+    [System.Runtime.Serialization.DataContractAttribute(Name="SegmentStatuses", Namespace="http://schemas.datacontract.org/2004/07/MemoQServices")]
+    public enum SegmentStatuses : int
+    {
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        TranslatorConfirmed = 1,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Reviewer1Confirmed = 2,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        Reviewer2Confirmed = 4,
+        
+        [System.Runtime.Serialization.EnumMemberAttribute()]
+        PreTranslated = 8,
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
@@ -16620,6 +18082,156 @@ namespace MQS.ServerProject
         [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RestoreArchive", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/RestoreArchiveRespons" +
             "e")]
         System.Threading.Tasks.Task<System.Guid> RestoreArchiveAsync(System.Guid archiveFileID);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/ListEditDistanceRepor" +
+            "ts", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/ListEditDistanceRepor" +
+            "tsResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/ListEditDistanceRepor" +
+            "tsUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/ListEditDistanceRepor" +
+            "tsGenericFaultFault", Name="GenericFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.CannotStartOperationFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/ListEditDistanceRepor" +
+            "tsCannotStartOperationFaultFault", Name="CannotStartOperationFault")]
+        MQS.ServerProject.EditDistanceReportInfo[] ListEditDistanceReports(System.Guid projectGuid);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/ListEditDistanceRepor" +
+            "ts", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/ListEditDistanceRepor" +
+            "tsResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.EditDistanceReportInfo[]> ListEditDistanceReportsAsync(System.Guid projectGuid);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetFuzzyEditDistanceR" +
+            "eport", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/GetFuzzyEditDistanceR" +
+            "eportResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetFuzzyEditDistanceR" +
+            "eportUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetFuzzyEditDistanceR" +
+            "eportGenericFaultFault", Name="GenericFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.CannotStartOperationFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetFuzzyEditDistanceR" +
+            "eportCannotStartOperationFaultFault", Name="CannotStartOperationFault")]
+        MQS.ServerProject.FuzzyEditDistanceReport GetFuzzyEditDistanceReport(System.Guid projectGuid, System.Guid reportId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetFuzzyEditDistanceR" +
+            "eport", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/GetFuzzyEditDistanceR" +
+            "eportResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.FuzzyEditDistanceReport> GetFuzzyEditDistanceReportAsync(System.Guid projectGuid, System.Guid reportId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetLevenshteinEditDis" +
+            "tanceReport", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/GetLevenshteinEditDis" +
+            "tanceReportResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetLevenshteinEditDis" +
+            "tanceReportUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetLevenshteinEditDis" +
+            "tanceReportGenericFaultFault", Name="GenericFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.CannotStartOperationFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetLevenshteinEditDis" +
+            "tanceReportCannotStartOperationFaultFault", Name="CannotStartOperationFault")]
+        MQS.ServerProject.LevenshteinEditDistanceReport GetLevenshteinEditDistanceReport(System.Guid projectGuid, System.Guid reportId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetLevenshteinEditDis" +
+            "tanceReport", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/GetLevenshteinEditDis" +
+            "tanceReportResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.LevenshteinEditDistanceReport> GetLevenshteinEditDistanceReportAsync(System.Guid projectGuid, System.Guid reportId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartFuzzyEditDistanc" +
+            "eTask", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/StartFuzzyEditDistanc" +
+            "eTaskResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartFuzzyEditDistanc" +
+            "eTaskUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartFuzzyEditDistanc" +
+            "eTaskGenericFaultFault", Name="GenericFault")]
+        MQS.ServerProject.TaskInfo StartFuzzyEditDistanceTask(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartFuzzyEditDistanc" +
+            "eTask", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/StartFuzzyEditDistanc" +
+            "eTaskResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.TaskInfo> StartFuzzyEditDistanceTaskAsync(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLevenshteinEditD" +
+            "istanceTask", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLevenshteinEditD" +
+            "istanceTaskResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLevenshteinEditD" +
+            "istanceTaskUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLevenshteinEditD" +
+            "istanceTaskGenericFaultFault", Name="GenericFault")]
+        MQS.ServerProject.TaskInfo StartLevenshteinEditDistanceTask(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLevenshteinEditD" +
+            "istanceTask", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLevenshteinEditD" +
+            "istanceTaskResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.TaskInfo> StartLevenshteinEditDistanceTaskAsync(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunFuzzyEditDistance", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/RunFuzzyEditDistanceR" +
+            "esponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunFuzzyEditDistanceU" +
+            "nexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunFuzzyEditDistanceG" +
+            "enericFaultFault", Name="GenericFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.CannotStartOperationFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunFuzzyEditDistanceC" +
+            "annotStartOperationFaultFault", Name="CannotStartOperationFault")]
+        MQS.ServerProject.FuzzyEditDistanceReport RunFuzzyEditDistance(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunFuzzyEditDistance", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/RunFuzzyEditDistanceR" +
+            "esponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.FuzzyEditDistanceReport> RunFuzzyEditDistanceAsync(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunLevenshteinEditDis" +
+            "tance", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/RunLevenshteinEditDis" +
+            "tanceResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunLevenshteinEditDis" +
+            "tanceUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunLevenshteinEditDis" +
+            "tanceGenericFaultFault", Name="GenericFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.CannotStartOperationFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunLevenshteinEditDis" +
+            "tanceCannotStartOperationFaultFault", Name="CannotStartOperationFault")]
+        MQS.ServerProject.LevenshteinEditDistanceReport RunLevenshteinEditDistance(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/RunLevenshteinEditDis" +
+            "tance", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/RunLevenshteinEditDis" +
+            "tanceResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.LevenshteinEditDistanceReport> RunLevenshteinEditDistanceAsync(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetEditDistanceReport" +
+            "AsCsv", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/GetEditDistanceReport" +
+            "AsCsvResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetEditDistanceReport" +
+            "AsCsvUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetEditDistanceReport" +
+            "AsCsvGenericFaultFault", Name="GenericFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.CannotStartOperationFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetEditDistanceReport" +
+            "AsCsvCannotStartOperationFaultFault", Name="CannotStartOperationFault")]
+        MQS.ServerProject.EditDistanceCsvResult GetEditDistanceReportAsCsv(System.Guid projectGuid, System.Guid reportId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/GetEditDistanceReport" +
+            "AsCsv", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/GetEditDistanceReport" +
+            "AsCsvResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.EditDistanceCsvResult> GetEditDistanceReportAsCsvAsync(System.Guid projectGuid, System.Guid reportId);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsProjectTask", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsProjectTaskResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsProjectTaskUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsProjectTaskGenericFaultFault", Name="GenericFault")]
+        MQS.ServerProject.TaskInfo StartLockUnlockSegmentsProjectTask(System.Guid serverProjectGuid, string[] targetLangCodes, MQS.ServerProject.LockUnlockSegmentsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsProjectTask", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsProjectTaskResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.TaskInfo> StartLockUnlockSegmentsProjectTaskAsync(System.Guid serverProjectGuid, string[] targetLangCodes, MQS.ServerProject.LockUnlockSegmentsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsDocumentsTask", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsDocumentsTaskResponse")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.UnexpectedFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsDocumentsTaskUnexpectedFaultFault", Name="UnexpectedFault")]
+        [System.ServiceModel.FaultContractAttribute(typeof(MQS.ServerProject.GenericFault), Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsDocumentsTaskGenericFaultFault", Name="GenericFault")]
+        MQS.ServerProject.TaskInfo StartLockUnlockSegmentsDocumentsTask(System.Guid serverProjectGuid, System.Guid[] translationDocGuids, MQS.ServerProject.LockUnlockSegmentsOptions options);
+        
+        [System.ServiceModel.OperationContractAttribute(Action="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsDocumentsTask", ReplyAction="http://kilgray.com/memoqservices/2007/IServerProjectService/StartLockUnlockSegmen" +
+            "tsDocumentsTaskResponse")]
+        System.Threading.Tasks.Task<MQS.ServerProject.TaskInfo> StartLockUnlockSegmentsDocumentsTaskAsync(System.Guid serverProjectGuid, System.Guid[] translationDocGuids, MQS.ServerProject.LockUnlockSegmentsOptions options);
     }
     
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.ServiceModel", "4.0.0.0")]
@@ -17744,6 +19356,106 @@ namespace MQS.ServerProject
         public System.Threading.Tasks.Task<System.Guid> RestoreArchiveAsync(System.Guid archiveFileID)
         {
             return base.Channel.RestoreArchiveAsync(archiveFileID);
+        }
+        
+        public MQS.ServerProject.EditDistanceReportInfo[] ListEditDistanceReports(System.Guid projectGuid)
+        {
+            return base.Channel.ListEditDistanceReports(projectGuid);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.EditDistanceReportInfo[]> ListEditDistanceReportsAsync(System.Guid projectGuid)
+        {
+            return base.Channel.ListEditDistanceReportsAsync(projectGuid);
+        }
+        
+        public MQS.ServerProject.FuzzyEditDistanceReport GetFuzzyEditDistanceReport(System.Guid projectGuid, System.Guid reportId)
+        {
+            return base.Channel.GetFuzzyEditDistanceReport(projectGuid, reportId);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.FuzzyEditDistanceReport> GetFuzzyEditDistanceReportAsync(System.Guid projectGuid, System.Guid reportId)
+        {
+            return base.Channel.GetFuzzyEditDistanceReportAsync(projectGuid, reportId);
+        }
+        
+        public MQS.ServerProject.LevenshteinEditDistanceReport GetLevenshteinEditDistanceReport(System.Guid projectGuid, System.Guid reportId)
+        {
+            return base.Channel.GetLevenshteinEditDistanceReport(projectGuid, reportId);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.LevenshteinEditDistanceReport> GetLevenshteinEditDistanceReportAsync(System.Guid projectGuid, System.Guid reportId)
+        {
+            return base.Channel.GetLevenshteinEditDistanceReportAsync(projectGuid, reportId);
+        }
+        
+        public MQS.ServerProject.TaskInfo StartFuzzyEditDistanceTask(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options)
+        {
+            return base.Channel.StartFuzzyEditDistanceTask(projectGuid, options);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.TaskInfo> StartFuzzyEditDistanceTaskAsync(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options)
+        {
+            return base.Channel.StartFuzzyEditDistanceTaskAsync(projectGuid, options);
+        }
+        
+        public MQS.ServerProject.TaskInfo StartLevenshteinEditDistanceTask(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options)
+        {
+            return base.Channel.StartLevenshteinEditDistanceTask(projectGuid, options);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.TaskInfo> StartLevenshteinEditDistanceTaskAsync(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options)
+        {
+            return base.Channel.StartLevenshteinEditDistanceTaskAsync(projectGuid, options);
+        }
+        
+        public MQS.ServerProject.FuzzyEditDistanceReport RunFuzzyEditDistance(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options)
+        {
+            return base.Channel.RunFuzzyEditDistance(projectGuid, options);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.FuzzyEditDistanceReport> RunFuzzyEditDistanceAsync(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options)
+        {
+            return base.Channel.RunFuzzyEditDistanceAsync(projectGuid, options);
+        }
+        
+        public MQS.ServerProject.LevenshteinEditDistanceReport RunLevenshteinEditDistance(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options)
+        {
+            return base.Channel.RunLevenshteinEditDistance(projectGuid, options);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.LevenshteinEditDistanceReport> RunLevenshteinEditDistanceAsync(System.Guid projectGuid, MQS.ServerProject.EditDistanceStatisticsOptions options)
+        {
+            return base.Channel.RunLevenshteinEditDistanceAsync(projectGuid, options);
+        }
+        
+        public MQS.ServerProject.EditDistanceCsvResult GetEditDistanceReportAsCsv(System.Guid projectGuid, System.Guid reportId)
+        {
+            return base.Channel.GetEditDistanceReportAsCsv(projectGuid, reportId);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.EditDistanceCsvResult> GetEditDistanceReportAsCsvAsync(System.Guid projectGuid, System.Guid reportId)
+        {
+            return base.Channel.GetEditDistanceReportAsCsvAsync(projectGuid, reportId);
+        }
+        
+        public MQS.ServerProject.TaskInfo StartLockUnlockSegmentsProjectTask(System.Guid serverProjectGuid, string[] targetLangCodes, MQS.ServerProject.LockUnlockSegmentsOptions options)
+        {
+            return base.Channel.StartLockUnlockSegmentsProjectTask(serverProjectGuid, targetLangCodes, options);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.TaskInfo> StartLockUnlockSegmentsProjectTaskAsync(System.Guid serverProjectGuid, string[] targetLangCodes, MQS.ServerProject.LockUnlockSegmentsOptions options)
+        {
+            return base.Channel.StartLockUnlockSegmentsProjectTaskAsync(serverProjectGuid, targetLangCodes, options);
+        }
+        
+        public MQS.ServerProject.TaskInfo StartLockUnlockSegmentsDocumentsTask(System.Guid serverProjectGuid, System.Guid[] translationDocGuids, MQS.ServerProject.LockUnlockSegmentsOptions options)
+        {
+            return base.Channel.StartLockUnlockSegmentsDocumentsTask(serverProjectGuid, translationDocGuids, options);
+        }
+        
+        public System.Threading.Tasks.Task<MQS.ServerProject.TaskInfo> StartLockUnlockSegmentsDocumentsTaskAsync(System.Guid serverProjectGuid, System.Guid[] translationDocGuids, MQS.ServerProject.LockUnlockSegmentsOptions options)
+        {
+            return base.Channel.StartLockUnlockSegmentsDocumentsTaskAsync(serverProjectGuid, translationDocGuids, options);
         }
     }
 }
