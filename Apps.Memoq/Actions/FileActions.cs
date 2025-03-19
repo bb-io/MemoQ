@@ -86,7 +86,7 @@ public class FileActions : MemoqInvocable
         using var stream = new MemoryStream(csvResult.Content);
         var fileReference = await _fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
 
-        return new EditDistanceReportExportResponse(reportGuid, fileReference);
+        return new EditDistanceReportExportResponse(reportId, fileReference);
     }
 
 
