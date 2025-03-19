@@ -67,7 +67,7 @@ public class ServerProjectActions : MemoqInvocable
         return new(response);
     }
 
-    [Action("Search edit distance reports ", Description = "Lists edit distance reports created earlier.")]
+    [Action("Search edit distance reports", Description = "Lists edit distance reports created earlier.")]
     public async Task<EditDistanceReportsResponse> SearchEditReports([ActionParameter] ProjectRequest project)
     {
         var response = await ExecuteWithHandling(() =>

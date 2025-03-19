@@ -30,7 +30,7 @@ namespace Apps.MemoQ.Models.ServerProjects.Responses
         public string Note { get; set; }
 
         [Display("Report ID")]
-        public Guid ReportId { get; set; }
+        public string ReportId { get; set; }
         public EditDistanceReportResponse(MQS.ServerProject.EditDistanceReportInfo info)
         {
             Created = info.Created;
@@ -38,7 +38,7 @@ namespace Apps.MemoQ.Models.ServerProjects.Responses
             DistanceMeasurement = info.DistanceMeasurement;
             Languages = info.Languages;
             Note = info.Note;
-            ReportId = info.ReportId;
+            ReportId = info.ReportId.ToString();
         }
     }
 }
