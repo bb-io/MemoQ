@@ -33,4 +33,7 @@ public class CreateProjectTemplateRequest
 
     [Display("Subject")]
     public string? Subject { get; set; }
+
+    [Display("Project metadata", Description = "The project attribute of the project. Can be null and it will be taken into consideration if the template does not specify the project. It must be filled if the template refers to the project placeholder.")]
+    public string? ProjectMetadata { get; set; }
 }

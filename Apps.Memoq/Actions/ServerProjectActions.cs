@@ -232,6 +232,7 @@ public class ServerProjectActions : MemoqInvocable
         var newProject = new TemplateBasedProjectCreateInfo
         {
             Name = request.ProjectName,
+            Project = request.ProjectMetadata,
             CreatorUser = SoapConstants.AdminGuid,
             SourceLanguageCode = request.SourceLangCode,
             TargetLanguageCodes = request.TargetLangCodes?.ToArray(),

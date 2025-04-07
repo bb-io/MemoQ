@@ -1,12 +1,6 @@
 ﻿using Apps.Memoq.Actions;
 using Apps.Memoq.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
-using Blackbird.Applications.Sdk.Common.Invocation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tests.MemoQ.Base;
 
 namespace Tests.MemoQ;

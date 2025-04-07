@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <Product>memoQ</Product>
     <Description>Computer-assisted translation</Description>
-    <Version>1.4.20</Version>
+    <Version>1.4.21</Version>
     <AssemblyName>Apps.MemoQ</AssemblyName>
     <LangVersion>12</LangVersion>
   </PropertyGroup>
@@ -39,10 +39,5 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="..\README.md">
-      <Link>README.md</Link>
-    </Content>
   </ItemGroup>
 </Project>
