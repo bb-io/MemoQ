@@ -1,12 +1,11 @@
 using Apps.Memoq.Connections;
 using Blackbird.Applications.Sdk.Common.Authentication;
-using DocumentFormat.OpenXml.Drawing;
 using Tests.MemoQ.Base;
 
 namespace Tests.MemoQ;
 
 [TestClass]
-public class ValidatorTests : TestBase
+public class ConnectionValidatorTests : TestBase
 {
     [TestMethod]
     public async Task ValidatesCorrectConnection()
