@@ -134,6 +134,12 @@ public class ServerProjectActions : MemoqInvocable
         [ActionParameter] string Value)
     {
         var allfields = (await GetCustomFields(project)).CustomFields;
+
+        if (allfields == null || !allfields.Any())
+        {
+            throw new PluginApplicationException("There is no custom fields. Please check your inputs and try again");
+        }
+
         allfields.First(x => x.Name == field.Field).Value = Value;
         var rows = allfields.Select(x => x.Name + "\t" + x.Type +"\t"+ x.Value);
 
