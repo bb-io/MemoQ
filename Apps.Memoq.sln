@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apps.MemoQ", "Apps.Memoq\Apps.MemoQ.csproj", "{38216ED3-9402-42CC-AB3F-2D1F2EF89DD8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{583B7524-6974-4866-B702-3AC277A0C571}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests.MemoQ", "Tests.MemoQ\Tests.MemoQ.csproj", "{5E432CA7-A616-489A-B152-229694369017}"
 EndProject

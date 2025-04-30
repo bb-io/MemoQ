@@ -11,7 +11,6 @@ using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.SDK.Blueprints;
 using MQS.Security;
 using MQS.ServerProject;
 using UserInfo = MQS.Security.UserInfo;
@@ -25,7 +24,6 @@ public class UserActions : MemoqInvocable
     {
     }
 
-    [BlueprintActionDefinition(BlueprintAction.TestAction)]
     [Action("Create user", Description = "Create a new user")]
     public async Task<UserDto> CreateUser([ActionParameter] CreateUserRequest input)
     {

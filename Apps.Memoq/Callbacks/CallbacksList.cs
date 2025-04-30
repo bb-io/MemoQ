@@ -3,7 +3,6 @@ using Apps.Memoq.Callbacks.Handlers;
 using Apps.Memoq.Callbacks.Models.Payload.Base;
 using Apps.Memoq.Callbacks.Models.Response;
 using Blackbird.Applications.Sdk.Common.Webhooks;
-using Blackbird.Applications.SDK.Blueprints;
 
 namespace Apps.Memoq.Callbacks;
 
@@ -16,7 +15,6 @@ public class CallbacksList
     public Task<WebhookResponse<DocumentDeliveredResponse>> OnDocumentDeliveredManual(WebhookRequest webhookRequest)
         => HandleCallback(webhookRequest);
 
-    [BlueprintEventDefinition(BlueprintEvent.TestWebhookEvent)]
     [Webhook("On file delivered", typeof(DocumentDeliveredHandler),
         Description = "On a specific file delivered")]
     public Task<WebhookResponse<DocumentDeliveredResponse>> OnDocumentDelivered(WebhookRequest webhookRequest)
