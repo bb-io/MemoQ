@@ -48,4 +48,7 @@ public class CreateUserRequest
 
     [Display("Secondary SID")]
     public string? SecondarySID { get; set; }
+
+    [Display("Text", Description = "Some Text")]
+    public string Text { get; set; }
 }
