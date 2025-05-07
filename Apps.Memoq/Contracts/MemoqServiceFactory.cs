@@ -19,7 +19,7 @@ public sealed class MemoqServiceFactory<T> : IDisposable
         var binding = new BasicHttpBinding(url.StartsWith("https") ? BasicHttpSecurityMode.Transport : BasicHttpSecurityMode.None)
         {
             MaxReceivedMessageSize = int.MaxValue,
-            SendTimeout = TimeSpan.FromMinutes(5)
+            SendTimeout = TimeSpan.FromMinutes(25)
         };
 
         var header = apiKey == "NONE" 
