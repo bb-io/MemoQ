@@ -19,7 +19,8 @@ public sealed class MemoqServiceFactory<T> : IDisposable
         var binding = new BasicHttpBinding(url.StartsWith("https") ? BasicHttpSecurityMode.Transport : BasicHttpSecurityMode.None)
         {
             MaxReceivedMessageSize = int.MaxValue,
-            SendTimeout = TimeSpan.FromMinutes(25)
+            SendTimeout = TimeSpan.FromMinutes(25),
+            ReceiveTimeout = TimeSpan.FromMinutes(25),
         };
 
         var header = apiKey == "NONE" 
@@ -35,7 +36,10 @@ public sealed class MemoqServiceFactory<T> : IDisposable
                 CertificateValidationMode = X509CertificateValidationMode.None,
                 RevocationMode = System.Security.Cryptography.X509Certificates.X509RevocationMode.NoCheck
             };
-        Service = _channelFactory.CreateChannel();
+
+        var channel = _channelFactory.CreateChannel();
+        ((IClientChannel)channel).OperationTimeout = TimeSpan.FromMinutes(25);
+        Service = channel;
     }
 
     public T Service { get; }
