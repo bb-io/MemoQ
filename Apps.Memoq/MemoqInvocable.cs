@@ -39,26 +39,58 @@ public class MemoqInvocable : BaseInvocable
     protected FileUploadManager FileUploadManager => new FileUploadManager(FileService.Service);
     protected TmxUploadManager TmxUploadManager => new TmxUploadManager(TmService.Service);
 
+
+    private const int MaxRetries = 3;
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(10);
     protected async Task ExecuteWithHandling(Func<Task> func)
     {
-        try
-        {
-            await func();
-        }
-        catch (Exception ex)
-        {
-            throw HandleException(ex);
+        int attempt = 0;
+        while (true)
+        {   
+            try
+            {
+                await func();
+                return;
+            }
+            catch (Exception ex) when (ex.Message.Contains("cannot start because there is another operation", StringComparison.OrdinalIgnoreCase))
+            {
+                attempt++;
+
+                if (attempt >= MaxRetries)
+                    throw new PluginApplicationException("MemoQ is still busy after multiple attempts. " + ex.Message);
+
+                await Task.Delay(RetryDelay);
+            }
+
+            catch (Exception ex)
+            {
+                throw HandleException(ex);
+            }
         }
     }
 
     protected async Task<T> ExecuteWithHandling<T>(Func<Task<T>> func)
     {
-        try
+        int attempt = 0;
+        while (true)
         {
-            return await func();
-        } catch(Exception ex)
-        {
-            throw HandleException(ex);
+            try
+            {
+                return await func();
+            }
+            catch (Exception ex) when (ex.Message.Contains("cannot start because there is another operation", StringComparison.OrdinalIgnoreCase))
+            {
+                attempt++;
+
+                if (attempt >= MaxRetries)
+                    throw new PluginApplicationException("MemoQ is still busy after multiple attempts. " + ex.Message);
+
+                await Task.Delay(RetryDelay);
+            }
+            catch (Exception ex)
+            {
+                throw HandleException(ex);
+            }
         }
     }
 

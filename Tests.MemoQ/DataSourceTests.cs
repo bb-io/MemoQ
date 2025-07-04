@@ -46,4 +46,19 @@ public class DataSourceTests : TestBase
        
         Assert.IsNotNull(result);
     }
+
+
+    //ListTranslationMemories
+
+    [TestMethod]
+    public async Task Translation_returns_memory_values()
+    {
+        var handler = new TranslationMemoryActions(InvocationContext, FileManager);
+
+        var result = await handler.ListTranslationMemories(new Apps.Memoq.Models.LanguagesRequest { });
+
+        var json = System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        Console.WriteLine(json);
+        Assert.IsNotNull(result);
+    }
 }
