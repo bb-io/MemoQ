@@ -1,13 +1,15 @@
-﻿using System.Xml.Serialization;
-using Apps.Memoq.Callbacks.Handlers;
+﻿using Apps.Memoq.Callbacks.Handlers;
 using Apps.Memoq.Callbacks.Models.Payload.Base;
 using Apps.Memoq.Callbacks.Models.Response;
+using Apps.MemoQ;
+using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
+using System.Xml.Serialization;
 
 namespace Apps.Memoq.Callbacks;
 
 [WebhookList]
-public class CallbacksList
+public class CallbacksList(InvocationContext invocationContext) : MemoqInvocable(invocationContext)
 {
     #region Deliver callbacks
 
@@ -24,18 +26,32 @@ public class CallbacksList
 
     private Task<WebhookResponse<DocumentDeliveredResponse>> HandleCallback(WebhookRequest webhookRequest)
     {
-        ArgumentException.ThrowIfNullOrEmpty(webhookRequest.Body.ToString(), nameof(webhookRequest.Body));
-
-        var serializer = new XmlSerializer(typeof(Envelope));
-        using TextReader reader = new StringReader(webhookRequest.Body.ToString()!);
-       
-        var envelope = (Envelope)serializer.Deserialize(reader)!;
-        var result = new DocumentDeliveredResponse(envelope.Body.DocumentDelivery);
-
-        return Task.FromResult(new WebhookResponse<DocumentDeliveredResponse>
+        try
         {
-            HttpResponseMessage = null,
-            Result = result
-        });
+            ArgumentException.ThrowIfNullOrEmpty(webhookRequest.Body.ToString(), nameof(webhookRequest.Body));
+
+            var serializer = new XmlSerializer(typeof(Envelope));
+            using TextReader reader = new StringReader(webhookRequest.Body.ToString()!);
+
+            var envelope = (Envelope)serializer.Deserialize(reader)!;
+            var result = new DocumentDeliveredResponse(envelope.Body.DocumentDelivery);
+
+            return Task.FromResult(new WebhookResponse<DocumentDeliveredResponse>
+            {
+                HttpResponseMessage = null,
+                Result = result
+            });
+        }
+        catch (Exception ex)
+        {
+            var errorMessage = "[MemoQ callback] Got an error while processing the callback request. "
+                + $"Request method: {webhookRequest.HttpMethod?.Method}"
+                + $"Request body: {webhookRequest.Body}"
+                + $"Exception message: {ex.Message}";
+
+            InvocationContext.Logger?.LogError(errorMessage, [ex.Message]);
+            throw;
+        }
+
     }
 }
