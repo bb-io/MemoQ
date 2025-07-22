@@ -208,15 +208,12 @@ public class FileActions : MemoqInvocable
         if (request.FilterConfigResGuid != null)
         {
             options.FilterConfigResGuid = GuidExtensions.ParseWithErrorHandling(request.FilterConfigResGuid);
-            string? importSettings = null;
-            if (request.File.Name.EndsWith(".xliff"))
-            {
-                file.Position = 0;
-                var reader = new StreamReader(file);
-                importSettings = reader.ReadToEnd();
-            }
-
-            options.ImportSettingsXML = importSettings;
+        }
+        else if (request.File.Name.EndsWith(".xliff"))
+        {
+            file.Position = 0;
+            var reader = new StreamReader(file);
+            options.ImportSettingsXML = reader.ReadToEnd();
         }
 
 
