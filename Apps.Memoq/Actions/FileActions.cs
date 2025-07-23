@@ -1,34 +1,30 @@
-﻿using System.Net.Mime;
-using System.Xml.Linq;
-using Apps.Memoq.Contracts;
-using Apps.Memoq.Models;
-using Apps.Memoq.Models.Dto;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Authentication;
-using MQS.FileManager;
-using MQS.ServerProject;
-using Apps.Memoq.Models.ServerProjects.Requests;
+﻿using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.Files.Requests;
 using Apps.Memoq.Models.Files.Responses;
+using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Utils.FileUploader;
-using Apps.Memoq.Utils.FileUploader.Managers;
 using Apps.Memoq.Utils.Xliff;
+using Apps.MemoQ;
+using Apps.MemoQ.Extensions;
+using Apps.MemoQ.Models.Dto;
+using Apps.MemoQ.Models.Files.Requests;
+using Apps.MemoQ.Models.Files.Responses;
+using Apps.MemoQ.Models.ServerProjects.Responses;
+using Blackbird.Applications.Sdk.Common;
+using Blackbird.Applications.Sdk.Common.Actions;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Files;
-using MQS.TasksService;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Parsers;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using MQS.FileManager;
+using MQS.ServerProject;
+using MQS.TasksService;
+using System.Net.Mime;
 using System.Text;
 using System.Text.RegularExpressions;
-using Apps.MemoQ.Models.Files.Requests;
-using Apps.MemoQ.Models.Dto;
-using Apps.MemoQ.Models.Files.Responses;
-using Apps.MemoQ;
-using Blackbird.Applications.Sdk.Common.Exceptions;
-using Apps.MemoQ.Extensions;
-using Apps.MemoQ.Models.ServerProjects.Responses;
+using System.Xml.Linq;
 
 namespace Apps.Memoq.Actions;
 
@@ -183,6 +179,30 @@ public class FileActions : MemoqInvocable
     public async Task<UploadFileResponse> UploadAndImportFileToProject(
         [ActionParameter] UploadDocumentToProjectWithOptionsRequest request)
     {
+        var targetLanguageCodes = request.TargetLanguageCodes;
+
+        if (request.PreventDuplicateDocuments == true)
+        {
+            if (targetLanguageCodes == null)
+            {
+                var serverProjectActions = new ServerProjectActions(InvocationContext);
+                var projectInfo = await serverProjectActions.GetProject(new ProjectRequest { ProjectGuid = request.ProjectGuid });
+                targetLanguageCodes = projectInfo.TargetLanguageCodes;
+            }
+
+            var existingDocumentGuidsByLanguageCode = await GetExistingDocumentGuidsByLanguageCode(
+                request.ProjectGuid,
+                targetLanguageCodes,
+                request.File.Name,
+                request.ExternalDocumentId);
+
+            targetLanguageCodes = targetLanguageCodes.Where(langCode => !existingDocumentGuidsByLanguageCode.ContainsKey(langCode));
+
+            if (!targetLanguageCodes.Any())
+            {
+                return new UploadFileResponse { DocumentGuids = [] };
+            }
+        }
 
         var fileStream = await _fileManagementClient.DownloadAsync(request.File);
         var file = new MemoryStream();
@@ -196,7 +216,7 @@ public class FileActions : MemoqInvocable
         var options = new ImportTranslationDocumentOptions
         {
             FileGuid = uploadFileResult,
-            TargetLangCodes = request.TargetLanguageCodes?.ToArray(),
+            TargetLangCodes = targetLanguageCodes?.ToArray(),
             CreatePreview = request.PreviewCreation == null
                 ? PreviewCreation.UseProjectPreference
                 : (PreviewCreation)int.Parse(request.PreviewCreation),
@@ -752,5 +772,35 @@ public class FileActions : MemoqInvocable
         var updatedMqXliffStream = new MemoryStream(Encoding.UTF8.GetBytes(updatedString));
         updatedMqXliffStream.Position = 0;
         return updatedMqXliffStream;
+    }
+
+    private async Task<Dictionary<string, string>> GetExistingDocumentGuidsByLanguageCode(
+        string projectGuid,
+        IEnumerable<string> targetLanguageCodes,
+        string documentName,
+        string? externalDocumentId = null)
+    {
+        var existingDocumentGuidsByLanguageCode = new Dictionary<string, string>();
+
+        IEnumerable<ServerProjectTranslationDocInfo2> projectDocumentList = await ExecuteWithHandling(() => ProjectService.Service
+            .ListProjectTranslationDocuments2Async(GuidExtensions.ParseWithErrorHandling(projectGuid), new()));
+
+        projectDocumentList = projectDocumentList
+            .Where(d => d.DocumentName == documentName)
+            .Where(d => string.IsNullOrEmpty(externalDocumentId) || d.ExternalDocumentId == externalDocumentId);
+
+        foreach (var targetLanguageCode in targetLanguageCodes)
+        {
+            var existingDocument = projectDocumentList
+                .Where(d => d.TargetLangCode == targetLanguageCode)
+                .FirstOrDefault();
+
+            if (existingDocument != null)
+            {
+                existingDocumentGuidsByLanguageCode.Add(targetLanguageCode, existingDocument.DocumentGuid.ToString());
+            }
+        }
+
+        return existingDocumentGuidsByLanguageCode;
     }
 }
