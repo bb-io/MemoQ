@@ -17,7 +17,7 @@ namespace Tests.MemoQ
         public async Task OnTaskStatusChanged_IsSuccess()
         {
             var polling = new PollingList(InvocationContext);
-            var taskId = "75996c8f-c5a4-411f-93f6-2318299bfe35";
+            var taskId = "5b070390-c8be-4284-a86b-061080a6a2ad";
             var targetTaskStatus = "Completed"; 
             var request = new PollingEventRequest<TaskStatusMemory>
             {
