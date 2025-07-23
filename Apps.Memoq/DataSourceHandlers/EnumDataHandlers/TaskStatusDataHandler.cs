@@ -8,11 +8,12 @@ namespace Apps.MemoQ.DataSourceHandlers.EnumDataHandlers
         {
             return new Dictionary<string, string>
             {
-                { "Pending", "Pending" },
-                { "Executing", "Executing" },
-                { "Completed", "Completed" },
-                { "Failed", "Failed" },
-                { "Cancelled", "Cancelled" }
+                { "Invalid task", "0" },
+                { "Pending", "1" },
+                { "Executing", "2" },
+                { "Cancelled", "3" },
+                { "Completed", "4" },
+                { "Failed", "5" }
             };
         }
     }
