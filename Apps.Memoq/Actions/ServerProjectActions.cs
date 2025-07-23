@@ -25,6 +25,7 @@ using Blackbird.Applications.Sdk.Common.Exceptions;
 using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using DocumentFormat.OpenXml.Office2016.Excel;
 
 namespace Apps.Memoq.Actions;
 
@@ -478,6 +479,65 @@ public class ServerProjectActions : MemoqInvocable
         var result = await ExecuteWithHandling(() => ProjectService.Service.PretranslateProjectAsync(GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid), targetLanguages, options));
         return new(result);
     }
+
+    [Action("Start pretranslate files", Description = "Start pretranslate files if file IDs are provided")]
+    public async Task<PretranslateTaskResponse> StartPretranslateDocumentsTask(
+      [ActionParameter] ProjectRequest projectRequest,
+      [ActionParameter] PretranslateDocumentsRequest request)
+    {
+        var options = new PretranslateOptions
+        {
+            OnlyUnambiguousMatches = request.OnlyUnambiguousMatches ?? true,
+            LockPretranslated = request.LockPretranslated ?? true,
+            UseMT = request.UseMt ?? true,
+            ConfirmLockPretranslated = request.ConfirmLockPreTranslated != null
+                     ? (PretranslateStateToConfirmAndLock)int.Parse(request.ConfirmLockPreTranslated)
+                     : PretranslateStateToConfirmAndLock.ExactMatch,
+            FinalTranslationState = request.FinalTranslationState != null
+                     ? (PretranslateExpectedFinalTranslationState)int.Parse(request.FinalTranslationState)
+                     : PretranslateExpectedFinalTranslationState.NoChange
+        };
+
+        if (request.PretranslateLookupBehavior != null)
+            options.PretranslateLookupBehavior =
+                (PretranslateLookupBehavior)int.Parse(request.PretranslateLookupBehavior);
+
+        if (request.TranslationMemoriesGuids != null && request.TranslationMemoriesGuids.Any())
+        {
+            options.ResourceFilter = new PreTransFilter
+            {
+                TMs = request.TranslationMemoriesGuids.Select((x) => GuidExtensions.ParseWithErrorHandling(x)).ToArray()
+            };
+        }
+
+        options.FragmentAssemblySettings = new FragmentAssemblySettings
+        {
+            IncludeNum = request.IncludeNumbers ?? true,
+            ChangeCase = request.ChangeCase ?? false,
+            IncludeAT = request.IncludeAutoTranslations ?? true,
+            IncludeFrag = request.IncludeFragments ?? true,
+            IncludeNT = request.IncludeNonTranslatables ?? true,
+            IncludeTB = request.IncludeTermBases ?? true,
+            MinCoverage = request.MinCoverage ?? 50,
+            CoverageType = (MatchCoverageType)int.Parse(request.CoverageType ?? "300"),
+        };
+
+        var documentGuids = request.DocumentGuids?.Select((x) => GuidExtensions.ParseWithErrorHandling(x)).ToArray();
+
+        var taskInfo = await ExecuteWithHandling(() => ProjectService.Service.StartPretranslateDocumentsTaskAsync(
+                GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid),
+                documentGuids,
+                options));
+
+        return new PretranslateTaskResponse
+        {
+            TaskId = taskInfo.TaskId.ToString(),
+            TaskStatus = taskInfo.Status.ToString(),
+            ProgressPercentage = taskInfo.ProgressPercentage
+        };
+    }
+
+
 
     private List<ServerProjectResourceAssignment> CreateAssignmentsBasedOnResourceType(ResourceType resourceType,
         AddResourceToProjectRequest request)

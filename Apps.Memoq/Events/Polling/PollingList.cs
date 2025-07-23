@@ -12,6 +12,8 @@ using Blackbird.Applications.Sdk.Common.Polling;
 using MQS.ServerProject;
 using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
+using MQS.TasksService;
+using Apps.MemoQ.Events.Polling.Models;
 
 namespace Apps.Memoq.Events.Polling;
 
@@ -21,6 +23,66 @@ public class PollingList : MemoqInvocable
     public PollingList(InvocationContext invocationContext) : base(invocationContext)
     {
     }
+
+
+    [PollingEvent("On task status changed", "Triggers when the status of a specific pretranslation task changes")]
+    public async Task<PollingEventResponse<TaskStatusMemory, TaskStatusResponse>> OnTaskStatusChanged(
+            PollingEventRequest<TaskStatusMemory> request,
+            [PollingEventParameter][Display("Task ID")] string taskId,
+            [PollingEventParameter] [Display("Task status")] [StaticDataSource(typeof(TaskStatusDataHandler))]
+            string? targetTaskStatus)
+    {
+        var taskGuid = GuidExtensions.ParseWithErrorHandling(taskId);
+
+        var taskInfo = await ExecuteWithHandling(() => TaskService.Service.GetTaskStatusAsync(taskGuid));
+
+        if (request.Memory is null)
+        {
+            return new()
+            {
+                FlyBird = false,
+                Memory = new TaskStatusMemory
+                {
+                    Status = "Pending",
+                    LastCheckDate = DateTime.UtcNow
+                }
+            };
+        }
+
+        var currentStatus = taskInfo.Status.ToString();
+        var previousStatus = request.Memory.Status;
+
+        if (currentStatus == previousStatus ||
+            (!string.IsNullOrEmpty(targetTaskStatus) && currentStatus != targetTaskStatus))
+        {
+            return new()
+            {
+                FlyBird = false,
+                Memory = new TaskStatusMemory
+                {
+                    Status = currentStatus,
+                    LastCheckDate = DateTime.UtcNow
+                }
+            };
+        }
+
+        return new()
+        {
+            FlyBird = true,
+            Result = new TaskStatusResponse
+            {
+                TaskId = taskInfo.TaskId.ToString(),
+                TaskStatus = taskInfo.Status.ToString(),
+                ProgressPercentage = taskInfo.ProgressPercentage
+            },
+            Memory = new TaskStatusMemory
+            {
+                Status = currentStatus,
+                LastCheckDate = DateTime.UtcNow
+            }
+        };
+    }
+
 
     [PollingEvent("On projects created", "On new projects are created")]
     public async Task<PollingEventResponse<EntityCreatedMemory, ListAllProjectsResponse>> OnProjectCreated(

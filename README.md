@@ -73,6 +73,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **Add target language to project** adds target language to a specific project.
 - **Get resources assigned to project** returns a list of all resources assigned to a project. You specify the type of resource you are looking for e.g. MT engine or TM.
 - **Add resource to project** add a new resource to a project.
+- **Start pretranslation task** starts a pretranslation task for a specific project. 
 - **Add glossary to project** add termbase to a specific project by ID.
 - **Pretranslate files** This action allows you to pretranslate files in a specific project. Pretranslation is a process where the system automatically fills in the translations for segments in a file based on certain criteria. This can significantly speed up the translation process. Parameters:  
 	- 'File IDs': This parameter is used to specify the unique identifiers of the files you want to pretranslate. If you don't specify any file ID, the action will pretranslate all files in the project.
@@ -126,6 +127,7 @@ Another important consideration is that our glossaries implementation adheres to
 - **On file delivered** is triggered when any project file was delivered.
 - **On projects created** is triggered when new projects are created.
 - **On project status changed** is triggered when status of a specific project has changed.
+- **On task status changed** is triggered when status of a specific task has changed.
 
 ## Missing features
 
