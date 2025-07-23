@@ -14,10 +14,10 @@ namespace Tests.MemoQ
     public  class PollingTests :TestBase
     { 
         [TestMethod]
-        public async Task TestOnTaskStatusChanged()
+        public async Task OnTaskStatusChanged_IsSuccess()
         {
             var polling = new PollingList(InvocationContext);
-            var taskId = "f8109c5c-b8a8-4acb-8120-3089bbb0b45e";
+            var taskId = "75996c8f-c5a4-411f-93f6-2318299bfe35";
             var targetTaskStatus = "Completed"; 
             var request = new PollingEventRequest<TaskStatusMemory>
             {

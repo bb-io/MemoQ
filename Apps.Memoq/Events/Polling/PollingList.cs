@@ -43,7 +43,7 @@ public class PollingList : MemoqInvocable
                 FlyBird = false,
                 Memory = new TaskStatusMemory
                 {
-                    Status = taskInfo.Status.ToString(),
+                    Status = "Pending",
                     LastCheckDate = DateTime.UtcNow
                 }
             };
