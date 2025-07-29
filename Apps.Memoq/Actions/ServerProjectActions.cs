@@ -480,7 +480,7 @@ public class ServerProjectActions : MemoqInvocable
         return new(result);
     }
 
-    [Action("Start pretranslate files", Description = "Start pretranslate files if file IDs are provided")]
+    [Action("Start pretranslation task", Description = "Start pretranslate files if file IDs are provided")]
     public async Task<PretranslateTaskResponse> StartPretranslateDocumentsTask(
       [ActionParameter] ProjectRequest projectRequest,
       [ActionParameter] PretranslateDocumentsRequest request)
@@ -536,8 +536,6 @@ public class ServerProjectActions : MemoqInvocable
             ProgressPercentage = taskInfo.ProgressPercentage
         };
     }
-
-
 
     private List<ServerProjectResourceAssignment> CreateAssignmentsBasedOnResourceType(ResourceType resourceType,
         AddResourceToProjectRequest request)
