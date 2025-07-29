@@ -480,7 +480,7 @@ public class ServerProjectActions : MemoqInvocable
         return new(result);
     }
 
-    [Action("Start pretranslation task", Description = "Start pretranslate files if file IDs are provided")]
+    [Action("Start pretranslate files", Description = "Start pretranslate files asyncronously (use a checkpoint to wait for results).")]
     public async Task<PretranslateTaskResponse> StartPretranslateDocumentsTask(
       [ActionParameter] ProjectRequest projectRequest,
       [ActionParameter] PretranslateDocumentsRequest request)
@@ -522,18 +522,34 @@ public class ServerProjectActions : MemoqInvocable
             CoverageType = (MatchCoverageType)int.Parse(request.CoverageType ?? "300"),
         };
 
-        var documentGuids = request.DocumentGuids?.Select((x) => GuidExtensions.ParseWithErrorHandling(x)).ToArray();
+        var documentGuids = request.DocumentGuids?.Select((x) => GuidExtensions.ParseWithErrorHandling(x)).ToArray() ?? [];
 
-        var taskInfo = await ExecuteWithHandling(() => ProjectService.Service.StartPretranslateDocumentsTaskAsync(
+        if (documentGuids.Length > 0)
+        {
+            var pretranslateDocumentsTaskInfo = await ExecuteWithHandling(() => ProjectService.Service.StartPretranslateDocumentsTaskAsync(
                 GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid),
                 documentGuids,
                 options));
 
+            return new PretranslateTaskResponse
+            {
+                TaskId = pretranslateDocumentsTaskInfo.TaskId.ToString(),
+                TaskStatus = pretranslateDocumentsTaskInfo.Status.ToString(),
+                ProgressPercentage = pretranslateDocumentsTaskInfo.ProgressPercentage
+            };
+        }
+
+        var targetLanguages = request.TargetLanguages?.ToArray();
+        var pretranslateProjectTaskInfo = await ExecuteWithHandling(() => ProjectService.Service.StartPretranslateProjectTaskAsync(
+                GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid),
+                targetLanguages,
+                options));
+
         return new PretranslateTaskResponse
         {
-            TaskId = taskInfo.TaskId.ToString(),
-            TaskStatus = taskInfo.Status.ToString(),
-            ProgressPercentage = taskInfo.ProgressPercentage
+            TaskId = pretranslateProjectTaskInfo.TaskId.ToString(),
+            TaskStatus = pretranslateProjectTaskInfo.Status.ToString(),
+            ProgressPercentage = pretranslateProjectTaskInfo.ProgressPercentage
         };
     }
 
