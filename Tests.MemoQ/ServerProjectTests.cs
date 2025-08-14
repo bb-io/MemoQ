@@ -21,5 +21,31 @@ namespace Tests.MemoQ
 
             Assert.IsTrue(true);
         }
+
+        [TestMethod]
+        public async Task GenerateFuzzyEditDistanceReport_IsSuccess()
+        {
+            var handler = new ServerProjectActions(InvocationContext);
+
+            var result = await handler.GenerateFuzzyEditDistanceReport(new ProjectRequest { ProjectGuid = "10bd767d-3ce2-ef11-875f-a8a15994f72e" },
+                new EditDistanceStatisticsRequest { });
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented);
+            Console.WriteLine(json);
+
+            Assert.IsTrue(true);
+        }
+
+        [TestMethod]
+        public async Task GenerateLevenshteinEditDistanceReport_IsSuccess()
+        {
+            var handler = new ServerProjectActions(InvocationContext);
+
+            var result = await handler.GenerateLevenshteinEditDistanceReport(new ProjectRequest { ProjectGuid = "10bd767d-3ce2-ef11-875f-a8a15994f72e" },
+                new EditDistanceStatisticsRequest { });
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented);
+            Console.WriteLine(json);
+
+            Assert.IsTrue(true);
+        }
     }
 }

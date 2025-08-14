@@ -79,7 +79,33 @@ public class ServerProjectActions : MemoqInvocable
         return new EditDistanceReportsResponse(response);
     }
 
-   
+    [Action("Generate fuzzy edit distance report",
+     Description = "Runs memoQ Fuzzy Edit Distance on the project and returns the report.")]
+    public async Task<FuzzyEditDistanceReport> GenerateFuzzyEditDistanceReport(
+     [ActionParameter] ProjectRequest project, [ActionParameter] EditDistanceStatisticsRequest inputOptions)
+    {
+        var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+        var options = BuildEditDistanceOptions(inputOptions);
+
+        var report = await ExecuteWithHandling(() =>
+            ProjectService.Service.RunFuzzyEditDistanceAsync(projectId, options));
+
+        return report;
+    }
+
+    [Action("Generate levenshtein edit distance report",
+        Description = "Runs memoQ Levenshtein Edit Distance on the project and returns the report.")]
+    public async Task<LevenshteinEditDistanceReport> GenerateLevenshteinEditDistanceReport(
+        [ActionParameter] ProjectRequest project, [ActionParameter] EditDistanceStatisticsRequest inputOptions)
+    {
+        var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+        var options = BuildEditDistanceOptions(inputOptions);
+
+        var report = await ExecuteWithHandling(() =>
+            ProjectService.Service.RunLevenshteinEditDistanceAsync(projectId, options));
+
+        return report;
+    }
 
     [Action("Get project custom fields", Description = "Get project custom metadata fields")]
     public async Task<CustomFieldsResponse> GetCustomFields([ActionParameter] ProjectRequest project)
@@ -580,5 +606,48 @@ public class ServerProjectActions : MemoqInvocable
         }
 
         return assignments;
+    }
+
+    private static EditDistanceStatisticsOptions BuildEditDistanceOptions(EditDistanceStatisticsRequest? input)
+    {
+        var opts = new EditDistanceStatisticsOptions();
+
+        if (input is null)
+        {
+            opts.WordCountMode = WordCountMode.MemoQ;
+            return opts;
+        }
+
+        if (input.CalculateForSlices.HasValue)
+            opts.CalculateForSlices = input.CalculateForSlices.Value;
+
+        if (input.DocumentIds is { Count: > 0 })
+            opts.DocumentGuids = input.DocumentIds
+                .Select(s => GuidExtensions.ParseWithErrorHandling(s))
+                .ToArray();
+
+        if (input.LanguageCodes is { Count: > 0 })
+            opts.LanguageCodes = input.LanguageCodes
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .ToArray();
+
+        if (input.StoreReportInProject.HasValue)
+            opts.StoreReportInProject = input.StoreReportInProject.Value;
+
+        opts.WordCountMode = ParseWordCountModeOrDefault(input.WordCountMode);
+
+        return opts;
+    }
+
+    private static WordCountMode ParseWordCountModeOrDefault(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return WordCountMode.MemoQ;
+
+        var v = value.Trim();
+        if (v.Equals("Trados", StringComparison.OrdinalIgnoreCase))
+            return WordCountMode.Trados;
+
+        return WordCountMode.MemoQ;
     }
 }
