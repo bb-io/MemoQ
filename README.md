@@ -73,6 +73,8 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **Add target language to project** adds target language to a specific project.
 - **Get resources assigned to project** returns a list of all resources assigned to a project. You specify the type of resource you are looking for e.g. MT engine or TM.
 - **Add resource to project** add a new resource to a project.
+- **Generate levenshtein edit distance report** generates a report of the Levenshtein edit distance for a specific project.
+- **Generate fuzzy edit distance report** generates a report of the fuzzy edit distance for a specific project.
 - **Add glossary to project** add termbase to a specific project by ID.
 - **Start pretranslation task** starts a pretranslation task for a specific project which is helpful when pretranslation take a long time. Use "On task status changed" to check this task status.
 - **Pretranslate files** This action allows you to pretranslate files in a specific project. Pretranslation is a process where the system automatically fills in the translations for segments in a file based on certain criteria. This can significantly speed up the translation process. Parameters:  
