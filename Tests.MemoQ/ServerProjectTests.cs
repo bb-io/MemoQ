@@ -27,8 +27,8 @@ namespace Tests.MemoQ
         {
             var handler = new ServerProjectActions(InvocationContext);
 
-            var result = await handler.GenerateFuzzyEditDistanceReport(new ProjectRequest { ProjectGuid = "10bd767d-3ce2-ef11-875f-a8a15994f72e" },
-                new EditDistanceStatisticsRequest { });
+            var result = await handler.GenerateFuzzyEditDistanceReport(new ProjectRequest { ProjectGuid = "ec423da3-ecef-ed11-85f6-d05099f919f4"},
+                new EditDistanceStatisticsRequest { StoreReportInProject = true, LanguageCodes = ["dut-NL"] });
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented);
             Console.WriteLine(json);
 
@@ -40,8 +40,8 @@ namespace Tests.MemoQ
         {
             var handler = new ServerProjectActions(InvocationContext);
 
-            var result = await handler.GenerateLevenshteinEditDistanceReport(new ProjectRequest { ProjectGuid = "10bd767d-3ce2-ef11-875f-a8a15994f72e" },
-                new EditDistanceStatisticsRequest { });
+            var result = await handler.GenerateLevenshteinEditDistanceReport(new ProjectRequest { ProjectGuid = "ec423da3-ecef-ed11-85f6-d05099f919f4"},
+                new EditDistanceStatisticsRequest { StoreReportInProject = true, LanguageCodes = ["dut-NL"] });
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented);
             Console.WriteLine(json);
 

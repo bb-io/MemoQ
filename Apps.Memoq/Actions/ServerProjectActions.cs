@@ -81,7 +81,7 @@ public class ServerProjectActions : MemoqInvocable
 
     [Action("Generate fuzzy edit distance report",
      Description = "Runs memoQ Fuzzy Edit Distance on the project and returns the report.")]
-    public async Task<FuzzyEditDistanceReport> GenerateFuzzyEditDistanceReport(
+    public async Task<FuzzyEditDistanceReportResponse> GenerateFuzzyEditDistanceReport(
      [ActionParameter] ProjectRequest project, [ActionParameter] EditDistanceStatisticsRequest inputOptions)
     {
         var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
@@ -90,12 +90,17 @@ public class ServerProjectActions : MemoqInvocable
         var report = await ExecuteWithHandling(() =>
             ProjectService.Service.RunFuzzyEditDistanceAsync(projectId, options));
 
-        return report;
+        return new FuzzyEditDistanceReportResponse
+        {
+            ReportId = report.ReportId,
+            Total = report.Total,
+            ByLanguage = report.ByLanguage
+        };
     }
 
     [Action("Generate levenshtein edit distance report",
         Description = "Runs memoQ Levenshtein Edit Distance on the project and returns the report.")]
-    public async Task<LevenshteinEditDistanceReport> GenerateLevenshteinEditDistanceReport(
+    public async Task<LevenshteinEditDistanceReportResponse> GenerateLevenshteinEditDistanceReport(
         [ActionParameter] ProjectRequest project, [ActionParameter] EditDistanceStatisticsRequest inputOptions)
     {
         var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
@@ -104,7 +109,12 @@ public class ServerProjectActions : MemoqInvocable
         var report = await ExecuteWithHandling(() =>
             ProjectService.Service.RunLevenshteinEditDistanceAsync(projectId, options));
 
-        return report;
+        return new LevenshteinEditDistanceReportResponse
+        {
+            ReportId = report.ReportId,
+            Total = report.Total,
+            ByLanguage = report.ByLanguage
+        };
     }
 
     [Action("Get project custom fields", Description = "Get project custom metadata fields")]
@@ -610,19 +620,19 @@ public class ServerProjectActions : MemoqInvocable
 
     private static EditDistanceStatisticsOptions BuildEditDistanceOptions(EditDistanceStatisticsRequest? input)
     {
-        var opts = new EditDistanceStatisticsOptions();
-
-        if (input is null)
+        var opts = new EditDistanceStatisticsOptions
         {
-            opts.WordCountMode = WordCountMode.MemoQ;
-            return opts;
-        }
+            WordCountMode = WordCountMode.MemoQ
+        };
+
+        if (input is null) return opts;
 
         if (input.CalculateForSlices.HasValue)
             opts.CalculateForSlices = input.CalculateForSlices.Value;
 
         if (input.DocumentIds is { Count: > 0 })
             opts.DocumentGuids = input.DocumentIds
+                .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(s => GuidExtensions.ParseWithErrorHandling(s))
                 .ToArray();
 
@@ -635,19 +645,12 @@ public class ServerProjectActions : MemoqInvocable
         if (input.StoreReportInProject.HasValue)
             opts.StoreReportInProject = input.StoreReportInProject.Value;
 
-        opts.WordCountMode = ParseWordCountModeOrDefault(input.WordCountMode);
+        if (!string.IsNullOrWhiteSpace(input.WordCountMode))
+            opts.WordCountMode = input.WordCountMode.Trim()
+                .Equals("Trados", StringComparison.OrdinalIgnoreCase)
+                ? WordCountMode.Trados
+                : WordCountMode.MemoQ;
 
         return opts;
-    }
-
-    private static WordCountMode ParseWordCountModeOrDefault(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) return WordCountMode.MemoQ;
-
-        var v = value.Trim();
-        if (v.Equals("Trados", StringComparison.OrdinalIgnoreCase))
-            return WordCountMode.Trados;
-
-        return WordCountMode.MemoQ;
     }
 }
