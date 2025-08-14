@@ -4,7 +4,7 @@ namespace Apps.MemoQ.Models.ServerProjects.Responses
 {
     public class FuzzyEditDistanceReportResponse
     {
-        [Display("Report ID")] public Guid? ReportId { get; set; }
+        [Display("Report ID")] public string? ReportId { get; set; }
         [Display("Total")] public FuzzyCountsDto? Total { get; set; }
         [Display("By language")] public List<FuzzyLanguageDto>? ByLanguage { get; set; }
     }

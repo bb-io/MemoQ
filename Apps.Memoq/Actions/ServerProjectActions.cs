@@ -105,7 +105,7 @@ public class ServerProjectActions : MemoqInvocable
 
         return new FuzzyEditDistanceReportResponse
         {
-            ReportId = r.ReportId,
+            ReportId = r.ReportId.ToString(),
             Total = ToCounts(r.Total),
             ByLanguage = r.ByLanguage?.Select(lang => new FuzzyLanguageDto
             {
@@ -155,7 +155,7 @@ public class ServerProjectActions : MemoqInvocable
 
         return new LevenshteinEditDistanceReportResponse
         {
-            ReportId = r.ReportId,
+            ReportId = r.ReportId.ToString(),
             Total = ToCounts(r.Total),
             ByLanguage = r.ByLanguage?.Select(lang => new LevenshteinLanguageDto
             {

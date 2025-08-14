@@ -4,7 +4,7 @@ namespace Apps.MemoQ.Models.ServerProjects.Responses
 {
     public class LevenshteinEditDistanceReportResponse
     {
-        [Display("Report ID")] public Guid? ReportId { get; set; }
+        [Display("Report ID")] public string? ReportId { get; set; }
         [Display("Total")] public LevenshteinCountsDto? Total { get; set; }
         [Display("By language")] public List<LevenshteinLanguageDto>? ByLanguage { get; set; }
     }
