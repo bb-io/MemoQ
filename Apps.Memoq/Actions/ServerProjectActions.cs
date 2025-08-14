@@ -87,14 +87,48 @@ public class ServerProjectActions : MemoqInvocable
         var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
         var options = BuildEditDistanceOptions(inputOptions);
 
-        var report = await ExecuteWithHandling(() =>
+        var r = await ExecuteWithHandling(() =>
             ProjectService.Service.RunFuzzyEditDistanceAsync(projectId, options));
+
+        FuzzyCountsDto? ToCounts(FuzzyEditDistanceResult? s) =>
+            s == null ? null : new FuzzyCountsDto
+            {
+                Segments = s.Segments,
+                Words = s.Words,
+                NoMatch = s.NoMatch,
+                Rate50_74 = s.Rate50_74,
+                Rate75_84 = s.Rate75_84,
+                Rate85_94 = s.Rate85_94,
+                Rate95_99 = s.Rate95_99,
+                Rate100 = s.Rate100
+            };
 
         return new FuzzyEditDistanceReportResponse
         {
-            ReportId = report.ReportId,
-            Total = report.Total,
-            ByLanguage = report.ByLanguage
+            ReportId = r.ReportId,
+            Total = ToCounts(r.Total),
+            ByLanguage = r.ByLanguage?.Select(lang => new FuzzyLanguageDto
+            {
+                LanguageCode = lang.TargetLangCode,
+                Documents = lang.ByDocument?.Select(doc => new FuzzyDocumentDto
+                {
+                    DocumentId = doc.DocumentGuid.ToString(),
+                    DocumentName = doc.DocumentName,
+                    AverageFuzzyDistance = doc.AverageFuzzyDistance,
+                    AverageMatchRate = doc.AverageMatchRate,
+
+                    Total = ToCounts(doc.Total),
+                    NoMatchInserted = ToCounts(doc.NoMatchInsertedStats),
+                    MachineTranslated = ToCounts(doc.MachineTranslatedStats),
+                    XTranslated = ToCounts(doc.XTranslatedStats),
+                    Rate50_74 = ToCounts(doc.Rate50_74Stats),
+                    Rate75_84 = ToCounts(doc.Rate75_84Stats),
+                    Rate85_94 = ToCounts(doc.Rate85_94Stats),
+                    Rate95_99 = ToCounts(doc.Rate95_99Stats),
+                    Rate100 = ToCounts(doc.Rate100Stats),
+                    Rate101 = ToCounts(doc.Rate101Stats)
+                }).ToList()
+            }).ToList()
         };
     }
 
@@ -106,14 +140,45 @@ public class ServerProjectActions : MemoqInvocable
         var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
         var options = BuildEditDistanceOptions(inputOptions);
 
-        var report = await ExecuteWithHandling(() =>
+        var r = await ExecuteWithHandling(() =>
             ProjectService.Service.RunLevenshteinEditDistanceAsync(projectId, options));
+
+        LevenshteinCountsDto? ToCounts(LevenshteinEditDistanceResult? s) =>
+            s == null ? null : new LevenshteinCountsDto
+            {
+                Segments = s.Segments,
+                Words = s.Words,
+                EditedSegments = s.EditedSegments,
+                AbsoluteEditDistance = s.AbsoluteEditDistance,
+                NormalizedEditDistance = s.NormalizedEditDistance
+            };
 
         return new LevenshteinEditDistanceReportResponse
         {
-            ReportId = report.ReportId,
-            Total = report.Total,
-            ByLanguage = report.ByLanguage
+            ReportId = r.ReportId,
+            Total = ToCounts(r.Total),
+            ByLanguage = r.ByLanguage?.Select(lang => new LevenshteinLanguageDto
+            {
+                LanguageCode = lang.TargetLangCode,
+                Documents = lang.ByDocument?.Select(doc => new LevenshteinDocumentDto
+                {
+                    DocumentId = doc.DocumentGuid.ToString(),
+                    DocumentName = doc.DocumentName,
+                    AverageMatchRate = doc.AverageMatchRate,
+                    NormalizedEditDistance = doc.NormalizedEditDistance,
+
+                    Total = ToCounts(doc.Total),
+                    NoMatchInserted = ToCounts(doc.NoMatchInsertedStats),
+                    MachineTranslated = ToCounts(doc.MachineTranslatedStats),
+                    XTranslated = ToCounts(doc.XTranslatedStats),
+                    Rate50_74 = ToCounts(doc.Rate50_74Stats),
+                    Rate75_84 = ToCounts(doc.Rate75_84Stats),
+                    Rate85_94 = ToCounts(doc.Rate85_94Stats),
+                    Rate95_99 = ToCounts(doc.Rate95_99Stats),
+                    Rate100 = ToCounts(doc.Rate100Stats),
+                    Rate101 = ToCounts(doc.Rate101Stats)
+                }).ToList()
+            }).ToList()
         };
     }
 
