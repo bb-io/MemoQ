@@ -17,7 +17,7 @@ namespace Apps.MemoQ.Models.ServerProjects.Requests
         [StaticDataSource(typeof(TargetLanguageDataHandler))]
         public List<string>? LanguageCodes { get; set; }
 
-        [Display("Store repoкt in project")]
+        [Display("Store report in project")]
         public bool? StoreReportInProject { get; set; }
 
         [Display("Word count mode")]
