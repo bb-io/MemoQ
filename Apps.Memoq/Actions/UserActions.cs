@@ -1,29 +1,20 @@
-﻿using Apps.Memoq.Contracts;
-using Apps.Memoq.Models;
-using Apps.Memoq.Models.Dto;
+﻿using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.Users.Requests;
-using Apps.Memoq.Models.Users.Responses;
 using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using MQS.Security;
 using MQS.ServerProject;
 using UserInfo = MQS.Security.UserInfo;
 
 namespace Apps.Memoq.Actions;
 
-[ActionList]
-public class UserActions : MemoqInvocable
+[ActionList("Users")]
+public class UserActions(InvocationContext invocationContext) : MemoqInvocable(invocationContext)
 {
-    public UserActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
     [Action("Create user", Description = "Create a new user")]
     public async Task<UserDto> CreateUser([ActionParameter] CreateUserRequest input)
     {

@@ -1,40 +1,27 @@
 ﻿using System.Text;
-using Apps.Memoq.Contracts;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.TranslationMemories.Requests;
 using Apps.Memoq.Models.TranslationMemories.Responses;
 using Apps.Memoq.Utils.FileUploader;
-using Apps.Memoq.Utils.FileUploader.Managers;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Parsers;
 using MQS.ServerProject;
-using MQS.TM;
 using TMEngineType = MQS.TM.TMEngineType;
 using TMOptimizationPreference = MQS.TM.TMOptimizationPreference;
 using Apps.MemoQ;
-using MQS.TB;
 using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Actions;
 
-[ActionList]
-public class TranslationMemoryActions : MemoqInvocable
+[ActionList("Translation memories")]
+public class TranslationMemoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : MemoqInvocable(invocationContext)
 {
-    private readonly IFileManagementClient _fileManagementClient;    
-
-    public TranslationMemoryActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
-        : base(invocationContext)
-    {
-        _fileManagementClient = fileManagementClient;
-    }
-
     [Action("Search translation memories", Description = "Search translation memories")]
     public async Task<ListTranslationMemoriesResponse> ListTranslationMemories(
         [ActionParameter] LanguagesRequest input)
@@ -114,7 +101,7 @@ public class TranslationMemoryActions : MemoqInvocable
     [Action("Import TMX file", Description = "Import TMX file")]
     public async Task<ImportTmxFileResponse> ImportTmxFile([ActionParameter] ImportTmxFileRequest input)
     {
-        var file = await _fileManagementClient.DownloadAsync(input.File);
+        var file = await fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
         var result = FileUploader.UploadFile(fileBytes, TmxUploadManager, input.TmGuid);
 
@@ -127,7 +114,7 @@ public class TranslationMemoryActions : MemoqInvocable
     [Action("Import translation memory scheme from XML", Description = "Import specific translation memory's scheme from XML")]
     public async Task<ImportTmSchemeFromXmlResponse> ImportTmSchemeFromXml([ActionParameter] ImportTmSchemeRequest input)
     {
-        var file = await _fileManagementClient.DownloadAsync(input.File);
+        var file = await fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
         var xml = Encoding.UTF8.GetString(fileBytes);
         var response = await ExecuteWithHandling(() => TmService.Service.ImportTMMetadataSchemeFromXMLAsync(GuidExtensions.ParseWithErrorHandling(input.TmGuid), xml));

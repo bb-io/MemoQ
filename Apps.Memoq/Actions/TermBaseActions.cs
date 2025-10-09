@@ -1,41 +1,27 @@
 ﻿using System.Net.Mime;
 using System.Text;
 using System.Xml;
-using Apps.Memoq.Contracts;
-using Apps.Memoq.Models;
 using Apps.Memoq.Models.Termbases;
 using Apps.Memoq.Models.Termbases.Requests;
 using Apps.Memoq.Models.Termbases.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Converters;
 using Blackbird.Applications.Sdk.Glossaries.Utils.Dtos;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using MQS.TB;
-using MQS.FileManager;
-using MQS.TasksService;
 using Apps.MemoQ;
-using MQS.TM;
 using System.Xml.XPath;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Actions;
 
-[ActionList]
-public class TermBaseActions : MemoqInvocable
+[ActionList("Terms")]
+public class TermBaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : MemoqInvocable(invocationContext)
 {
-    private readonly IFileManagementClient _fileManagementClient;
-
-    public TermBaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
-        : base(invocationContext)
-    {
-        _fileManagementClient = fileManagementClient;
-    }
-
     #region Import
 
     private const string EntryId = "Entry_ID";
@@ -668,7 +654,7 @@ public class TermBaseActions : MemoqInvocable
             return null;
         }
 
-        await using var glossaryStream = await _fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
+        await using var glossaryStream = await fileManagementClient.DownloadAsync(glossaryWrapper.Glossary);
         var glossary = await glossaryStream.ConvertFromTbx();
 
         var languagesPresent = glossary.ConceptEntries
@@ -808,7 +794,7 @@ public class TermBaseActions : MemoqInvocable
             var glossaryStream = glossary.ConvertToTbx();
 
             var glossaryFileReference =
-                await _fileManagementClient.UploadAsync(glossaryStream, MediaTypeNames.Text.Xml,
+                await fileManagementClient.UploadAsync(glossaryStream, MediaTypeNames.Text.Xml,
                     $"{termbase.Name}.tbx");
 
             return new() { Glossary = glossaryFileReference };

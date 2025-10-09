@@ -1,24 +1,16 @@
-using Apps.Memoq.Contracts;
-using Apps.Memoq.Models;
 using Apps.Memoq.Models.Package.Request;
 using Apps.Memoq.Models.Package.Response;
 using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using MQS.ServerProject;
 
 namespace Apps.Memoq.Actions;
 
-[ActionList]
-public class PackageActions : MemoqInvocable
+[ActionList("Packages")]
+public class PackageActions(InvocationContext invocationContext) : MemoqInvocable(invocationContext)
 {
-    public PackageActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
     [Action("Create delivery package", Description = "Create a new delivery package")]
     public async Task<CreateDeliveryPackageResponse> CreateDeliveryPackage([ActionParameter] CreateDeliveryPackageRequest input)
     {
