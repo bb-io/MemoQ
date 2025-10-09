@@ -1,6 +1,4 @@
-﻿using System.Runtime.Serialization;
-using Apps.Memoq.Contracts;
-using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
+﻿using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Extensions;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
@@ -10,7 +8,6 @@ using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.ServerProjects.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
@@ -24,19 +21,12 @@ using Apps.MemoQ.Models.ServerProjects.Requests;
 using Blackbird.Applications.Sdk.Common.Exceptions;
 using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using DocumentFormat.OpenXml.Office2016.Excel;
 
 namespace Apps.Memoq.Actions;
 
-[ActionList]
-public class ServerProjectActions : MemoqInvocable
+[ActionList("Projects")]
+public class ServerProjectActions(InvocationContext invocationContext) : MemoqInvocable(invocationContext)
 {
-
-    public ServerProjectActions(InvocationContext invocationContext) : base(invocationContext)
-    {
-    }
-
     [Action("Search projects", Description = "Search through your memoQ projects")]
     public async Task<ListAllProjectsResponse> ListAllProjects([ActionParameter] ListProjectsRequest input)
     {

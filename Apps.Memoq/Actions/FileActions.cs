@@ -28,17 +28,9 @@ using System.Xml.Linq;
 
 namespace Apps.Memoq.Actions;
 
-[ActionList]
-public class FileActions : MemoqInvocable
+[ActionList("Files")]
+public class FileActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : MemoqInvocable(invocationContext)
 {
-    private readonly IFileManagementClient _fileManagementClient;
-
-    public FileActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient)
-        : base(invocationContext)
-    {
-        _fileManagementClient = fileManagementClient;
-    }
-
     [Action("Search project files", Description = "Returns the files currently in a project.")]
     public async Task<ListAllProjectFilesResponse> ListAllProjectFiles(
         [ActionParameter] ProjectRequest project,
@@ -80,11 +72,10 @@ public class FileActions : MemoqInvocable
         var filename = $"EditDistanceReport_{reportId}.csv";
 
         using var stream = new MemoryStream(csvResult.Content);
-        var fileReference = await _fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
+        var fileReference = await fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
 
         return new EditDistanceReportExportResponse(reportGuid, fileReference);
     }
-
 
     [Action("File exists", Description = "Check if the file exists in a specified project")]
     public async Task<DocumentExistsResponse> DocumentExists(
@@ -134,7 +125,7 @@ public class FileActions : MemoqInvocable
     [Action("Overwrite file", Description = "Overwrite a file in a project")]
     public async Task OverwriteFileInProject([ActionParameter] OverwriteFileInProjectRequest input)
     {
-        var file = await _fileManagementClient.DownloadAsync(input.File);
+        var file = await fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
         var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, input.Filename ?? input.File.Name);
         await ExecuteWithHandling(() => ProjectService.Service.ReImportTranslationDocumentsAsync(GuidExtensions.ParseWithErrorHandling(input.ProjectGuid),
@@ -204,7 +195,7 @@ public class FileActions : MemoqInvocable
             }
         }
 
-        var fileStream = await _fileManagementClient.DownloadAsync(request.File);
+        var fileStream = await fileManagementClient.DownloadAsync(request.File);
         var file = new MemoryStream();
         await fileStream.CopyToAsync(file);
 
@@ -263,7 +254,7 @@ public class FileActions : MemoqInvocable
         [ActionParameter] ReimportDocumentsRequest reimportDocumentsRequest)
     {
 
-        var fileStream = await _fileManagementClient.DownloadAsync(request.File);
+        var fileStream = await fileManagementClient.DownloadAsync(request.File);
         var file = new MemoryStream();
         await fileStream.CopyToAsync(file);
         file.Position = 0;
@@ -322,10 +313,10 @@ public class FileActions : MemoqInvocable
                 UseMqxliff = true
             });
 
-        var file = await _fileManagementClient.DownloadAsync(request.File);
+        var file = await fileManagementClient.DownloadAsync(request.File);
         byte[] fileBytes = await ProcessXliffFile(file, request.File.Name);
 
-        var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
+        var mqXliffFile = await fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
 
         var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes),
             XliffRequest.UpdateLocked.GetValueOrDefault(true), XliffRequest.UpdateConfirmed.GetValueOrDefault(true));
@@ -361,7 +352,7 @@ public class FileActions : MemoqInvocable
         [ActionParameter] UploadDocumentToProjectRequest request,
         [ActionParameter] ImportDocumentAsXliffRequest importDocumentAsXliffRequest)
     {
-        var file = await _fileManagementClient.DownloadAsync(request.File);
+        var file = await fileManagementClient.DownloadAsync(request.File);
         byte[] fileBytes = request.File.Name.EndsWith(".xliff")
             ? await ProcessXliffFile(file, request.File.Name)
             : await file.GetByteData();
@@ -375,7 +366,7 @@ public class FileActions : MemoqInvocable
 
         fileName = string.IsNullOrEmpty(fileReferenceName) ? fileName : fileReferenceName;
         var xliffFileReference =
-            await _fileManagementClient.UploadAsync(new MemoryStream(fileBytes), MediaTypeNames.Application.Xml,
+            await fileManagementClient.UploadAsync(new MemoryStream(fileBytes), MediaTypeNames.Application.Xml,
                 fileName);
 
         return string.IsNullOrEmpty(importDocumentAsXliffRequest.DocumentGuid)
@@ -409,7 +400,7 @@ public class FileActions : MemoqInvocable
         }, request.DocumentGuid);
 
         using var stream = new MemoryStream(data);
-        var fileReference = await _fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
+        var fileReference = await fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
         return new DownloadFileResponse(document) { File = fileReference };
     }
 
@@ -442,7 +433,7 @@ public class FileActions : MemoqInvocable
         var useMqxliff = request.UseMqxliff ?? false;
         if (useMqxliff)
         {
-            var fileReference = await _fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
+            var fileReference = await fileManagementClient.UploadAsync(stream, "application/xliff+xml", filename);
             return new(document) { File = fileReference };
         }
 
@@ -488,7 +479,7 @@ public class FileActions : MemoqInvocable
 
         return new(
             statistics,
-            _fileManagementClient,
+            fileManagementClient,
             $"{Path.GetFileNameWithoutExtension(document.Name)}_{statistics.TargetLangCode}.html",
             MediaTypeNames.Text.Html);
     }
@@ -523,7 +514,7 @@ public class FileActions : MemoqInvocable
 
         var taskResult = (StatisticsTaskResult) await WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
         var analysis = taskResult.ResultsForTargetLangs
-            .Select(x => new GetAnalysisResponse(x, _fileManagementClient, $"Analysis_{x.TargetLangCode}.html",
+            .Select(x => new GetAnalysisResponse(x, fileManagementClient, $"Analysis_{x.TargetLangCode}.html",
                 MediaTypeNames.Text.Html))
             .ToList();
 
@@ -664,7 +655,7 @@ public class FileActions : MemoqInvocable
 
                 string contentType = MediaTypeNames.Text.Plain;
 
-                return await _fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
+                return await fileManagementClient.UploadAsync(xliffStream, contentType, fileName);
             }
         }
     }
@@ -707,12 +698,12 @@ public class FileActions : MemoqInvocable
                     UseMqxliff = true
                 });
 
-            var mqXliffFile = await _fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
-            var fileStream = await _fileManagementClient.DownloadAsync(fileReference);
+            var mqXliffFile = await fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
+            var fileStream = await fileManagementClient.DownloadAsync(fileReference);
 
             var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, fileStream);
             string mqXliffFileName = request.File.Name + ".mqxliff";
-            fileReference = await _fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml,
+            fileReference = await fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml,
                 mqXliffFileName);
         }
 
