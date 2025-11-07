@@ -17,8 +17,12 @@ public class ProjectDataHandler : MemoqInvocable, IAsyncDataSourceItemHandler
 
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
+        InvocationContext.Logger?.LogError($"[MemoQ error logger] Invocation handler", null);
+
         try
         {
+            InvocationContext.Logger?.LogError($"[MemoQ error logger] Before invocation handler", null);
+
             var projects = await ProjectService.Service.ListProjectsAsync(new ServerProjectListFilter());
 
             InvocationContext.Logger?.LogError($"[MemoQ error logger] Fetching projects: {Newtonsoft.Json.JsonConvert.SerializeObject(projects)}", null);
