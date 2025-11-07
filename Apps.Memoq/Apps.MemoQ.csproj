@@ -37,6 +37,13 @@
     <PackageReference Include="System.ServiceModel.Primitives" Version="6.1.0" />
     <PackageReference Include="System.ServiceModel.Security" Version="6.0.0" />
   </ItemGroup>
+
+	<PropertyGroup>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<PublishTrimmed>false</PublishTrimmed>
+		<DisableImplicitAspNetCoreAnalyzers>true</DisableImplicitAspNetCoreAnalyzers>
+	</PropertyGroup>
+	
   <ItemGroup>
     <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
   </ItemGroup>
