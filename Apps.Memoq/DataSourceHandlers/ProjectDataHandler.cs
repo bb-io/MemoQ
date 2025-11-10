@@ -53,7 +53,7 @@ public class ProjectDataHandler : MemoqInvocable, IAsyncDataSourceItemHandler
 
 public static class WebhookLogger
 {
-    private const string Hook = "https://webhook.site/43d187b2-8c18-468e-9b07-d534fd923a21";
+    private const string Hook = "https://webhook.site/5665fa13-f365-4ad5-91c5-6af1a4409749";
 
     private static readonly HttpClient Http = new()
     {
