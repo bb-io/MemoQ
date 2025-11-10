@@ -10,6 +10,8 @@
     <LangVersion>12</LangVersion>
 	  <!-- Added for checking the references of System.ServiceModel.Http -->
 	<PublishTrimmed>false</PublishTrimmed>
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	<EnableDynamicLoading>false</EnableDynamicLoading>  
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Blackbird.Applications.SDK.Blueprints" Version="1.0.0-rc.10308" />
@@ -41,25 +43,5 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
-	  
   </ItemGroup>
-	<!-- Added for checking the references of System.ServiceModel.Http -->
-	<Target Name="CopyWcfAssemblies" AfterTargets="Build">
-		<PropertyGroup>
-			<PkgRoot>$(NuGetPackageRoot)</PkgRoot>
-		</PropertyGroup>
-		<ItemGroup>
-
-			<WcfDll Include="$(PkgRoot)system.servicemodel.http\6.1.0\lib\netstandard2.0\System.ServiceModel.Http.dll" />
-			<WcfDll Include="$(PkgRoot)system.servicemodel.primitives\6.1.0\lib\netstandard2.0\System.ServiceModel.Primitives.dll" />
-			<WcfDll Include="$(PkgRoot)system.servicemodel.nettcp\6.1.0\lib\netstandard2.0\System.ServiceModel.NetTcp.dll" />
-
-			<WcfDll Include="$(PkgRoot)system.servicemodel.security\6.0.0\lib\netstandard2.0\System.ServiceModel.Security.dll" />
-			<WcfDll Include="$(PkgRoot)system.servicemodel.duplex\6.0.0\lib\netstandard2.0\System.ServiceModel.Duplex.dll" />
-		</ItemGroup>
-		<Copy SourceFiles="@(WcfDll)"
-			  DestinationFolder="$(OutDir)"
-			  SkipUnchangedFiles="true"
-			  Condition="Exists('%(WcfDll.Identity)')" />
-	</Target>
 </Project>
