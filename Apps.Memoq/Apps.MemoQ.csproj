@@ -1,48 +1,43 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <Product>memoQ</Product>
-    <Description>Computer-assisted translation</Description>
-    <Version>1.4.32</Version>
-    <AssemblyName>Apps.MemoQ</AssemblyName>
-    <LangVersion>12</LangVersion>
-	  <!-- Added for checking the references of System.ServiceModel.Http -->
-	  <PublishTrimmed>false</PublishTrimmed>
-	  <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-	  <EnableDynamicLoading>false</EnableDynamicLoading>
-	  <PublishSingleFile>false</PublishSingleFile>
-	  <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Blackbird.Applications.SDK.Blueprints" Version="1.0.0-rc.10308" />
-    <PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.0.1" />
-    <PackageReference Include="Blackbird.Applications.Sdk.Glossaries.Utils" Version="1.0.0" />
-    <PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.26" />
-    <PackageReference Include="Blackbird.Xliff.Utils" Version="1.0.19" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Azure.Storage.Blob" Version="11.2.3" />
-    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="7.0.13">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="MimeTypes" Version="2.5.2">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.20.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="System.ServiceModel.Duplex" Version="6.0.0" />
-    <PackageReference Include="System.ServiceModel.Federation" Version="6.2.0" />
-    <PackageReference Include="System.ServiceModel.Http" Version="6.2.0" />
-    <PackageReference Include="System.ServiceModel.NetTcp" Version="6.2.0" />
-    <PackageReference Include="System.ServiceModel.Primitives" Version="6.2.0" />
-    <PackageReference Include="System.ServiceModel.Security" Version="6.0.0" />  
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
-  </ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Product>memoQ</Product>
+		<Description>Computer-assisted translation</Description>
+		<Version>1.4.32</Version>
+		<AssemblyName>Apps.MemoQ</AssemblyName>
+		<LangVersion>12</LangVersion>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Blackbird.Applications.SDK.Blueprints" Version="1.0.0-rc.10308" />
+		<PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.0.1" />
+		<PackageReference Include="Blackbird.Applications.Sdk.Glossaries.Utils" Version="1.0.0" />
+		<PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.26" />
+		<PackageReference Include="Blackbird.Xliff.Utils" Version="1.0.19" />
+		<PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
+		<PackageReference Include="Microsoft.Azure.Storage.Blob" Version="11.2.3" />
+		<PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="7.0.13">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="MimeTypes" Version="2.5.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="NSwag.ApiDescription.Client" Version="13.20.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="System.Private.ServiceModel" Version="4.10.3" />
+		<PackageReference Include="System.ServiceModel.Duplex" Version="6.0.0" />
+		<PackageReference Include="System.ServiceModel.Federation" Version="6.1.0" />
+		<PackageReference Include="System.ServiceModel.Http" Version="6.1.0" />
+		<PackageReference Include="System.ServiceModel.NetTcp" Version="6.1.0" />
+		<PackageReference Include="System.ServiceModel.Primitives" Version="6.1.0" />
+		<PackageReference Include="System.ServiceModel.Security" Version="6.0.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
+	</ItemGroup>
 </Project>
