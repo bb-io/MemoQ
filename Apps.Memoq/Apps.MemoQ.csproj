@@ -31,9 +31,6 @@
 		</PackageReference>
 		<PackageReference Include="System.Private.ServiceModel" Version="4.10.3" />
 		<PackageReference Include="System.ServiceModel.Http" Version="6.0.0" />
-		<PackageReference Include="System.ServiceModel.NetTcp" Version="6.0.0" />
-		<PackageReference Include="System.ServiceModel.Primitives" Version="6.0.0" />
-		<PackageReference Include="System.ServiceModel.Security" Version="6.0.0" />
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
