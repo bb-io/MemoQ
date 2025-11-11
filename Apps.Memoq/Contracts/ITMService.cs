@@ -1735,20 +1735,20 @@ namespace MQS.TM
         {
         }
         
-        //public TMServiceClient(string endpointConfigurationName) : 
-        //        base(endpointConfigurationName)
-        //{
-        //}
+        public TMServiceClient(string endpointConfigurationName) : 
+                base(endpointConfigurationName)
+        {
+        }
         
-        //public TMServiceClient(string endpointConfigurationName, string remoteAddress) : 
-        //        base(endpointConfigurationName, remoteAddress)
-        //{
-        //}
+        public TMServiceClient(string endpointConfigurationName, string remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress)
+        {
+        }
         
-        //public TMServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
-        //        base(endpointConfigurationName, remoteAddress)
-        //{
-        //}
+        public TMServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress)
+        {
+        }
         
         public TMServiceClient(System.ServiceModel.Channels.Binding binding, System.ServiceModel.EndpointAddress remoteAddress) : 
                 base(binding, remoteAddress)

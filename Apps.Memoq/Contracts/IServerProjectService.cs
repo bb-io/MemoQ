@@ -18248,20 +18248,20 @@ namespace MQS.ServerProject
         {
         }
         
-        //public ServerProjectServiceClient(string endpointConfigurationName) : 
-        //        base(endpointConfigurationName)
-        //{
-        //}
+        public ServerProjectServiceClient(string endpointConfigurationName) : 
+                base(endpointConfigurationName)
+        {
+        }
         
-        //public ServerProjectServiceClient(string endpointConfigurationName, string remoteAddress) : 
-        //        base(endpointConfigurationName, remoteAddress)
-        //{
-        //}
+        public ServerProjectServiceClient(string endpointConfigurationName, string remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress)
+        {
+        }
         
-        //public ServerProjectServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
-        //        base(endpointConfigurationName, remoteAddress)
-        //{
-        //}
+        public ServerProjectServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress)
+        {
+        }
         
         public ServerProjectServiceClient(System.ServiceModel.Channels.Binding binding, System.ServiceModel.EndpointAddress remoteAddress) : 
                 base(binding, remoteAddress)

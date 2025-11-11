@@ -844,20 +844,20 @@ namespace MQS.Security
         {
         }
         
-        //public SecurityServiceClient(string endpointConfigurationName) : 
-        //        base(endpointConfigurationName)
-        //{
-        //}
+        public SecurityServiceClient(string endpointConfigurationName) : 
+                base(endpointConfigurationName)
+        {
+        }
         
-        //public SecurityServiceClient(string endpointConfigurationName, string remoteAddress) : 
-        //        base(endpointConfigurationName, remoteAddress)
-        //{
-        //}
+        public SecurityServiceClient(string endpointConfigurationName, string remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress)
+        {
+        }
         
-        //public SecurityServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
-        //        base(endpointConfigurationName, remoteAddress)
-        //{
-        //}
+        public SecurityServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress)
+        {
+        }
         
         public SecurityServiceClient(System.ServiceModel.Channels.Binding binding, System.ServiceModel.EndpointAddress remoteAddress) : 
                 base(binding, remoteAddress)

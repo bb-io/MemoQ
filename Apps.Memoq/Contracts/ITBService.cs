@@ -1813,20 +1813,20 @@ namespace MQS.TB
         {
         }
         
-        //public TBServiceClient(string endpointConfigurationName) : 
-        //        base(endpointConfigurationName)
-        //{
-        //}
+        public TBServiceClient(string endpointConfigurationName) : 
+                base(endpointConfigurationName)
+        {
+        }
         
-        //public TBServiceClient(string endpointConfigurationName, string remoteAddress) : 
-        //        base(endpointConfigurationName, remoteAddress)
-        //{
-        //}
+        public TBServiceClient(string endpointConfigurationName, string remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress)
+        {
+        }
         
-        //public TBServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
-        //        base(endpointConfigurationName, remoteAddress)
-        //{
-        //}
+        public TBServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
+                base(endpointConfigurationName, remoteAddress)
+        {
+        }
         
         public TBServiceClient(System.ServiceModel.Channels.Binding binding, System.ServiceModel.EndpointAddress remoteAddress) : 
                 base(binding, remoteAddress)
