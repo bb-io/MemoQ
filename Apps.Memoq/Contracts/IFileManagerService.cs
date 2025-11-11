@@ -11,7 +11,7 @@
 namespace MQS.FileManager
 {
     using System.Runtime.Serialization;
-    
+
     
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.CodeDom.Compiler.GeneratedCodeAttribute("System.Runtime.Serialization", "4.0.0.0")]
@@ -240,20 +240,20 @@ namespace MQS.FileManager
         {
         }
         
-        public FileManagerServiceClient(string endpointConfigurationName) : 
-                base(endpointConfigurationName)
-        {
-        }
+        //public FileManagerServiceClient(string endpointConfigurationName) : 
+        //        base(endpointConfigurationName)
+        //{
+        //}
         
-        public FileManagerServiceClient(string endpointConfigurationName, string remoteAddress) : 
-                base(endpointConfigurationName, remoteAddress)
-        {
-        }
+        //public FileManagerServiceClient(string endpointConfigurationName, string remoteAddress) : 
+        //        base(endpointConfigurationName, remoteAddress)
+        //{
+        //}
         
-        public FileManagerServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
-                base(endpointConfigurationName, remoteAddress)
-        {
-        }
+        //public FileManagerServiceClient(string endpointConfigurationName, System.ServiceModel.EndpointAddress remoteAddress) : 
+        //        base(endpointConfigurationName, remoteAddress)
+        //{
+        //}
         
         public FileManagerServiceClient(System.ServiceModel.Channels.Binding binding, System.ServiceModel.EndpointAddress remoteAddress) : 
                 base(binding, remoteAddress)
