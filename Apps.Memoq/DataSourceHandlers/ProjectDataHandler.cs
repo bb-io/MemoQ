@@ -1,11 +1,10 @@
-using Apps.Memoq.Contracts;
-using Apps.Memoq.Models;
 using Apps.MemoQ;
-using Blackbird.Applications.Sdk.Common;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
+using DocumentFormat.OpenXml.Spreadsheet;
 using MQS.ServerProject;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace Apps.Memoq.DataSourceHandlers;
 

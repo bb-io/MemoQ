@@ -15,6 +15,7 @@ using MQS.TM;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -52,7 +53,7 @@ public class MemoqInvocable : BaseInvocable
                 await func();
                 return;
             }
-            catch (Exception ex) when (ex.Message.Contains("cannot start because there is another operation", StringComparison.OrdinalIgnoreCase))
+            catch (Exception ex) when (IsBusyException(ex))
             {
                 attempt++;
 
@@ -78,7 +79,7 @@ public class MemoqInvocable : BaseInvocable
             {
                 return await func();
             }
-            catch (Exception ex) when (ex.Message.Contains("cannot start because there is another operation", StringComparison.OrdinalIgnoreCase))
+            catch (Exception ex) when (IsBusyException(ex))
             {
                 attempt++;
 
@@ -96,6 +97,9 @@ public class MemoqInvocable : BaseInvocable
 
     private Exception HandleException(Exception ex)
     {
+        if (ex is TargetInvocationException tiex && tiex.InnerException != null)
+            ex = tiex.InnerException;
+
         if (ex.Message == "Message.ResourceNotFound.ProjectTemplate")
             throw new PluginMisconfigurationException("The selected project template does not exist.");
         else if (ex.Message == "An online project with the same name already exists.")
@@ -104,6 +108,18 @@ public class MemoqInvocable : BaseInvocable
             return new PluginMisconfigurationException("The name contains invalid characters, or the name is reserved by Windows. Please check the characters you are using in the name.");
 
         return new PluginApplicationException(ex.Message);
+    }
+
+    private static bool IsBusyException(Exception ex)
+    {
+        while (ex != null)
+        {
+            if (ex.Message.Contains("cannot start because there is another operation", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            ex = ex.InnerException;
+        }
+        return false;
     }
 
 }

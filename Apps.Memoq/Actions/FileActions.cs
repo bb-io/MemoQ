@@ -607,7 +607,19 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
             return result;
         } catch(Exception ex)
         {
-            throw new PluginApplicationException(ex.Message);
+            var root = ex;
+            while (root.InnerException != null)
+                root = root.InnerException;
+
+            InvocationContext.Logger?.LogError.Invoke("Error while downloading memoQ file {FileGuid}. Exception: {Exception}. Root: {RootException}",
+            new object[]
+            {
+                fileGuid,
+                ex,
+                root
+            });
+
+            throw new PluginApplicationException($"memoQ download failed: {root.Message}");
         }        
     }
 
