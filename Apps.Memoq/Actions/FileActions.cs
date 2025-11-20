@@ -611,8 +611,8 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
             while (root.InnerException != null)
                 root = root.InnerException;
 
-            InvocationContext.Logger?.LogError("Error while downloading memoQ file {FileGuid}. Exception: {Exception}. Root: {RootException}",
-            new object?[]
+            InvocationContext.Logger?.LogError.Invoke("Error while downloading memoQ file {FileGuid}. Exception: {Exception}. Root: {RootException}",
+            new object[]
             {
                 fileGuid,
                 ex,
