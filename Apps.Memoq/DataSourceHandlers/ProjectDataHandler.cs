@@ -16,38 +16,14 @@ public class ProjectDataHandler : MemoqInvocable, IAsyncDataSourceItemHandler
 
     public async Task<IEnumerable<DataSourceItem>> GetDataAsync(DataSourceContext context, CancellationToken cancellationToken)
     {
-        InvocationContext.Logger?.LogError($"[MemoQ error logger] Invocation handler", null);
-        await WebhookLogger.SendAsync(new { stage = "entered", search = context?.SearchString }, cancellationToken);
+        var projects = await ProjectService.Service.ListProjectsAsync(new ServerProjectListFilter());
 
-        try
-        {
-            InvocationContext.Logger?.LogError($"[MemoQ error logger] Before invocation handler", null);
-            await WebhookLogger.SendAsync(new { stage = "before_list" }, cancellationToken);
-
-            var projects = await ProjectService.Service.ListProjectsAsync(new ServerProjectListFilter());
-            await WebhookLogger.SendAsync(new { stage = "after_list", count = projects?.Count() }, cancellationToken);
-
-            InvocationContext.Logger?.LogError($"[MemoQ error logger] Fetching projects: {Newtonsoft.Json.JsonConvert.SerializeObject(projects)}", null);
-
-            await WebhookLogger.SendAsync(new { stage = "return", items = projects.Count(), body = Newtonsoft.Json.JsonConvert.SerializeObject(projects) }, cancellationToken);
-
-            return projects
-                .Where(x => context.SearchString is null ||
-                            x.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(x => x.CreationTime)
-                .Take(20)
-                .Select(x => new DataSourceItem(x.ServerProjectGuid.ToString(), x.Name));
-        }
-        catch (OperationCanceledException)
-        {
-            await WebhookLogger.SendAsync(new { stage = "canceled" }, CancellationToken.None);
-            return Array.Empty<DataSourceItem>();
-        }
-        catch (Exception ex)
-        {
-            await WebhookLogger.SendAsync(new { stage = "error", ex = ex.Message, type = ex.GetType().FullName }, CancellationToken.None);
-            return Array.Empty<DataSourceItem>();
-        }
+        return projects
+            .Where(x => context.SearchString is null ||
+                        x.Name.Contains(context.SearchString, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(x => x.CreationTime)
+            .Take(20)
+            .Select(x => new DataSourceItem(x.ServerProjectGuid.ToString(), x.Name));
     }
 }
 
