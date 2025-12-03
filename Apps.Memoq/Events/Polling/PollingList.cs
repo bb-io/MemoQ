@@ -202,52 +202,56 @@ public class PollingList : MemoqInvocable
 
         var allDelivered = total > 0 && deliveredCount == total;
 
-        if (allDelivered)
+        if (!allDelivered)
         {
-            if (request.Memory is not null && request.Memory.IsCompleted)
-            {
-                return new()
-                {
-                    FlyBird = false,
-                    Memory = request.Memory
-                };
-            }
-
-            var result = new AllFilesDeliveredResponse
-            {
-                ProjectId = projectRequest.ProjectGuid,
-                Documents = documents.Select(d => new AllFilesDeliveredDocumentDto
-                {
-                    Id = d.DocumentGuid.ToString(),
-                    Name = d.DocumentName,
-                    IsDelivered = true,
-                    TargetLanguage = d.TargetLangCode
-                }).ToList()
-            };
-
             return new()
             {
-                FlyBird = true,
-                Result = result,
+                FlyBird = false,
                 Memory = new AllFilesDeliveredMemory
                 {
-                    IsCompleted = true,
-                    LastCheckDate = DateTime.UtcNow,
-                    DeliveredCount = deliveredCount,
-                    TotalCount = total
+                    TotalCount = total,
+                    DeliveredCount = deliveredCount
                 }
             };
         }
 
+        var alreadyReported =
+            request.Memory != null &&
+            request.Memory.TotalCount == total &&
+            request.Memory.DeliveredCount == deliveredCount;
+
+        if (alreadyReported)
+        {
+            return new()
+            {
+                FlyBird = false,
+                Memory = new AllFilesDeliveredMemory
+                {
+                    TotalCount = total,
+                    DeliveredCount = deliveredCount
+                }
+            };
+        }
+        var result = new AllFilesDeliveredResponse
+        {
+            ProjectId = projectRequest.ProjectGuid,
+            Documents = documents.Select(d => new AllFilesDeliveredDocumentDto
+            {
+                Id = d.DocumentGuid.ToString(),
+                Name = d.DocumentName,
+                IsDelivered = true,
+                TargetLanguage = d.TargetLangCode
+            }).ToList()
+        };
+
         return new()
         {
-            FlyBird = false,
+            FlyBird = true,
+            Result = result,
             Memory = new AllFilesDeliveredMemory
             {
-                IsCompleted = false,
-                LastCheckDate = DateTime.UtcNow,
-                DeliveredCount = deliveredCount,
-                TotalCount = total
+                TotalCount = total,
+                DeliveredCount = deliveredCount
             }
         };
     }
