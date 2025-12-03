@@ -2,6 +2,7 @@
 using Apps.Memoq.Events.Polling.Models.Memory;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.MemoQ.Events.Polling.Models;
+using Apps.MemoQ.Events.Polling.Models.Memory;
 using Blackbird.Applications.Sdk.Common.Polling;
 using System;
 using System.Collections.Generic;
@@ -61,6 +62,25 @@ namespace Tests.MemoQ
                 WriteIndented = true
             };
             Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(response, json));
+            Assert.IsNotNull(response);
+        }
+
+
+        [TestMethod]
+        public async Task OnAllFilesDelivered_IsSuccess()
+        {
+            var polling = new PollingList(InvocationContext);
+            var project = new ProjectRequest { ProjectGuid = "2c80a2ed-6fd0-f011-875f-a8a15994f72e" };
+            var request = new PollingEventRequest<AllFilesDeliveredMemory>
+            {
+                Memory = new AllFilesDeliveredMemory
+                {
+                }
+
+            };
+            var response = await polling.OnAllFilesDelivered(request, project);
+
+            Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(response));
             Assert.IsNotNull(response);
         }
     }
