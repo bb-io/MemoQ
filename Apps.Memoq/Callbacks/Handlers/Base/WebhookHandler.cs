@@ -1,4 +1,5 @@
 using Apps.Memoq.Extensions;
+using Apps.MemoQ;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -8,7 +9,7 @@ using Blackbird.Applications.Sdk.Utils.Webhooks.Bridge.Models.Request;
 
 namespace Apps.Memoq.Callbacks.Handlers.Base;
 
-public class WebhookHandler : BaseInvocable, IWebhookEventHandler
+public class WebhookHandler : MemoqInvocable, IWebhookEventHandler
 {
     public WebhookHandler(InvocationContext invocationContext) : base(invocationContext)
     {
