@@ -14,6 +14,8 @@ using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
 using MQS.TasksService;
 using Apps.MemoQ.Events.Polling.Models;
+using Apps.MemoQ.Callbacks.Models.Response;
+using Apps.MemoQ.Events.Polling.Models.Memory;
 
 namespace Apps.Memoq.Events.Polling;
 
@@ -177,6 +179,86 @@ public class PollingList : MemoqInvocable
                 LastModificationDate = DateTime.UtcNow,
             }
         };
+    }
+
+    [PollingEvent("On all files delivered", "Triggers when ALL files of the specified project are delivered")]
+    public async Task<PollingEventResponse<AllFilesDeliveredMemory, AllFilesDeliveredResponse>> OnAllFilesDelivered(
+    PollingEventRequest<AllFilesDeliveredMemory> request,
+    [PollingEventParameter] ProjectRequest projectRequest)
+    {
+        var projectGuid = GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid);
+
+        var documents = await ExecuteWithHandling(() =>
+            ProjectService.Service.ListProjectTranslationDocuments2Async(
+                projectGuid,
+                new()
+                {
+                    FillInAssignmentInformation = false
+                }));
+
+        var total = documents.Length;
+        var deliveredDocs = documents.Where(IsDelivered).ToArray();
+        var deliveredCount = deliveredDocs.Length;
+
+        var allDelivered = total > 0 && deliveredCount == total;
+
+        if (!allDelivered)
+        {
+            return new()
+            {
+                FlyBird = false,
+                Memory = new AllFilesDeliveredMemory
+                {
+                    TotalCount = total,
+                    DeliveredCount = deliveredCount
+                }
+            };
+        }
+
+        var alreadyReported =
+            request.Memory != null &&
+            request.Memory.TotalCount == total &&
+            request.Memory.DeliveredCount == deliveredCount;
+
+        if (alreadyReported)
+        {
+            return new()
+            {
+                FlyBird = false,
+                Memory = new AllFilesDeliveredMemory
+                {
+                    TotalCount = total,
+                    DeliveredCount = deliveredCount
+                }
+            };
+        }
+        var result = new AllFilesDeliveredResponse
+        {
+            ProjectId = projectRequest.ProjectGuid,
+            Documents = documents.Select(d => new AllFilesDeliveredDocumentDto
+            {
+                Id = d.DocumentGuid.ToString(),
+                Name = d.DocumentName,
+                IsDelivered = true,
+                TargetLanguage = d.TargetLangCode
+            }).ToList()
+        };
+
+        return new()
+        {
+            FlyBird = true,
+            Result = result,
+            Memory = new AllFilesDeliveredMemory
+            {
+                TotalCount = total,
+                DeliveredCount = deliveredCount
+            }
+        };
+    }
+
+    private static bool IsDelivered(ServerProjectTranslationDocInfo2 doc)
+    {
+        return !string.IsNullOrWhiteSpace(doc.ExportPath);
     }
 
     private Task<ServerProjectInfo[]> ListProjects(MemoqServiceFactory<IServerProjectService> projectService) =>
