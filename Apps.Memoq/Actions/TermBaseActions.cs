@@ -900,6 +900,10 @@ public class TermBaseActions(InvocationContext invocationContext, IFileManagemen
         }
         catch (Exception e)
         {
+            InvocationContext.Logger?.LogError(
+                $"[MemoQ ConvertXmlTermbaseToGlossary] Action failed. {e.Message} - {e.StackTrace}", 
+                null
+            );
             throw new Exception("Failed to convert termbase to glossary", e);
         }
     }
