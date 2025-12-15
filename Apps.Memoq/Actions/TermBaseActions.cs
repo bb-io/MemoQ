@@ -810,10 +810,15 @@ public class TermBaseActions(InvocationContext invocationContext, IFileManagemen
     {
         try
         {
-            var xmlContent = Encoding.Unicode.GetString(xmlBytes);
+            using var ms = new MemoryStream(xmlBytes);
+            using var reader = XmlReader.Create(ms, new XmlReaderSettings
+            {
+                DtdProcessing = DtdProcessing.Ignore,
+                CheckCharacters = false
+            });
 
             var xmlDocument = new XmlDocument();
-            xmlDocument.LoadXml(xmlContent);
+            xmlDocument.Load(reader);
 
             var conceptEntries = new List<GlossaryConceptEntry>();
             var glossary = new Glossary(conceptEntries);
