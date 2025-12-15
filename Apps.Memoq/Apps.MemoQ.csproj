@@ -5,14 +5,14 @@
 		<Nullable>enable</Nullable>
 		<Product>memoQ</Product>
 		<Description>Computer-assisted translation</Description>
-		<Version>1.4.34</Version>
+		<Version>1.4.35</Version>
 		<AssemblyName>Apps.MemoQ</AssemblyName>
 		<LangVersion>12</LangVersion>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Blackbird.Applications.SDK.Blueprints" Version="1.0.0-rc.10308" />
 		<PackageReference Include="Blackbird.Applications.SDK.Extensions.FileManagement" Version="1.0.1" />
-		<PackageReference Include="Blackbird.Applications.Sdk.Glossaries.Utils" Version="1.0.0" />
+		<PackageReference Include="Blackbird.Applications.Sdk.Glossaries.Utils" Version="1.0.1" />
 		<PackageReference Include="Blackbird.Applications.Sdk.Utils" Version="1.0.26" />
 		<PackageReference Include="Blackbird.Xliff.Utils" Version="1.0.19" />
 		<PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
