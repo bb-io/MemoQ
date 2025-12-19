@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<Product>memoQ</Product>
 		<Description>Computer-assisted translation</Description>
-		<Version>1.4.35</Version>
+		<Version>1.4.36</Version>
 		<AssemblyName>Apps.MemoQ</AssemblyName>
 		<LangVersion>12</LangVersion>
 	</PropertyGroup>
