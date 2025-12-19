@@ -340,32 +340,30 @@ public class ServerProjectActions(InvocationContext invocationContext) : MemoqIn
             .Select(x => x.Trim())
             .ToArray();
 
-        if (string.IsNullOrWhiteSpace(projectName))
-            throw new PluginMisconfigurationException("Project name is required.");
-
-        if (string.IsNullOrWhiteSpace(sourceLang))
-            throw new PluginMisconfigurationException("Source language is required.");
-
         if (string.IsNullOrWhiteSpace(templateId))
             throw new PluginMisconfigurationException("Template ID is required.");
 
-        if (targets is null || targets.Length == 0)
-            throw new PluginMisconfigurationException("At least one target language is required.");
+        if (string.IsNullOrWhiteSpace(projectName))
+            throw new PluginMisconfigurationException("Project name is required.");
+
+        if (targets != null && targets.Length == 0)
+            targets = null;
 
         var templateGuid = GuidExtensions.ParseWithErrorHandling(templateId);
 
         var newProject = new TemplateBasedProjectCreateInfo
         {
             Name = projectName,
-            Project = Normalize(request.ProjectMetadata),
             CreatorUser = SoapConstants.AdminGuid,
+            TemplateGuid = templateGuid,
+
             SourceLanguageCode = sourceLang,
             TargetLanguageCodes = targets,
+            Project = Normalize(request.ProjectMetadata),
             Description = Normalize(request.Description),
+            Client = Normalize(request.Client),
             Domain = Normalize(request.Domain),
             Subject = Normalize(request.Subject),
-            Client = Normalize(request.Client),
-            TemplateGuid = templateGuid
         };
 
         string TargetsToString(string[]? arr) => arr == null ? "null" : string.Join(", ", arr);
@@ -376,7 +374,8 @@ public class ServerProjectActions(InvocationContext invocationContext) : MemoqIn
 
             logger?.LogInformation?.Invoke(
                 $"[{correlationId}] memoQ CreateProjectFromTemplate started. " +
-                $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', Source='{newProject.SourceLanguageCode}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
+                $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', " +
+                $"Source='{newProject.SourceLanguageCode ?? "null"}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
                 $"Client='{newProject.Client ?? "null"}', Domain='{newProject.Domain ?? "null"}', Subject='{newProject.Subject ?? "null"}', " +
                 $"ProjectMetadata='{newProject.Project ?? "null"}', Description='{newProject.Description ?? "null"}'",
                 null
@@ -455,7 +454,8 @@ public class ServerProjectActions(InvocationContext invocationContext) : MemoqIn
             {
                 logger?.LogError?.Invoke(
                     $"[{correlationId}] memoQ CreateProjectFromTemplate failed. " +
-                    $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', Source='{newProject.SourceLanguageCode}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
+                    $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', " +
+                    $"Source='{newProject.SourceLanguageCode ?? "null"}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
                     $"Client='{newProject.Client ?? "null"}', Domain='{newProject.Domain ?? "null"}', Subject='{newProject.Subject ?? "null"}', " +
                     $"ProjectMetadata='{newProject.Project ?? "null"}', Description='{newProject.Description ?? "null"}'. " +
                     $"Exception: {ex}",
