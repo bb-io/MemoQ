@@ -1,5 +1,6 @@
 ﻿using Apps.Memoq.Actions;
 using Apps.Memoq.DataSourceHandlers;
+using Apps.MemoQ.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Tests.MemoQ.Base;
 
@@ -59,6 +60,21 @@ public class DataSourceTests : TestBase
 
         var json = System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
         Console.WriteLine(json);
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod]
+    public async Task ProjectTemplateDataHandler_returns_values()
+    {
+        var handler = new ProjectTemplateDataHandler(InvocationContext);
+
+        var result = await handler.GetDataAsync(new DataSourceContext { }, CancellationToken.None);
+
+        foreach (var item in result) 
+        {
+            Console.WriteLine($"Name {item.DisplayName} , ID: {item.Value}");
+        }
+
         Assert.IsNotNull(result);
     }
 }
