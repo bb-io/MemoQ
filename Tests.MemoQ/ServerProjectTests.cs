@@ -55,7 +55,7 @@ namespace Tests.MemoQ
 
             var result = await handler.CreateProjectFromTemplate(new CreateProjectTemplateRequest 
             { 
-                ProjectName = "Test from API543",
+                ProjectName = "Test from API5463",
                 SourceLangCode = "eng-GB",
                 TargetLangCodes = ["fre-CA"],
                 ProjectMetadata = "1212284379468771",
