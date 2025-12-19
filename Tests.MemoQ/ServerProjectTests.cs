@@ -47,5 +47,26 @@ namespace Tests.MemoQ
 
             Assert.IsTrue(true);
         }
+
+        [TestMethod]
+        public async Task CreateProjectFromTemplate_IsSuccess()
+        {
+            var handler = new ServerProjectActions(InvocationContext);
+
+            var result = await handler.CreateProjectFromTemplate(new CreateProjectTemplateRequest 
+            { 
+                ProjectName = "Test from API543",
+                SourceLangCode = "eng-GB",
+                TargetLangCodes = ["fre-CA"],
+                ProjectMetadata = "1212284379468771",
+                Client = "API Client",
+                TemplateGuid = "16000000-0000-0000-0000-00001b46f17c"
+
+            });
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, Newtonsoft.Json.Formatting.Indented);
+            Console.WriteLine(json);
+
+            Assert.IsTrue(true);
+        }
     }
 }

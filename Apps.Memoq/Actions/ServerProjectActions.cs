@@ -327,26 +327,143 @@ public class ServerProjectActions(InvocationContext invocationContext) : MemoqIn
         Description = "Creates a new project based on an existing memoQ project template")]
     public async Task<ProjectDto> CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
     {
+        string? Normalize(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+        var correlationId = Guid.NewGuid().ToString("N");
+
+        var projectName = Normalize(request.ProjectName);
+        var sourceLang = Normalize(request.SourceLangCode);
+        var templateId = Normalize(request.TemplateGuid);
+
+        var targets = request.TargetLangCodes?
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .ToArray();
+
+        if (string.IsNullOrWhiteSpace(templateId))
+            throw new PluginMisconfigurationException("Template ID is required.");
+
+        if (string.IsNullOrWhiteSpace(projectName))
+            throw new PluginMisconfigurationException("Project name is required.");
+
+        if (targets != null && targets.Length == 0)
+            targets = null;
+
+        var templateGuid = GuidExtensions.ParseWithErrorHandling(templateId);
+
         var newProject = new TemplateBasedProjectCreateInfo
         {
-            Name = request.ProjectName,
-            Project = request.ProjectMetadata,
+            Name = projectName,
             CreatorUser = SoapConstants.AdminGuid,
-            SourceLanguageCode = request.SourceLangCode,
-            TargetLanguageCodes = request.TargetLangCodes?.ToArray(),
-            Description = request.Description,
-            Domain = request.Domain,
-            Subject = request.Subject,
-            Client = request.Client,
-            TemplateGuid = GuidExtensions.ParseWithErrorHandling(request.TemplateGuid)
+            TemplateGuid = templateGuid,
+
+            SourceLanguageCode = sourceLang,
+            TargetLanguageCodes = targets,
+            Project = Normalize(request.ProjectMetadata),
+            Description = Normalize(request.Description),
+            Client = Normalize(request.Client),
+            Domain = Normalize(request.Domain),
+            Subject = Normalize(request.Subject),
         };
+
+        string TargetsToString(string[]? arr) => arr == null ? "null" : string.Join(", ", arr);
 
         return await ExecuteWithHandling(async () =>
         {
-            var result = await ProjectService.Service.CreateProjectFromTemplateAsync(newProject);
-            var response = await ProjectService.Service.GetProjectAsync(result.ProjectGuid);
+            var logger = invocationContext.Logger;
 
-            return new ProjectDto(response);
+            logger?.LogInformation?.Invoke(
+                $"[{correlationId}] memoQ CreateProjectFromTemplate started. " +
+                $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', " +
+                $"Source='{newProject.SourceLanguageCode ?? "null"}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
+                $"Client='{newProject.Client ?? "null"}', Domain='{newProject.Domain ?? "null"}', Subject='{newProject.Subject ?? "null"}', " +
+                $"ProjectMetadata='{newProject.Project ?? "null"}', Description='{newProject.Description ?? "null"}'",
+                null
+            );
+
+            try
+            {
+                var result = await ProjectService.Service.CreateProjectFromTemplateAsync(newProject);
+
+                logger?.LogInformation?.Invoke(
+                    $"[{correlationId}] memoQ CreateProjectFromTemplate succeeded. Created ProjectGuid='{result.ProjectGuid}'",
+                    null
+                );
+
+                ServerProjectInfo? response = null;
+                Exception? lastGetEx = null;
+
+                for (var attempt = 1; attempt <= 5; attempt++)
+                {
+                    try
+                    {
+                        logger?.LogDebug?.Invoke(
+                            $"[{correlationId}] memoQ GetProject attempt {attempt}/5 for ProjectGuid='{result.ProjectGuid}'",
+                            null
+                        );
+
+                        response = await ProjectService.Service.GetProjectAsync(result.ProjectGuid);
+
+                        if (response != null)
+                        {
+                            logger?.LogInformation?.Invoke(
+                                $"[{correlationId}] memoQ GetProject succeeded on attempt {attempt}/5 for ProjectGuid='{result.ProjectGuid}'",
+                                null
+                            );
+                            break;
+                        }
+
+                        logger?.LogWarning?.Invoke(
+                            $"[{correlationId}] memoQ GetProject returned null on attempt {attempt}/5 for ProjectGuid='{result.ProjectGuid}'",
+                            null
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        lastGetEx = ex;
+
+                        logger?.LogWarning?.Invoke(
+                            $"[{correlationId}] memoQ GetProject failed on attempt {attempt}/5 for ProjectGuid='{result.ProjectGuid}'. Exception: {ex}",
+                            null
+                        );
+
+                        if (attempt == 5)
+                            throw;
+
+                        await Task.Delay(500);
+                    }
+                }
+
+                if (response == null)
+                {
+                    logger?.LogError?.Invoke(
+                        $"[{correlationId}] memoQ GetProject failed: response is null after retries. " +
+                        $"ProjectGuid='{result.ProjectGuid}'. Last exception: {lastGetEx}",
+                        null
+                    );
+
+                    throw new PluginApplicationException(
+                        "Project was created but could not be retrieved from memoQ immediately. Please try again.",
+                        lastGetEx
+                    );
+                }
+
+                return new ProjectDto(response);
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError?.Invoke(
+                    $"[{correlationId}] memoQ CreateProjectFromTemplate failed. " +
+                    $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', " +
+                    $"Source='{newProject.SourceLanguageCode ?? "null"}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
+                    $"Client='{newProject.Client ?? "null"}', Domain='{newProject.Domain ?? "null"}', Subject='{newProject.Subject ?? "null"}', " +
+                    $"ProjectMetadata='{newProject.Project ?? "null"}', Description='{newProject.Description ?? "null"}'. " +
+                    $"Exception: {ex}",
+                    null
+                );
+
+                throw;
+            }
         });
     }
 
