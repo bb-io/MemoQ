@@ -328,23 +328,25 @@ public class ServerProjectActions(InvocationContext invocationContext) : MemoqIn
     public async Task<ProjectDto> CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
     {
         string? Normalize(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+        string TargetsToString(string[]? arr) => arr == null ? "null" : string.Join(", ", arr);
 
-        var correlationId = Guid.NewGuid().ToString("N");
+        var opId = Guid.NewGuid().ToString("N");
+
+        var templateId = Normalize(request.TemplateGuid);
+        if (string.IsNullOrWhiteSpace(templateId))
+            throw new PluginMisconfigurationException("Template ID is required.");
 
         var projectName = Normalize(request.ProjectName);
+        if (string.IsNullOrWhiteSpace(projectName))
+            throw new PluginMisconfigurationException("Project name is required.");
+
         var sourceLang = Normalize(request.SourceLangCode);
-        var templateId = Normalize(request.TemplateGuid);
 
         var targets = request.TargetLangCodes?
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
-
-        if (string.IsNullOrWhiteSpace(templateId))
-            throw new PluginMisconfigurationException("Template ID is required.");
-
-        if (string.IsNullOrWhiteSpace(projectName))
-            throw new PluginMisconfigurationException("Project name is required.");
 
         if (targets != null && targets.Length == 0)
             targets = null;
@@ -354,116 +356,82 @@ public class ServerProjectActions(InvocationContext invocationContext) : MemoqIn
         var newProject = new TemplateBasedProjectCreateInfo
         {
             Name = projectName,
+            Project = Normalize(request.ProjectMetadata),
             CreatorUser = SoapConstants.AdminGuid,
-            TemplateGuid = templateGuid,
-
             SourceLanguageCode = sourceLang,
             TargetLanguageCodes = targets,
-            Project = Normalize(request.ProjectMetadata),
             Description = Normalize(request.Description),
-            Client = Normalize(request.Client),
             Domain = Normalize(request.Domain),
             Subject = Normalize(request.Subject),
+            Client = Normalize(request.Client),
+            TemplateGuid = templateGuid
         };
 
-        string TargetsToString(string[]? arr) => arr == null ? "null" : string.Join(", ", arr);
+        var logger = invocationContext.Logger;
+
+        logger?.LogInformation?.Invoke(
+            $"[memoQ][{opId}] CreateProjectFromTemplate started. " +
+            $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', " +
+            $"Source='{newProject.SourceLanguageCode ?? "null"}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
+            $"Client='{newProject.Client ?? "null"}', Domain='{newProject.Domain ?? "null"}', Subject='{newProject.Subject ?? "null"}', " +
+            $"ProjectMetadata='{newProject.Project ?? "null"}', Description='{newProject.Description ?? "null"}'",
+            null);
 
         return await ExecuteWithHandling(async () =>
         {
-            var logger = invocationContext.Logger;
-
-            logger?.LogInformation?.Invoke(
-                $"[{correlationId}] memoQ CreateProjectFromTemplate started. " +
-                $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', " +
-                $"Source='{newProject.SourceLanguageCode ?? "null"}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
-                $"Client='{newProject.Client ?? "null"}', Domain='{newProject.Domain ?? "null"}', Subject='{newProject.Subject ?? "null"}', " +
-                $"ProjectMetadata='{newProject.Project ?? "null"}', Description='{newProject.Description ?? "null"}'",
-                null
-            );
-
+            var createResult = await ProjectService.Service.CreateProjectFromTemplateAsync(newProject);
             try
             {
-                var result = await ProjectService.Service.CreateProjectFromTemplateAsync(newProject);
-
-                logger?.LogInformation?.Invoke(
-                    $"[{correlationId}] memoQ CreateProjectFromTemplate succeeded. Created ProjectGuid='{result.ProjectGuid}'",
-                    null
-                );
-
-                ServerProjectInfo? response = null;
-                Exception? lastGetEx = null;
-
-                for (var attempt = 1; attempt <= 5; attempt++)
-                {
-                    try
-                    {
-                        logger?.LogDebug?.Invoke(
-                            $"[{correlationId}] memoQ GetProject attempt {attempt}/5 for ProjectGuid='{result.ProjectGuid}'",
-                            null
-                        );
-
-                        response = await ProjectService.Service.GetProjectAsync(result.ProjectGuid);
-
-                        if (response != null)
-                        {
-                            logger?.LogInformation?.Invoke(
-                                $"[{correlationId}] memoQ GetProject succeeded on attempt {attempt}/5 for ProjectGuid='{result.ProjectGuid}'",
-                                null
-                            );
-                            break;
-                        }
-
-                        logger?.LogWarning?.Invoke(
-                            $"[{correlationId}] memoQ GetProject returned null on attempt {attempt}/5 for ProjectGuid='{result.ProjectGuid}'",
-                            null
-                        );
-                    }
-                    catch (Exception ex)
-                    {
-                        lastGetEx = ex;
-
-                        logger?.LogWarning?.Invoke(
-                            $"[{correlationId}] memoQ GetProject failed on attempt {attempt}/5 for ProjectGuid='{result.ProjectGuid}'. Exception: {ex}",
-                            null
-                        );
-
-                        if (attempt == 5)
-                            throw;
-
-                        await Task.Delay(500);
-                    }
-                }
-
-                if (response == null)
-                {
-                    logger?.LogError?.Invoke(
-                        $"[{correlationId}] memoQ GetProject failed: response is null after retries. " +
-                        $"ProjectGuid='{result.ProjectGuid}'. Last exception: {lastGetEx}",
-                        null
-                    );
-
-                    throw new PluginApplicationException(
-                        "Project was created but could not be retrieved from memoQ immediately. Please try again.",
-                        lastGetEx
-                    );
-                }
-
-                return new ProjectDto(response);
+                createResult = await ProjectService.Service.CreateProjectFromTemplateAsync(newProject);
             }
             catch (Exception ex)
             {
-                logger?.LogError?.Invoke(
-                    $"[{correlationId}] memoQ CreateProjectFromTemplate failed. " +
-                    $"Name='{newProject.Name}', TemplateGuid='{newProject.TemplateGuid}', " +
-                    $"Source='{newProject.SourceLanguageCode ?? "null"}', Targets='{TargetsToString(newProject.TargetLanguageCodes)}', " +
-                    $"Client='{newProject.Client ?? "null"}', Domain='{newProject.Domain ?? "null"}', Subject='{newProject.Subject ?? "null"}', " +
-                    $"ProjectMetadata='{newProject.Project ?? "null"}', Description='{newProject.Description ?? "null"}'. " +
-                    $"Exception: {ex}",
-                    null
-                );
-
+                logger?.LogError?.Invoke($"[memoQ][{opId}] CreateProjectFromTemplateAsync failed. Exception: {ex}", null);
                 throw;
             }
+
+            var createdGuid = createResult?.ProjectGuid ?? Guid.Empty;
+
+            logger?.LogInformation?.Invoke(
+                $"[memoQ][{opId}] CreateProjectFromTemplateAsync finished. Returned ProjectGuid='{createdGuid}'",
+                null);
+
+            if (createdGuid != Guid.Empty)
+            {
+                var project = await TryGetProjectWithRetry(opId, createdGuid);
+
+                if (project != null)
+                    return new ProjectDto(project);
+
+                logger?.LogWarning?.Invoke(
+                    $"[memoQ][{opId}] GetProjectAsync failed after retries for ProjectGuid='{createdGuid}'. " +
+                    $"Will try fallback search by name '{newProject.Name}'.",
+                    null);
+            }
+            else
+            {
+                logger?.LogWarning?.Invoke(
+                    $"[memoQ][{opId}] memoQ returned empty ProjectGuid. Will try fallback search by name '{newProject.Name}'.",
+                    null);
+            }
+
+            var found = await TryFindLatestProjectByName(opId, newProject.Name);
+
+            if (found != null)
+            {
+                logger?.LogInformation?.Invoke(
+                    $"[memoQ][{opId}] Fallback search succeeded. Found ProjectGuid='{found.ServerProjectGuid}', Name='{found.Name}', CreatedAt='{found.CreationTime:o}'",
+                    null);
+
+                return new ProjectDto(found);
+            }
+
+            logger?.LogError?.Invoke(
+                $"[memoQ][{opId}] Fallback search failed. Project seems created but cannot be retrieved. Name='{newProject.Name}'",
+                null);
+
+            throw new PluginApplicationException(
+                "Project was created but could not be retrieved from memoQ immediately. Please try again.");
         });
     }
 
@@ -759,6 +727,94 @@ public class ServerProjectActions(InvocationContext invocationContext) : MemoqIn
             TaskStatus = pretranslateProjectTaskInfo.Status.ToString(),
             ProgressPercentage = pretranslateProjectTaskInfo.ProgressPercentage
         };
+    }
+
+    private async Task<ServerProjectInfo?> TryGetProjectWithRetry(string opId, Guid projectGuid)
+    {
+        var logger = invocationContext.Logger;
+        Exception? lastEx = null;
+
+        for (var attempt = 1; attempt <= 8; attempt++)
+        {
+            try
+            {
+                logger?.LogDebug?.Invoke(
+                    $"[memoQ][{opId}] GetProjectAsync attempt {attempt}/8 for ProjectGuid='{projectGuid}'",
+                    null);
+
+                var project = await ProjectService.Service.GetProjectAsync(projectGuid);
+
+                if (project != null)
+                {
+                    logger?.LogInformation?.Invoke(
+                        $"[memoQ][{opId}] GetProjectAsync succeeded on attempt {attempt}/8. Name='{project.Name}'",
+                        null);
+
+                    return project;
+                }
+
+                logger?.LogWarning?.Invoke(
+                    $"[memoQ][{opId}] GetProjectAsync returned null on attempt {attempt}/8 for ProjectGuid='{projectGuid}'",
+                    null);
+            }
+            catch (Exception ex)
+            {
+                lastEx = ex;
+                logger?.LogWarning?.Invoke(
+                    $"[memoQ][{opId}] GetProjectAsync threw on attempt {attempt}/8 for ProjectGuid='{projectGuid}'. Exception: {ex}",
+                    null);
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(Math.Min(200 * attempt, 1600)));
+        }
+
+        logger?.LogWarning?.Invoke(
+            $"[memoQ][{opId}] GetProjectAsync failed after retries for ProjectGuid='{projectGuid}'. Last exception: {lastEx}",
+            null);
+
+        return null;
+    }
+
+    private async Task<ServerProjectInfo?> TryFindLatestProjectByName(string opId, string projectName)
+    {
+        var logger = invocationContext.Logger;
+
+        var filter = new ServerProjectListFilter
+        {
+            TimeClosed = new DateTime(2500, 1, 1),
+            NameOrDescription = projectName
+        };
+
+        logger?.LogInformation?.Invoke(
+            $"[memoQ][{opId}] Fallback ListProjects started. NameOrDescription='{projectName}', TimeClosed='{filter.TimeClosed:o}'",
+            null);
+
+        ServerProjectInfo[]? projects;
+        try
+        {
+            projects = await ProjectService.Service.ListProjectsAsync(filter);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError?.Invoke($"[memoQ][{opId}] ListProjectsAsync failed. Exception: {ex}", null);
+            return null;
+        }
+
+        if (projects == null || projects.Length == 0)
+        {
+            logger?.LogWarning?.Invoke($"[memoQ][{opId}] ListProjectsAsync returned 0 projects for name '{projectName}'", null);
+            return null;
+        }
+
+        var exact = projects
+            .Where(p => string.Equals(p.Name, projectName, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(p => p.CreationTime)
+            .FirstOrDefault();
+
+        if (exact != null)
+            return exact;
+
+        return projects.OrderByDescending(p => p.CreationTime).FirstOrDefault();
     }
 
     private List<ServerProjectResourceAssignment> CreateAssignmentsBasedOnResourceType(ResourceType resourceType,
