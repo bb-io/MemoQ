@@ -1,5 +1,4 @@
 ﻿using Apps.Memoq.Models.Files.Requests;
-using Blackbird.Applications.Sdk.Common.Authentication;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common;
@@ -26,7 +25,7 @@ namespace Apps.MemoQ.DataSourceHandlers
                 throw new InvalidOperationException("You should input a project guid first");
             }
 
-            var actions = new ServerProjectActions(_context);
+            var actions = new ServerProjectActions(_context, null!);
             var response = await actions.GetCustomFields(new Memoq.Models.ServerProjects.Requests.ProjectRequest { ProjectGuid = _projectGuid });
 
             return response.CustomFields

@@ -17,16 +17,21 @@ using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
 using Blackbird.Applications.Sdk.Common.Exceptions;
+using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
+using DocumentFormat.OpenXml.Bibliography;
 using MQS.ServerProject;
 using Newtonsoft.Json;
+using System.Text;
 using ResourceType = MQS.ServerProject.ResourceType;
 
 namespace Apps.Memoq.Actions;
 
 [ActionList("Projects")]
-public class ServerProjectActions(InvocationContext invocationContext) : MemoqInvocable(invocationContext)
+public class ServerProjectActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) 
+    : MemoqInvocable(invocationContext)
 {
     [Action("Search projects", Description = "Search through your memoQ projects")]
     public async Task<ListAllProjectsResponse> ListAllProjects([ActionParameter] ListProjectsRequest input)
@@ -714,6 +719,36 @@ public class ServerProjectActions(InvocationContext invocationContext) : MemoqIn
             TaskStatus = pretranslateProjectTaskInfo.Status.ToString(),
             ProgressPercentage = pretranslateProjectTaskInfo.ProgressPercentage
         };
+    }
+
+    [Action("Run QA checks", Description = "Execute QA checks on the specified scope, collect errors and warnings and get a report of the errors and warnings present in the specified scope")]
+    public async Task<RunQaChecksResponse> RunQaChecks(
+        [ActionParameter] ProjectRequest projectRequest,
+        [ActionParameter] RunQaChecksRequest qaRequest)
+    {
+        var options = new RunQAGetReportOptions
+        {
+            DocumentGuids = qaRequest.DocumentGuids?.Select(Guid.Parse).ToArray(),
+            IncludeLockedRows = qaRequest.IncludeLockedRows,
+            ReportType = Enum.Parse<QAReportTypes>(qaRequest.ReportType),
+            ReportDisplayLanguage = qaRequest.ReportLanguage
+        };
+
+        var response = await ExecuteWithHandling(async () =>
+            await ProjectService.Service.RunQAGetReportAsync(Guid.Parse(projectRequest.ProjectGuid), options)
+        );
+
+        var reportsPerDocument = response.ReportsPerDocument.Select(x => new QaReportPerDocumentDto(x));
+
+        FileReference? fileReference = null;
+        if (!string.IsNullOrWhiteSpace(response.DetailedReport))
+        {
+            var filename = $"QaReport_{projectRequest.ProjectGuid}.html";
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(response.DetailedReport));
+            fileReference = await fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
+        }
+
+        return new(fileReference, reportsPerDocument);
     }
 
     private List<ServerProjectResourceAssignment> CreateAssignmentsBasedOnResourceType(ResourceType resourceType,
