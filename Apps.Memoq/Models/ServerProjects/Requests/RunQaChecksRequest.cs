@@ -21,7 +21,9 @@ public class RunQaChecksRequest
     public IEnumerable<string>? DocumentGuids { get; set; }
 
     [StaticDataSource(typeof(TwoLetterLanguageCodesDataHandler))]
-    [Display("Report display language (2-letter region code and optional country code)",
-        Description = "English is the default if the input is missing or unavailable")]
+    [Display("Report display language",
+        Description = 
+            "2-letter region code and optional country code. " +
+            "English is the default if the input is missing or unavailable")]
     public string? ReportLanguage { get; set; }
 }

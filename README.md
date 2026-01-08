@@ -95,6 +95,8 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 	- 'Coverage type': This optional parameter is used to specify the type of coverage for pretranslation. By default, this is set to 'Not full'.  
 	- 'Only unambiguous matches': This optional parameter, when set to true, only includes unambiguous matches in the pretranslation. By default, this is set to true.
 	- 'Final translation state': This optional parameter is used to specify the final translation state for pretranslated segments. By default, this is set to 'No change'.
+- **Run QA checks** executes QA checks on the specified scope, collects errors and warnings and gets a report of the errors and warnings present in the specified scope.
+
 
 ### Project custom fields
 - **Get project custom fields** Gets all custom metadata fields for a specific project
