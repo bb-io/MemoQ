@@ -176,7 +176,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
         {
             if (targetLanguageCodes == null)
             {
-                var serverProjectActions = new ServerProjectActions(InvocationContext);
+                var serverProjectActions = new ServerProjectActions(InvocationContext, fileManagementClient);
                 var projectInfo = await serverProjectActions.GetProject(new ProjectRequest { ProjectGuid = request.ProjectGuid });
                 targetLanguageCodes = projectInfo.TargetLanguageCodes;
             }
