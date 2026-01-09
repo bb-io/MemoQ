@@ -1,21 +1,22 @@
 using Apps.Memoq.Contracts;
-using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
 using Apps.Memoq.Events.Polling.Models.Memory;
 using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.ServerProjects.Responses;
+using Apps.MemoQ;
+using Apps.MemoQ.Callbacks.Models.Response;
+using Apps.MemoQ.DataSourceHandlers.EnumDataHandlers;
+using Apps.MemoQ.Events.Polling.Models;
+using Apps.MemoQ.Events.Polling.Models.Memory;
+using Apps.MemoQ.Extensions;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Dictionaries;
+using Blackbird.Applications.Sdk.Common.Exceptions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Polling;
 using MQS.ServerProject;
-using Apps.MemoQ;
-using Apps.MemoQ.Extensions;
 using MQS.TasksService;
-using Apps.MemoQ.Events.Polling.Models;
-using Apps.MemoQ.Callbacks.Models.Response;
-using Apps.MemoQ.Events.Polling.Models.Memory;
 
 namespace Apps.Memoq.Events.Polling;
 
@@ -181,84 +182,50 @@ public class PollingList : MemoqInvocable
         };
     }
 
-    [PollingEvent("On all files delivered", "Triggers when ALL files of the specified project are delivered")]
+    [PollingEvent("On all files status reached", "Triggers when ALL files of the specified project reached the specified status")]
     public async Task<PollingEventResponse<AllFilesDeliveredMemory, AllFilesDeliveredResponse>> OnAllFilesDelivered(
     PollingEventRequest<AllFilesDeliveredMemory> request,
-    [PollingEventParameter] ProjectRequest projectRequest)
+    [PollingEventParameter] ProjectRequest projectRequest,
+    [PollingEventParameter] TranslationFileStatus status)
     {
+        if (string.IsNullOrWhiteSpace(status?.Status))
+            throw new PluginMisconfigurationException("Status is required.");
+
+        if (!Enum.TryParse<DocumentStatus>(status.Status, ignoreCase: true, out var targetStatus))
+            throw new PluginMisconfigurationException($"Unknown status '{status.Status}'.");
+
         var projectGuid = GuidExtensions.ParseWithErrorHandling(projectRequest.ProjectGuid);
 
         var documents = await ExecuteWithHandling(() =>
             ProjectService.Service.ListProjectTranslationDocuments2Async(
                 projectGuid,
-                new()
-                {
-                    FillInAssignmentInformation = false
-                }));
+                new() { FillInAssignmentInformation = false }));
 
-        var total = documents.Length;
-        var deliveredDocs = documents.Where(IsDelivered).ToArray();
-        var deliveredCount = deliveredDocs.Length;
+        if (documents.Length == 0)
+            return new() { FlyBird = false };
 
-        var allDelivered = total > 0 && deliveredCount == total;
+        var allReached = documents.All(d => d.DocumentStatus == targetStatus);
+        if (!allReached)
+            return new() { FlyBird = false };
 
-        if (!allDelivered)
-        {
-            return new()
-            {
-                FlyBird = false,
-                Memory = new AllFilesDeliveredMemory
-                {
-                    TotalCount = total,
-                    DeliveredCount = deliveredCount
-                }
-            };
-        }
-
-        var alreadyReported =
-            request.Memory != null &&
-            request.Memory.TotalCount == total &&
-            request.Memory.DeliveredCount == deliveredCount;
-
-        if (alreadyReported)
-        {
-            return new()
-            {
-                FlyBird = false,
-                Memory = new AllFilesDeliveredMemory
-                {
-                    TotalCount = total,
-                    DeliveredCount = deliveredCount
-                }
-            };
-        }
         var result = new AllFilesDeliveredResponse
         {
             ProjectId = projectRequest.ProjectGuid,
+            RequestedStatus = targetStatus.ToString(),
             Documents = documents.Select(d => new AllFilesDeliveredDocumentDto
             {
                 Id = d.DocumentGuid.ToString(),
                 Name = d.DocumentName,
-                IsDelivered = true,
-                TargetLanguage = d.TargetLangCode
+                TargetLanguage = d.TargetLangCode,
+                Status = d.DocumentStatus.ToString()
             }).ToList()
         };
 
         return new()
         {
             FlyBird = true,
-            Result = result,
-            Memory = new AllFilesDeliveredMemory
-            {
-                TotalCount = total,
-                DeliveredCount = deliveredCount
-            }
+            Result = result
         };
-    }
-
-    private static bool IsDelivered(ServerProjectTranslationDocInfo2 doc)
-    {
-        return !string.IsNullOrWhiteSpace(doc.ExportPath);
     }
 
     private Task<ServerProjectInfo[]> ListProjects(MemoqServiceFactory<IServerProjectService> projectService) =>

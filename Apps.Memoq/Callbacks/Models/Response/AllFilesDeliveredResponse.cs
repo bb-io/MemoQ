@@ -7,6 +7,9 @@ namespace Apps.MemoQ.Callbacks.Models.Response
         [Display("Project ID")]
         public string ProjectId { get; set; } = default!;
 
+        [Display("Requested status")]
+        public string RequestedStatus { get; set; } = default!;
+
         [Display("Documents")]
         public List<AllFilesDeliveredDocumentDto> Documents { get; set; } = new();
     }
