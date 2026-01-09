@@ -132,6 +132,7 @@ Another important consideration is that our glossaries implementation adheres to
 - **On projects created** is triggered when new projects are created.
 - **On project status changed** is triggered when status of a specific project has changed.
 - **On task status changed** is triggered when status of a specific task has changed.
+- **On all files status reached** is triggered when all files in a project have reached a specific status.
 
 ## Missing features
 
