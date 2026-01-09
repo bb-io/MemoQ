@@ -21,6 +21,8 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using MQS.FileManager;
 using MQS.ServerProject;
 using MQS.TasksService;
+using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Net.Mime;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -383,25 +385,112 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<DownloadFileResponse> DownloadFileByGuid(
         [ActionParameter] DownloadFileRequest request)
     {
-        var exportResult = await ExecuteWithHandling(() => ProjectService.Service
-            .ExportTranslationDocument2Async(GuidExtensions.ParseWithErrorHandling(request.ProjectGuid), GuidExtensions.ParseWithErrorHandling(request.DocumentGuid),
-                new DocumentExportOptions
-                {
-                    ExportAllMultilingualSiblings = request.ExportAllMultilingualSibling ?? true,
-                    RevertFaultyTargetsToSource = request.RevertFaultyTargetsToSource ?? false,
-                    CopySourceToEmptyTarget = request.CopySourceToEmptyTarget ?? false,
-                    CopySourceToUnconfirmedRows = request.CopySourceToEmptyTarget ?? false,
-                }));
+        InvocationContext.Logger?.LogInformation?.Invoke(
+        $"[MemoQ][DownloadFileByGuid] Input: {JsonConvert.SerializeObject(request)}",
+        Array.Empty<object>());
 
-        var data = DownloadFile(FileService.Service, exportResult.FileGuid, out var filename);
-        var document = await GetFile(new()
+        var options = new DocumentExportOptions
         {
-            ProjectGuid = request.ProjectGuid
-        }, request.DocumentGuid);
+            ExportAllMultilingualSiblings = request.ExportAllMultilingualSibling ?? true,
+            RevertFaultyTargetsToSource = request.RevertFaultyTargetsToSource ?? false,
+            CopySourceToEmptyTarget = request.CopySourceToEmptyTarget ?? false,
+            CopySourceToUnconfirmedRows = request.CopySourceToUnconfirmedRows ?? false,
+        };
 
-        using var stream = new MemoryStream(data);
-        var fileReference = await fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
-        return new DownloadFileResponse(document) { File = fileReference };
+        InvocationContext.Logger?.LogInformation?.Invoke(
+            $"[MemoQ][DownloadFileByGuid] ExportOptions: {JsonConvert.SerializeObject(options)}",
+            Array.Empty<object>());
+
+        try
+        {
+            var swExport = Stopwatch.StartNew();
+            var exportResult = await ExecuteWithHandling(() =>
+                ProjectService.Service.ExportTranslationDocument2Async(
+                    GuidExtensions.ParseWithErrorHandling(request.ProjectGuid),
+                    GuidExtensions.ParseWithErrorHandling(request.DocumentGuid),
+                    options));
+            swExport.Stop();
+
+            InvocationContext.Logger?.LogInformation?.Invoke(
+                $"[MemoQ][DownloadFileByGuid] ExportResult ({swExport.ElapsedMilliseconds}ms): {JsonConvert.SerializeObject(exportResult)}",
+                Array.Empty<object>());
+
+            if (exportResult == null || exportResult.FileGuid == Guid.Empty)
+            {
+                InvocationContext.Logger?.LogError?.Invoke(
+                    $"[MemoQ][DownloadFileByGuid] Export returned EMPTY FileGuid. ExportResult: {JsonConvert.SerializeObject(exportResult)}",
+                    Array.Empty<object>());
+
+                throw new PluginApplicationException("memoQ export returned empty FileGuid, cannot download file.");
+            }
+
+            InvocationContext.Logger?.LogInformation?.Invoke(
+                $"[MemoQ][DownloadFileByGuid] Download starting. FileGuid={exportResult.FileGuid}",
+                Array.Empty<object>());
+
+            byte[] data;
+            string filename;
+
+            try
+            {
+                var swDl = Stopwatch.StartNew();
+                data = DownloadFile(FileService.Service, exportResult.FileGuid, out filename);
+                swDl.Stop();
+
+                InvocationContext.Logger?.LogInformation?.Invoke(
+                    $"[MemoQ][DownloadFileByGuid] Download OK ({swDl.ElapsedMilliseconds}ms): {{\"filename\":\"{filename}\",\"bytes\":{(data?.Length ?? 0)}}}",
+                    Array.Empty<object>());
+            }
+            catch (Exception ex)
+            {
+                InvocationContext.Logger?.LogError?.Invoke(
+                    $"[MemoQ][DownloadFileByGuid] Download FAILED: {ex}",
+                    Array.Empty<object>());
+                throw;
+            }
+
+            try
+            {
+                var swMeta = Stopwatch.StartNew();
+                var document = await GetFile(new() { ProjectGuid = request.ProjectGuid }, request.DocumentGuid);
+                swMeta.Stop();
+
+                InvocationContext.Logger?.LogInformation?.Invoke(
+                    $"[MemoQ][DownloadFileByGuid] Document metadata OK ({swMeta.ElapsedMilliseconds}ms): {JsonConvert.SerializeObject(document)}",
+                    Array.Empty<object>());
+
+                using var stream = new MemoryStream(data);
+                var mime = MimeTypes.GetMimeType(filename);
+
+                InvocationContext.Logger?.LogInformation?.Invoke(
+                    $"[MemoQ][DownloadFileByGuid] Upload starting: {JsonConvert.SerializeObject(new { filename, mime, bytes = data.Length })}",
+                    Array.Empty<object>());
+
+                var swUp = Stopwatch.StartNew();
+                var fileReference = await fileManagementClient.UploadAsync(stream, mime, filename);
+                swUp.Stop();
+
+                InvocationContext.Logger?.LogInformation?.Invoke(
+                    $"[MemoQ][DownloadFileByGuid] Upload OK ({swUp.ElapsedMilliseconds}ms): {JsonConvert.SerializeObject(fileReference)}",
+                    Array.Empty<object>());
+
+                return new DownloadFileResponse(document) { File = fileReference };
+            }
+            catch (Exception ex)
+            {
+                InvocationContext.Logger?.LogError?.Invoke(
+                    $"[MemoQ][DownloadFileByGuid] Metadata/Upload FAILED: {ex}",
+                    Array.Empty<object>());
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            InvocationContext.Logger?.LogError?.Invoke(
+                $"[MemoQ][DownloadFileByGuid] FAILED (outer): {ex}",
+                Array.Empty<object>());
+            throw;
+        }
     }
 
     [Action("Download XLIFF file",
