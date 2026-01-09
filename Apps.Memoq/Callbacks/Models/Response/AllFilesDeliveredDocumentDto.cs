@@ -10,8 +10,8 @@ namespace Apps.MemoQ.Callbacks.Models.Response
         [Display("Name")]
         public string Name { get; set; } = default!;
 
-        [Display("Delivered")]
-        public bool IsDelivered { get; set; }
+        [Display("Status")]
+        public string Status { get; set; } = default!;
 
         [Display("Target language")]
         public string? TargetLanguage { get; set; }

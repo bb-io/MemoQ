@@ -70,15 +70,12 @@ namespace Tests.MemoQ
         public async Task OnAllFilesDelivered_IsSuccess()
         {
             var polling = new PollingList(InvocationContext);
-            var project = new ProjectRequest { ProjectGuid = "2c80a2ed-6fd0-f011-875f-a8a15994f72e" };
+            var project = new ProjectRequest { ProjectGuid = "3bd942d0-93ed-f011-875f-a8a15994f72e" };
             var request = new PollingEventRequest<AllFilesDeliveredMemory>
             {
-                Memory = new AllFilesDeliveredMemory
-                {
-                }
-
             };
-            var response = await polling.OnAllFilesDelivered(request, project);
+            var status = new TranslationFileStatus { Status = "TranslationFinished" };
+            var response = await polling.OnAllFilesDelivered(request, project, status);
 
             Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(response));
             Assert.IsNotNull(response);

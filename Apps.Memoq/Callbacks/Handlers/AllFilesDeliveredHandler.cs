@@ -63,7 +63,7 @@ namespace Apps.MemoQ.Callbacks.Handlers
                 {
                     Id = d.Id,
                     Name = d.Name,
-                    IsDelivered = true,
+                    Status = d.DocumentStatus.ToString(),
                     TargetLanguage = d.TargetLanguage
                 }).ToList()
             };

@@ -17,8 +17,8 @@ namespace Tests.MemoQ
         {
             var action = new FileActions(InvocationContext, FileManager);
 
-            var response = await action.DownloadFileByGuid( new DownloadFileRequest { ProjectGuid = "b3398340-2bdd-f011-97cc-005056ba375d", 
-                DocumentGuid = "31e2e2a5-b3a8-4590-8ecf-03400e2a89e4"
+            var response = await action.DownloadFileByGuid( new DownloadFileRequest { ProjectGuid = "10bd767d-3ce2-ef11-875f-a8a15994f72e", 
+                DocumentGuid = "0d928a55-8070-48db-9e3e-00723fe85cfd"
             });
 
             Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(response));
