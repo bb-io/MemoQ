@@ -54,9 +54,9 @@ public class ServerProjectTests : TestBase
             ProjectName = "Test from API5463ро",
             SourceLangCode = "eng-GB",
             TargetLangCodes = ["fre-CA"],
-            ProjectMetadata = "1212284379468771",
+            ProjectMetadata = "1212751453167361",
             Client = "API Client",
-            TemplateGuid = "16000000-0000-0000-0000-00001b46f17c"
+            TemplateGuid = "5d57a482-3a35-4038-9013-3ec5d5d298f4"
 
         });
 

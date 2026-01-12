@@ -333,7 +333,7 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
         Description = "Creates a new project based on an existing memoQ project template")]
     public async Task<ProjectDto> CreateProjectFromTemplate([ActionParameter] CreateProjectTemplateRequest request)
     {
-        var logger = invocationContext.Logger;
+        var log = invocationContext.Logger;
         var opId = Guid.NewGuid().ToString("N");
 
         string? Normalize(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
@@ -360,70 +360,125 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
             TemplateGuid = templateGuid
         };
 
-        logger?.LogInformation?.Invoke(
-            $"[memoQ][{opId}] CreateProjectFromTemplate started. " +
-            $"Name='{newProject.Name ?? "null"}', TemplateGuid='{newProject.TemplateGuid}', " +
-            $"Source='{newProject.SourceLanguageCode ?? "null"}', " +
-            $"Targets='{(newProject.TargetLanguageCodes == null ? "null" : string.Join(", ", newProject.TargetLanguageCodes))}', " +
-            $"Client='{newProject.Client ?? "null"}', Domain='{newProject.Domain ?? "null"}', Subject='{newProject.Subject ?? "null"}', " +
-            $"ProjectMetadata='{newProject.Project ?? "null"}', Description='{newProject.Description ?? "null"}'",
+        log?.LogInformation?.Invoke(
+            $"[memoQ][{opId}] CreateProjectFromTemplate start | " +
+            $"Name='{newProject.Name}', Template='{newProject.TemplateGuid}', " +
+            $"Source='{newProject.SourceLanguageCode}', " +
+            $"Targets='{string.Join(", ", newProject.TargetLanguageCodes ?? Array.Empty<string>())}'",
             null);
 
         return await ExecuteWithHandling(async () =>
         {
-            object? createResult = null;
+            object? createResult;
             try
             {
                 createResult = await ProjectService.Service.CreateProjectFromTemplateAsync(newProject);
-
-                logger?.LogInformation?.Invoke(
-                    $"[memoQ][{opId}] CreateProjectFromTemplateAsync result: {JsonConvert.SerializeObject(createResult)}",
-                    null);
             }
             catch (Exception ex)
             {
-                logger?.LogError?.Invoke($"[memoQ][{opId}] CreateProjectFromTemplateAsync threw exception: {ex}", null);
+                log?.LogError?.Invoke($"[memoQ][{opId}] CreateProjectFromTemplateAsync exception: {ex}", null);
                 throw;
+            }
+
+            if (createResult == null)
+                throw new PluginApplicationException("memoQ returned null result when creating project from template.");
+
+            var t = createResult.GetType();
+
+            var projectGuidProp = t.GetProperty("ProjectGuid");
+            var resultStatusProp = t.GetProperty("ResultStatus");
+            var mainMessageProp = t.GetProperty("MainMessage");
+            var detailedMessageProp = t.GetProperty("DetailedMessage");
+
+            if (projectGuidProp == null || resultStatusProp == null)
+            {
+                var raw = JsonConvert.SerializeObject(createResult);
+                log?.LogError?.Invoke(
+                    $"[memoQ][{opId}] Create result missing required fields. " +
+                    $"Type='{t.FullName}'. Raw={raw}",
+                    null);
+
+                throw new PluginApplicationException(
+                    "memoQ create result did not contain required fields (ProjectGuid/ResultStatus). See logs.");
             }
 
             Guid projectGuid;
             try
             {
-                projectGuid = (Guid)createResult!.GetType().GetProperty("ProjectGuid")!.GetValue(createResult)!;
+                var pg = projectGuidProp.GetValue(createResult);
+                projectGuid = pg is Guid g ? g : Guid.Parse(pg?.ToString() ?? string.Empty);
             }
             catch (Exception ex)
             {
-                logger?.LogError?.Invoke(
-                    $"[memoQ][{opId}] Could not read ProjectGuid from createResult. " +
-                    $"createResultType='{createResult?.GetType().FullName ?? "null"}'. Exception: {ex}",
+                var raw = JsonConvert.SerializeObject(createResult);
+                log?.LogError?.Invoke(
+                    $"[memoQ][{opId}] Could not parse ProjectGuid from create result. Exception: {ex}. Raw={raw}",
+                    null);
+                throw new PluginApplicationException("memoQ returned invalid ProjectGuid. See logs.");
+            }
+
+            int resultStatus;
+            try
+            {
+                var rs = resultStatusProp.GetValue(createResult);
+                resultStatus = rs is int i ? i : Convert.ToInt32(rs);
+            }
+            catch (Exception ex)
+            {
+                var raw = JsonConvert.SerializeObject(createResult);
+                log?.LogError?.Invoke(
+                    $"[memoQ][{opId}] Could not parse ResultStatus from create result. Exception: {ex}. Raw={raw}",
+                    null);
+                throw new PluginApplicationException("memoQ returned invalid ResultStatus. See logs.");
+            }
+
+            var mainMessage = mainMessageProp?.GetValue(createResult)?.ToString();
+            var detailedMessage = detailedMessageProp?.GetValue(createResult)?.ToString();
+
+            log?.LogInformation?.Invoke(
+                $"[memoQ][{opId}] Create result | Status={resultStatus}, ProjectGuid={projectGuid}",
+                null);
+
+            if (projectGuid == Guid.Empty || resultStatus != 0)
+            {
+                var raw = JsonConvert.SerializeObject(createResult);
+
+                log?.LogError?.Invoke(
+                    $"[memoQ][{opId}] Template-based project creation failed | " +
+                    $"Status={resultStatus}, ProjectGuid={projectGuid}, " +
+                    $"Main='{mainMessage}', Details='{detailedMessage}'. Raw={raw}",
+                    null);
+
+                var userMessage =
+                    !string.IsNullOrWhiteSpace(detailedMessage) ? detailedMessage :
+                    !string.IsNullOrWhiteSpace(mainMessage) ? mainMessage :
+                    "Project creation failed in memoQ.";
+
+                throw new PluginApplicationException(userMessage);
+            }
+
+            MQS.ServerProject.ServerProjectInfo? getResult;
+            try
+            {
+                getResult = await ProjectService.Service.GetProjectAsync(projectGuid);
+            }
+            catch (Exception ex)
+            {
+                log?.LogError?.Invoke($"[memoQ][{opId}] GetProjectAsync exception: {ex}", null);
+                throw;
+            }
+
+            if (getResult == null)
+            {
+                log?.LogError?.Invoke(
+                    $"[memoQ][{opId}] GetProjectAsync returned null | ProjectGuid={projectGuid}",
                     null);
 
                 throw new PluginApplicationException(
-                    "memoQ create result did not contain a readable ProjectGuid. See logs for raw createResult.");
+                    $"memoQ project was created (GUID: {projectGuid}) but could not be retrieved (GetProject returned null).");
             }
 
-            logger?.LogInformation?.Invoke(
-                $"[memoQ][{opId}] ProjectGuid from createResult: '{projectGuid}'",
-                null);
-
-            try
-            {
-                var getResult = await ProjectService.Service.GetProjectAsync(projectGuid);
-
-                logger?.LogInformation?.Invoke(
-                    $"[memoQ][{opId}] GetProjectAsync result: {JsonConvert.SerializeObject(getResult)}",
-                    null);
-
-                if (getResult == null)
-                    throw new PluginApplicationException("memoQ GetProject returned null. See logs.");
-
-                return new ProjectDto(getResult);
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError?.Invoke($"[memoQ][{opId}] GetProjectAsync threw exception: {ex}", null);
-                throw;
-            }
+            return new ProjectDto(getResult);
         });
     }
 
