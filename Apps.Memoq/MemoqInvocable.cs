@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -65,7 +66,13 @@ public class MemoqInvocable : BaseInvocable
 
             catch (Exception ex)
             {
-                throw HandleException(ex);
+                var handled = HandleException(ex);
+
+                InvocationContext.Logger?.LogError?.Invoke(
+                    $"[MemoQ] Exception caught. Original: {ex}\nHandled: {handled}",
+                    Array.Empty<object>());
+
+                throw handled;
             }
         }
     }
@@ -90,7 +97,13 @@ public class MemoqInvocable : BaseInvocable
             }
             catch (Exception ex)
             {
-                throw HandleException(ex);
+                var handled = HandleException(ex);
+
+                InvocationContext.Logger?.LogError?.Invoke(
+                    $"[MemoQ] Exception caught. Original: {ex}\nHandled: {handled}",
+                    Array.Empty<object>());
+
+                throw handled;
             }
         }
     }
@@ -101,13 +114,40 @@ public class MemoqInvocable : BaseInvocable
             ex = tiex.InnerException;
 
         if (ex.Message == "Message.ResourceNotFound.ProjectTemplate")
-            throw new PluginMisconfigurationException("The selected project template does not exist.");
+            return new PluginMisconfigurationException("The selected project template does not exist.");
         else if (ex.Message == "An online project with the same name already exists.")
-            throw new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
+            return new PluginMisconfigurationException("An online project with the same name already exists. Please configure a unique name.");
         else if (ex.Message == "The name contains invalid characters, or the name is reserved by Windows.")
             return new PluginMisconfigurationException("The name contains invalid characters, or the name is reserved by Windows. Please check the characters you are using in the name.");
 
-        return new PluginApplicationException(ex.Message);
+        var full = BuildDiagnosticMessage(ex);
+        return new PluginApplicationException(full);
+    }
+
+    private static string BuildDiagnosticMessage(Exception ex)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"MemoQ call failed: {ex.GetType().FullName}");
+        sb.AppendLine($"Message: {ex.Message}");
+
+        if (ex is FaultException fe)
+        {
+            sb.AppendLine($"SOAP Fault Code: {fe.Code?.Name}");
+            sb.AppendLine($"SOAP Fault Reason: {fe.Reason}");
+        }
+
+        var depth = 0;
+        var cur = ex.InnerException;
+        while (cur != null && depth < 10)
+        {
+            depth++;
+            sb.AppendLine($"-- Inner[{depth}]: {cur.GetType().FullName}: {cur.Message}");
+            cur = cur.InnerException;
+        }
+
+        sb.AppendLine(ex.ToString());
+
+        return sb.ToString();
     }
 
     private static bool IsBusyException(Exception ex)
