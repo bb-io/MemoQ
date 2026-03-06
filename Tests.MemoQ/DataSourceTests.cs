@@ -2,6 +2,7 @@
 using Apps.Memoq.DataSourceHandlers;
 using Apps.MemoQ.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
+using Blackbird.Applications.Sdk.Common.Files;
 using Tests.MemoQ.Base;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -61,8 +62,8 @@ public class DataSourceTests : TestBase
             //Domain = "deepL",
             //Subject = "Xliff sample",
             //NameOrDescription = "blackbird",
-            LastModifiedAfter = new DateTime(2024, 7, 1),
-            LastModifiedBefore = new DateTime(2024, 7, 31, 23, 59, 59),
+            //LastModifiedAfter = new DateTime(2024, 7, 1),
+            //LastModifiedBefore = new DateTime(2024, 7, 31, 23, 59, 59),
             SourceLanguage = "eng",
             TargetLanguage = "dut",
         });
@@ -71,6 +72,26 @@ public class DataSourceTests : TestBase
         Console.WriteLine(json);
         Assert.IsNotNull(result);
     }
+
+    [TestMethod]
+    public async Task ImportTmxFile_IsSuccess()
+    {
+        var handler = new TranslationMemoryActions(InvocationContext, FileManager);
+
+        var result = await handler.ImportTmxFile(new Apps.Memoq.Models.TranslationMemories.Requests.ImportTmxFileRequest
+        {
+            File = new FileReference
+            {
+                Name = "translation-memory-e7e318b1-ed95-4639-8053-28be7ab5745c.tmx", 
+            },
+            TmGuid= "e7e318b1-ed95-4639-8053-28be7ab5745c"
+        });
+
+        var json = System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        Console.WriteLine(json);
+        Assert.IsNotNull(result);
+    }
+
 
     [TestMethod]
     public async Task ExportTranslationMemory_returns_values()

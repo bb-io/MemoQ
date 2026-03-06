@@ -122,11 +122,39 @@ public class TranslationMemoryActions(InvocationContext invocationContext, IFile
     {
         var file = await fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
-        var result = FileUploader.UploadFile(fileBytes, TmxUploadManager, input.TmGuid);
+
+        var tmGuid = GuidExtensions.ParseWithErrorHandling(input.TmGuid);
+
+        var settings = new TmxImportSettings
+        {
+            ProcessTradosTmx = input.ProcessTradosTmx ?? default,
+            ImportMemoQFormatting = input.ImportMemoQFormatting ?? default,
+            ImportUtAsMemoQTag = input.ImportUtAsMemoQTag ?? default,
+            CustomTagsAsMemoQTags = input.CustomTagsAsMemoQTags ?? default
+        };
+
+        var sessionId = await ExecuteWithHandling(() =>
+            TmService.Service.BeginChunkedTMXImport2Async(tmGuid, settings));
+
+        const int chunkSize = 1024 * 1024;
+
+        for (var offset = 0; offset < fileBytes.Length; offset += chunkSize)
+        {
+            var currentChunkSize = Math.Min(chunkSize, fileBytes.Length - offset);
+            var chunk = new byte[currentChunkSize];
+
+            Array.Copy(fileBytes, offset, chunk, 0, currentChunkSize);
+
+            await ExecuteWithHandling(() =>
+                TmService.Service.AddNextTMXChunkAsync(sessionId, chunk));
+        }
+
+        await ExecuteWithHandling(() =>
+            TmService.Service.EndChunkedTMXImportAsync(sessionId));
 
         return new()
         {
-            Guid = result.ToString()
+            Guid = sessionId.ToString()
         };
     }
     
