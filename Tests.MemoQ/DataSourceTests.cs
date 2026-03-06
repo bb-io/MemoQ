@@ -56,19 +56,32 @@ public class DataSourceTests : TestBase
 
         var result = await handler.ListTranslationMemories(new Apps.Memoq.Models.LanguagesRequest 
         {
-            //Client = "Vitalii" ,
+            //Client = "Test client" ,
             //Project = "XLIFF project",
             //Domain = "deepL",
             //Subject = "Xliff sample",
             //NameOrDescription = "blackbird",
-            //LastModifiedAfter = new DateTime(2024, 7, 1),
-            //LastModifiedBefore = new DateTime(2024, 7, 31, 23, 59, 59),
+            LastModifiedAfter = new DateTime(2024, 7, 1),
+            LastModifiedBefore = new DateTime(2024, 7, 31, 23, 59, 59),
             SourceLanguage = "eng",
             TargetLanguage = "dut",
         });
 
         var json = System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
         Console.WriteLine(json);
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod]
+    public async Task ExportTranslationMemory_returns_values()
+    {
+        var handler = new TranslationMemoryActions(InvocationContext, FileManager);
+
+        var result = await handler.ExportTranslationMemory(new Apps.MemoQ.Models.TranslationMemories.Requests.ExportTranslationMemoryRequest 
+        { 
+            TmGuid = "e7e318b1-ed95-4639-8053-28be7ab5745c"
+        });
+        Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(result));
         Assert.IsNotNull(result);
     }
 

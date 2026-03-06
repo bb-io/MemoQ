@@ -6,6 +6,8 @@ using Apps.Memoq.Models.TranslationMemories.Responses;
 using Apps.Memoq.Utils.FileUploader;
 using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
+using Apps.MemoQ.Models.TranslationMemories.Requests;
+using Apps.MemoQ.Models.TranslationMemories.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
@@ -166,5 +168,57 @@ public class TranslationMemoryActions(InvocationContext invocationContext, IFile
         };
 
         await ExecuteWithHandling(() => ProjectService.Service.SetProjectTMs2Async(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), new[] { tmAssignments }));
+    }
+
+    [Action("Export translation memory", Description = "Export translation memory as TMX file")]
+    public async Task<ExportTranslationMemoryResponse> ExportTranslationMemory(
+    [ActionParameter] ExportTranslationMemoryRequest input)
+    {
+        var tmGuid = GuidExtensions.ParseWithErrorHandling(input.TmGuid);
+        var sessionId = Guid.Empty;
+
+        try
+        {
+            sessionId = await ExecuteWithHandling(() => TmService.Service.BeginChunkedTMXExportAsync(tmGuid));
+
+            await using var outputStream = new MemoryStream();
+
+            while (true)
+            {
+                var chunk = await ExecuteWithHandling(() => TmService.Service.GetNextTMXChunkAsync(sessionId));
+
+                if (chunk == null || chunk.Length == 0)
+                    break;
+
+                await outputStream.WriteAsync(chunk, 0, chunk.Length);
+            }
+
+            outputStream.Position = 0;
+
+            var fileName = string.IsNullOrWhiteSpace(input.FileName)
+                ? $"translation-memory-{input.TmGuid}.tmx"
+                : EnsureTmxExtension(input.FileName);
+
+            var fileReference = await fileManagementClient.UploadAsync(outputStream, "text/xml", fileName);
+
+            return new ExportTranslationMemoryResponse
+            {
+                File = fileReference
+            };
+        }
+        finally
+        {
+            if (sessionId != Guid.Empty)
+            {
+                await ExecuteWithHandling(() => TmService.Service.EndChunkedTMXExportAsync(sessionId));
+            }
+        }
+    }
+
+    private static string EnsureTmxExtension(string fileName)
+    {
+        return fileName.EndsWith(".tmx", StringComparison.OrdinalIgnoreCase)
+            ? fileName
+            : $"{fileName}.tmx";
     }
 }
