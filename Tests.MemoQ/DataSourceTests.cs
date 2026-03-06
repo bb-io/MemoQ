@@ -1,5 +1,6 @@
 ﻿using Apps.Memoq.Actions;
 using Apps.Memoq.DataSourceHandlers;
+using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.MemoQ.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Blackbird.Applications.Sdk.Common.Files;
@@ -104,6 +105,27 @@ public class DataSourceTests : TestBase
         });
         Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(result));
         Assert.IsNotNull(result);
+    }
+
+
+    [TestMethod]
+    public async Task UpdateProject_returns_values()
+    {
+        var handler = new ServerProjectActions(InvocationContext, FileManager);
+
+        await handler.UpdateProject(new ProjectRequest
+        {
+            ProjectGuid = "3c8014cf-c3f0-ed11-85f6-d05099f919f4"
+        }, new UpdateProjectRequest 
+        { 
+            CallbackUrl= "https://webhook.test.com", 
+            Description= "Test description 2",
+            Subject="Test subject 3",
+            Domain= "Test domain 2",
+            Client= "Test client 2",
+            Deadline = DateTime.Now.AddDays(7)
+        });
+        Assert.IsTrue(true);
     }
 
     [TestMethod]
