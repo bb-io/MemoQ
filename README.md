@@ -110,6 +110,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **Get/create/update/delete**.
 - **Import TMX file** imports TMX file to the translation memory.
 - **Import translation memory scheme from XML** imports translation memory metadata scheme from an XML file.
+- **Export translation memory** exports an existing translation memory.
 
 ### Term bases
 

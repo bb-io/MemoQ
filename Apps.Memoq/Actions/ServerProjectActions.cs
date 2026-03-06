@@ -539,17 +539,41 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
     [Action("Update project", Description = "Update info of a specific project")]
     public async Task UpdateProject([ActionParameter] ProjectRequest project, [ActionParameter] UpdateProjectRequest request)
     {
-        var currentProjectValues = await GetProject(new ProjectRequest {ProjectGuid = project.ProjectGuid });
-                
-        await ExecuteWithHandling(() => ProjectService.Service.UpdateProjectAsync(new()
+        var projectGuid = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+
+        var currentProject = await ExecuteWithHandling(() =>
+            ProjectService.Service.GetProjectAsync(projectGuid));
+
+        var updateInfo = new ServerProjectUpdateInfo
         {
-            Deadline = (DateTime)(request.Deadline.HasValue ? request.Deadline : currentProjectValues.Deadline),
-            Description = request.Description ?? currentProjectValues.Description,
-            Domain = request.Domain ?? currentProjectValues.Domain,
-            Subject = request.Subject ?? currentProjectValues.Subject,
-            Client = request.Client ?? currentProjectValues.Client,
-            ServerProjectGuid = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)
-        }));
+            ServerProjectGuid = projectGuid,
+            Deadline = request.Deadline ?? currentProject.Deadline,
+            Description = request.Description ?? currentProject.Description,
+            Domain = request.Domain ?? currentProject.Domain,
+            Subject = request.Subject ?? currentProject.Subject,
+            Client = request.Client ?? currentProject.Client,
+            CustomMetas = request.CustomMetas ?? currentProject.CustomMetas,
+            Project = currentProject.Project
+        };
+
+        if (request.CallbackUrl is not null)
+        {
+            updateInfo.CallbackWebServiceUrl = request.CallbackUrl;
+            updateInfo.CommunicationSettings = new ServerProjectCommunicationSettings
+            {
+                EnableCommunication = true,
+                PreventDeliveryOnQAError = currentProject.CommunicationSettings?.PreventDeliveryOnQAError,
+                ConfidentialitySettings = currentProject.CommunicationSettings?.ConfidentialitySettings,
+                NotificationSettings = currentProject.CommunicationSettings?.NotificationSettings
+            };
+        }
+
+        await ExecuteWithHandling(() => ProjectService.Service.UpdateProjectAsync(updateInfo));
+
+        var currentProjectAfterUpdate = await ExecuteWithHandling(() =>
+            ProjectService.Service.GetProjectAsync(projectGuid));
+
+        Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(currentProjectAfterUpdate));
     }
     
     [Action("Add glossary to project", Description = "Add termbase to a specific project")]

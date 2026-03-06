@@ -1,21 +1,24 @@
-﻿using System.Text;
-using Apps.Memoq.Models;
+﻿using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.TranslationMemories.Requests;
 using Apps.Memoq.Models.TranslationMemories.Responses;
 using Apps.Memoq.Utils.FileUploader;
+using Apps.MemoQ;
+using Apps.MemoQ.Extensions;
+using Apps.MemoQ.Models.TranslationMemories.Requests;
+using Apps.MemoQ.Models.TranslationMemories.Responses;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Parsers;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using MQS.ServerProject;
+using MQS.TM;
+using System.Text;
 using TMEngineType = MQS.TM.TMEngineType;
 using TMOptimizationPreference = MQS.TM.TMOptimizationPreference;
-using Apps.MemoQ;
-using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Actions;
 
@@ -26,10 +29,26 @@ public class TranslationMemoryActions(InvocationContext invocationContext, IFile
     public async Task<ListTranslationMemoriesResponse> ListTranslationMemories(
         [ActionParameter] LanguagesRequest input)
     {
-        var response = await ExecuteWithHandling(() => TmService.Service.ListTMsAsync(input.SourceLanguage, input.TargetLanguage));
+        var filter = new TMListFilter
+        {
+            SourceLangCode = input.SourceLanguage,
+            TargetLangCode = input.TargetLanguage,
+            NameOrDescription = input.NameOrDescription,
+            Client = input.Client,
+            Domain = input.Domain,
+            LastModifiedAfter = input.LastModifiedAfter,
+            LastModifiedBefore = input.LastModifiedBefore,
+            LastUsedAfter = input.LastUsedAfter,
+            LastUsedBefore = input.LastUsedBefore,
+            Subject = input.Subject,
+            Project = input.Project ,
+            UsedInProject = input.UsedInProject
+        };
+
+        var response = await ExecuteWithHandling(() => TmService.Service.ListTMs2Async(filter));
         var translationMemories = response.Select(x => new TmDto(x)).ToArray();
-            
-        return new()
+
+        return new ListTranslationMemoriesResponse
         {
             TranslationMemories = translationMemories
         };
@@ -103,11 +122,39 @@ public class TranslationMemoryActions(InvocationContext invocationContext, IFile
     {
         var file = await fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
-        var result = FileUploader.UploadFile(fileBytes, TmxUploadManager, input.TmGuid);
+
+        var tmGuid = GuidExtensions.ParseWithErrorHandling(input.TmGuid);
+
+        var settings = new TmxImportSettings
+        {
+            ProcessTradosTmx = input.ProcessTradosTmx ?? default,
+            ImportMemoQFormatting = input.ImportMemoQFormatting ?? default,
+            ImportUtAsMemoQTag = input.ImportUtAsMemoQTag ?? default,
+            CustomTagsAsMemoQTags = input.CustomTagsAsMemoQTags ?? default
+        };
+
+        var sessionId = await ExecuteWithHandling(() =>
+            TmService.Service.BeginChunkedTMXImport2Async(tmGuid, settings));
+
+        const int chunkSize = 1024 * 1024;
+
+        for (var offset = 0; offset < fileBytes.Length; offset += chunkSize)
+        {
+            var currentChunkSize = Math.Min(chunkSize, fileBytes.Length - offset);
+            var chunk = new byte[currentChunkSize];
+
+            Array.Copy(fileBytes, offset, chunk, 0, currentChunkSize);
+
+            await ExecuteWithHandling(() =>
+                TmService.Service.AddNextTMXChunkAsync(sessionId, chunk));
+        }
+
+        await ExecuteWithHandling(() =>
+            TmService.Service.EndChunkedTMXImportAsync(sessionId));
 
         return new()
         {
-            Guid = result.ToString()
+            Guid = sessionId.ToString()
         };
     }
     
@@ -149,5 +196,57 @@ public class TranslationMemoryActions(InvocationContext invocationContext, IFile
         };
 
         await ExecuteWithHandling(() => ProjectService.Service.SetProjectTMs2Async(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid), new[] { tmAssignments }));
+    }
+
+    [Action("Export translation memory", Description = "Export translation memory as TMX file")]
+    public async Task<ExportTranslationMemoryResponse> ExportTranslationMemory(
+    [ActionParameter] ExportTranslationMemoryRequest input)
+    {
+        var tmGuid = GuidExtensions.ParseWithErrorHandling(input.TmGuid);
+        var sessionId = Guid.Empty;
+
+        try
+        {
+            sessionId = await ExecuteWithHandling(() => TmService.Service.BeginChunkedTMXExportAsync(tmGuid));
+
+            await using var outputStream = new MemoryStream();
+
+            while (true)
+            {
+                var chunk = await ExecuteWithHandling(() => TmService.Service.GetNextTMXChunkAsync(sessionId));
+
+                if (chunk == null || chunk.Length == 0)
+                    break;
+
+                await outputStream.WriteAsync(chunk, 0, chunk.Length);
+            }
+
+            outputStream.Position = 0;
+
+            var fileName = string.IsNullOrWhiteSpace(input.FileName)
+                ? $"translation-memory-{input.TmGuid}.tmx"
+                : EnsureTmxExtension(input.FileName);
+
+            var fileReference = await fileManagementClient.UploadAsync(outputStream, "text/xml", fileName);
+
+            return new ExportTranslationMemoryResponse
+            {
+                File = fileReference
+            };
+        }
+        finally
+        {
+            if (sessionId != Guid.Empty)
+            {
+                await ExecuteWithHandling(() => TmService.Service.EndChunkedTMXExportAsync(sessionId));
+            }
+        }
+    }
+
+    private static string EnsureTmxExtension(string fileName)
+    {
+        return fileName.EndsWith(".tmx", StringComparison.OrdinalIgnoreCase)
+            ? fileName
+            : $"{fileName}.tmx";
     }
 }

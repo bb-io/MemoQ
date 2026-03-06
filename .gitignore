@@ -355,10 +355,12 @@ healthchecksdb
 *.dmg
 *.env
 /Apps.Memoq/ApplicationConstants.cs
-/ConsoleApp1
-/ConsoleApp2
 /Tests.MemoQ/appsettings.json
 /Tests.MemoQ/appsettings.json
 /Tests.MemoQ/appsettings.json
 /Tests.MemoQ/appsettings.json
 /Tests.MemoQ/appsettings.json
+
+# Test input/output folders
+**/Input/
+**/Output/
