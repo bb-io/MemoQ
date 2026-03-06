@@ -3,6 +3,7 @@ using Apps.Memoq.DataSourceHandlers;
 using Apps.MemoQ.DataSourceHandlers;
 using Blackbird.Applications.Sdk.Common.Dynamic;
 using Tests.MemoQ.Base;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Tests.MemoQ;
 [TestClass]
@@ -48,15 +49,23 @@ public class DataSourceTests : TestBase
         Assert.IsNotNull(result);
     }
 
-
-    //ListTranslationMemories
-
     [TestMethod]
     public async Task Translation_returns_memory_values()
     {
         var handler = new TranslationMemoryActions(InvocationContext, FileManager);
 
-        var result = await handler.ListTranslationMemories(new Apps.Memoq.Models.LanguagesRequest { });
+        var result = await handler.ListTranslationMemories(new Apps.Memoq.Models.LanguagesRequest 
+        {
+            //Client = "Vitalii" ,
+            //Project = "XLIFF project",
+            //Domain = "deepL",
+            //Subject = "Xliff sample",
+            //NameOrDescription = "blackbird",
+            //LastModifiedAfter = new DateTime(2024, 7, 1),
+            //LastModifiedBefore = new DateTime(2024, 7, 31, 23, 59, 59),
+            SourceLanguage = "eng",
+            TargetLanguage = "dut",
+        });
 
         var json = System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
         Console.WriteLine(json);

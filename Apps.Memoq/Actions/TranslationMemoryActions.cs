@@ -1,21 +1,22 @@
-﻿using System.Text;
-using Apps.Memoq.Models;
+﻿using Apps.Memoq.Models;
 using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.TranslationMemories.Requests;
 using Apps.Memoq.Models.TranslationMemories.Responses;
 using Apps.Memoq.Utils.FileUploader;
+using Apps.MemoQ;
+using Apps.MemoQ.Extensions;
 using Blackbird.Applications.Sdk.Common;
 using Blackbird.Applications.Sdk.Common.Actions;
 using Blackbird.Applications.Sdk.Common.Invocation;
-using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using Blackbird.Applications.Sdk.Utils.Extensions.Files;
 using Blackbird.Applications.Sdk.Utils.Parsers;
+using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using MQS.ServerProject;
+using MQS.TM;
+using System.Text;
 using TMEngineType = MQS.TM.TMEngineType;
 using TMOptimizationPreference = MQS.TM.TMOptimizationPreference;
-using Apps.MemoQ;
-using Apps.MemoQ.Extensions;
 
 namespace Apps.Memoq.Actions;
 
@@ -26,10 +27,26 @@ public class TranslationMemoryActions(InvocationContext invocationContext, IFile
     public async Task<ListTranslationMemoriesResponse> ListTranslationMemories(
         [ActionParameter] LanguagesRequest input)
     {
-        var response = await ExecuteWithHandling(() => TmService.Service.ListTMsAsync(input.SourceLanguage, input.TargetLanguage));
+        var filter = new TMListFilter
+        {
+            SourceLangCode = input.SourceLanguage,
+            TargetLangCode = input.TargetLanguage,
+            NameOrDescription = input.NameOrDescription,
+            Client = input.Client,
+            Domain = input.Domain,
+            LastModifiedAfter = input.LastModifiedAfter,
+            LastModifiedBefore = input.LastModifiedBefore,
+            LastUsedAfter = input.LastUsedAfter,
+            LastUsedBefore = input.LastUsedBefore,
+            Subject = input.Subject,
+            Project = input.Project ,
+            UsedInProject = input.UsedInProject
+        };
+
+        var response = await ExecuteWithHandling(() => TmService.Service.ListTMs2Async(filter));
         var translationMemories = response.Select(x => new TmDto(x)).ToArray();
-            
-        return new()
+
+        return new ListTranslationMemoriesResponse
         {
             TranslationMemories = translationMemories
         };
