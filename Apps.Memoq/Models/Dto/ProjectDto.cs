@@ -33,6 +33,9 @@ public class ProjectDto
     [Display("Target language codes")]
     public List<string> TargetLanguageCodes { get; set; }
 
+    [Display("Total word count")]
+    public double? TotalWordCount { get; set; }
+
     public ProjectDto(ServerProjectInfo project)
     {
         Guid = project.ServerProjectGuid.ToString();
@@ -48,5 +51,6 @@ public class ProjectDto
         TargetLanguageCodes = project.TargetLanguageCodes.ToList();
         CreatedAt = project.CreationTime;
         Status = project.ProjectStatus.ToString();
+        TotalWordCount = project.TotalWordCount;
     }
 }
