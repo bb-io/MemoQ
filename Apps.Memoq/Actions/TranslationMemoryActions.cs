@@ -17,6 +17,8 @@ using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
 using MQS.ServerProject;
 using MQS.TM;
 using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using TMEngineType = MQS.TM.TMEngineType;
 using TMOptimizationPreference = MQS.TM.TMOptimizationPreference;
 
@@ -122,6 +124,25 @@ public class TranslationMemoryActions(InvocationContext invocationContext, IFile
     {
         var file = await fileManagementClient.DownloadAsync(input.File);
         var fileBytes = await file.GetByteData();
+
+        XDocument tmxDoc;        
+        using (var ms = new MemoryStream(fileBytes))
+            tmxDoc = XDocument.Load(ms);
+
+        using (var ms = new MemoryStream())
+        {
+            var writerSettings = new XmlWriterSettings
+            {
+                Encoding = Encoding.Unicode,
+                Indent = true,
+                OmitXmlDeclaration = false
+            };
+
+            using (var writer = XmlWriter.Create(ms, writerSettings))
+                tmxDoc.Save(writer);
+
+            fileBytes = ms.ToArray();
+        }
 
         var tmGuid = GuidExtensions.ParseWithErrorHandling(input.TmGuid);
 
