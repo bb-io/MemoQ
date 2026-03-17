@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <Folder Include="Files\" />
+    <Folder Include="Input\" />
     <Folder Include="Output\" />
   </ItemGroup>
 

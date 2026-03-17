@@ -1,10 +1,5 @@
 ﻿using Apps.Memoq.Actions;
 using Apps.Memoq.Models.ServerProjects.Requests;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tests.MemoQ.Base;
 
 namespace Tests.MemoQ
@@ -12,6 +7,18 @@ namespace Tests.MemoQ
     [TestClass]
     public class FileTests :TestBase
     {
+        [TestMethod]
+        public async Task Report_returns_report_values()
+        {
+            var handler = new FileActions(InvocationContext, FileManager);
+
+            var result = await handler.GetEditDistanceReport(
+                new ProjectRequest { ProjectGuid = "10bd767d-3ce2-ef11-875f-a8a15994f72e" },
+                "a25715b6-c004-f011-875f-a8a15994f72e");
+
+            Assert.IsNotNull(result);
+        }
+
         [TestMethod]
         public async Task DownloadFileByGuid_IsSuccess()
         {
