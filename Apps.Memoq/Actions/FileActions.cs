@@ -45,6 +45,12 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
             }));
 
         var files = response.Select(x => new FileInfoDto(x)).ToArray();
+
+        if (!String.IsNullOrEmpty(input.TargetLanguageCode))
+        {
+            files = files.Where(x => x.TargetLanguageCode == input.TargetLanguageCode).ToArray();
+        }
+
         return new()
         {
             Files = files
