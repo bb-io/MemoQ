@@ -6,7 +6,7 @@ namespace Apps.MemoQ.Models.ServerProjects.Responses
 {
     public class PostTranslationAnalysisRunResponse
     {
-        [Display("Result status")] public ResultStatus ResultStatus { get; set; }
+        [Display("Result status")] public string? ResultStatus { get; set; }
         [Display("Main message")] public string? MainMessage { get; set; }
         [Display("Detailed message")] public string? DetailedMessage { get; set; }
         [Display("By language")] public List<PostTranslationAnalysisLanguageDto>? ByLanguage { get; set; }

@@ -252,7 +252,7 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
 
             return new PostTranslationAnalysisRunResponse
             {
-                ResultStatus = result.ResultStatus,
+                ResultStatus = result.ResultStatus.ToString(),
                 MainMessage = result.MainMessage,
                 DetailedMessage = result.DetailedMessage,
                 ByLanguage = result.ResultsForTargetLangs?.Select(lang => new PostTranslationAnalysisLanguageDto
