@@ -271,8 +271,7 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
         }
         catch (Exception ex)
         {
-            invocationContext.Logger?.LogError(
-                JsonConvert.SerializeObject(ex, Formatting.Indented), null);
+            invocationContext.Logger?.LogError($"[memoQ error] body:{JsonConvert.SerializeObject(ex, Formatting.Indented)}", null);
             throw;
         }
     }
