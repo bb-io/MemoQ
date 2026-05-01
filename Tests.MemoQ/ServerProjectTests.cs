@@ -9,6 +9,8 @@ namespace Tests.MemoQ;
 [TestClass]
 public class ServerProjectTests : TestBase
 {
+    private const string PostTranslationProjectGuid = "ec423da3-ecef-ed11-85f6-d05099f919f4";
+
     [TestMethod]
     public async Task Projects_returns_report_values()
     {
@@ -112,6 +114,34 @@ public class ServerProjectTests : TestBase
         var result = await actions.RunQaChecks(project, qaRequest);
 
         // Assert
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod]
+    public async Task GeneratePostTranslationAnalysisReport_IsSuccess()
+    {
+        var actions = new ServerProjectActions(InvocationContext, FileManager);
+
+        var result = await actions.GeneratePostTranslationAnalysisReport(
+            new ProjectRequest { ProjectGuid = "3bd942d0-93ed-f011-875f-a8a15994f72e" },
+            new PostTranslationAnalysisRequest
+            {
+                StoreReportInProject = true
+            });
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+    }
+
+    [TestMethod]
+    public async Task SearchPostTranslationAnalysisReports_IsSuccess()
+    {
+        var actions = new ServerProjectActions(InvocationContext, FileManager);
+
+        var result = await actions.SearchPostTranslationAnalysisReports(
+            new ProjectRequest { ProjectGuid = "3bd942d0-93ed-f011-875f-a8a15994f72e" });
+
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
     }
