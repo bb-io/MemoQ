@@ -85,6 +85,39 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
         return new EditDistanceReportExportResponse(reportGuid, fileReference);
     }
 
+    [Action("Export post translation analysis report as CSV",
+        Description = "Exports a post translation analysis report as CSV files and gets the results.")]
+    public async Task<PostTranslationAnalysisReportExportResponse> GetPostTranslationAnalysisReport(
+        [ActionParameter] ProjectRequest project,
+        [ActionParameter][Display("Report ID")] string reportId)
+    {
+        var projectGuid = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+        var reportGuid = GuidExtensions.ParseWithErrorHandling(reportId);
+
+        var csvResult = await ExecuteWithHandling(() =>
+            ProjectService.Service.GetPostTranslationAnalysisReportAsCSVAsync(projectGuid, reportGuid)
+        );
+
+        var files = new List<PostTranslationAnalysisExportFileDto>();
+        foreach (var languageResult in csvResult.DataForTargetLangs ?? Array.Empty<PostTranslationAnalysisAsCSVResultForLang>())
+        {
+            var languageCode = string.IsNullOrWhiteSpace(languageResult.LanguageCode)
+                ? "unknown"
+                : languageResult.LanguageCode.Trim();
+            var filename = $"PostTranslationAnalysisReport_{reportId}_{languageCode}.csv";
+
+            using var stream = new MemoryStream(languageResult.ExportedContent);
+            var fileReference = await fileManagementClient.UploadAsync(
+                stream,
+                MimeTypes.GetMimeType(filename),
+                filename);
+
+            files.Add(new PostTranslationAnalysisExportFileDto(languageCode, fileReference));
+        }
+
+        return new PostTranslationAnalysisReportExportResponse(reportGuid, files);
+    }
+
     [Action("File exists", Description = "Check if the file exists in a specified project")]
     public async Task<DocumentExistsResponse> DocumentExists(
         [ActionParameter] ProjectRequest project,
