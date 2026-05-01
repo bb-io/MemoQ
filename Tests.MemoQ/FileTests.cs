@@ -43,15 +43,14 @@ namespace Tests.MemoQ
         {
             var serverProjectActions = new ServerProjectActions(InvocationContext, FileManager);
             await serverProjectActions.GeneratePostTranslationAnalysisReport(
-                new ProjectRequest { ProjectGuid = PostTranslationProjectGuid },
+                new ProjectRequest { ProjectGuid = "3bd942d0-93ed-f011-875f-a8a15994f72e" },
                 new PostTranslationAnalysisRequest
                 {
                     StoreReportInProject = true,
-                    LanguageCodes = ["dut-NL"]
                 });
 
             var reports = await serverProjectActions.SearchPostTranslationAnalysisReports(
-                new ProjectRequest { ProjectGuid = PostTranslationProjectGuid });
+                new ProjectRequest { ProjectGuid = "3bd942d0-93ed-f011-875f-a8a15994f72e" });
             var reportId = reports.Reports.FirstOrDefault()?.ReportId;
 
             Assert.IsFalse(string.IsNullOrWhiteSpace(reportId), "No post translation analysis report was found for export.");

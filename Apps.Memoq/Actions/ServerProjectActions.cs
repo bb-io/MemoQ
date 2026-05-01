@@ -198,74 +198,83 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
         [ActionParameter] ProjectRequest project,
         [ActionParameter] PostTranslationAnalysisRequest inputOptions)
     {
-        var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
-        var options = BuildPostTranslationAnalysisOptions(inputOptions);
-
-        var result = await ExecuteWithHandling(() =>
-            ProjectService.Service.RunPostTranslationAnalysisAsync(projectId, options));
-
-        PostTranslationAnalysisCountsDto? ToCounts(PostTranslationReportCounts? counts) =>
-            counts == null ? null : new PostTranslationAnalysisCountsDto
-            {
-                SegmentCount = counts.SegmentCount,
-                SourceAsianCharCount = counts.SourceAsianCharCount,
-                SourceCharCount = counts.SourceCharCount,
-                SourceNonAsianWordCount = counts.SourceNonAsianWordCount,
-                SourceTagCount = counts.SourceTagCount,
-                SourceWordCount = counts.SourceWordCount
-            };
-
-        PostTranslationAnalysisItemDto? ToItem(PostTransAnalysisReportItem? item) =>
-            item == null ? null : new PostTranslationAnalysisItemDto
-            {
-                All = ToCounts(item.All),
-                AutoPropagated = ToCounts(item.AutoPropagated),
-                Fragments = ToCounts(item.Fragments),
-                Hit100 = ToCounts(item.Hit100),
-                Hit101 = ToCounts(item.Hit101),
-                Hit50_74 = ToCounts(item.Hit50_74),
-                Hit75_84 = ToCounts(item.Hit75_84),
-                Hit85_94 = ToCounts(item.Hit85_94),
-                Hit95_99 = ToCounts(item.Hit95_99),
-                NoMatch = ToCounts(item.NoMatch),
-                XTranslated = ToCounts(item.XTranslated)
-            };
-
-        PostTranslationAnalysisUserDto ToUser(PostTransAnalysisReportForUser user) =>
-            new()
-            {
-                Username = user.Username,
-                All = ToCounts(user.All),
-                AutoPropagated = ToCounts(user.AutoPropagated),
-                Fragments = ToCounts(user.Fragments),
-                Hit100 = ToCounts(user.Hit100),
-                Hit101 = ToCounts(user.Hit101),
-                Hit50_74 = ToCounts(user.Hit50_74),
-                Hit75_84 = ToCounts(user.Hit75_84),
-                Hit85_94 = ToCounts(user.Hit85_94),
-                Hit95_99 = ToCounts(user.Hit95_99),
-                NoMatch = ToCounts(user.NoMatch),
-                XTranslated = ToCounts(user.XTranslated)
-            };
-
-        return new PostTranslationAnalysisRunResponse
+        try
         {
-            ResultStatus = result.ResultStatus,
-            MainMessage = result.MainMessage,
-            DetailedMessage = result.DetailedMessage,
-            ByLanguage = result.ResultsForTargetLangs?.Select(lang => new PostTranslationAnalysisLanguageDto
-            {
-                LanguageCode = lang.TargetLangCode,
-                Summary = ToItem(lang.Summary),
-                Documents = lang.ByDocument?.Select(doc => new PostTranslationAnalysisDocumentDto
+            var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+            var options = BuildPostTranslationAnalysisOptions(inputOptions);
+
+            var result = await ExecuteWithHandling(() =>
+                ProjectService.Service.RunPostTranslationAnalysisAsync(projectId, options));
+
+            PostTranslationAnalysisCountsDto? ToCounts(PostTranslationReportCounts? counts) =>
+                counts == null ? null : new PostTranslationAnalysisCountsDto
                 {
-                    DocumentId = doc.DocumentGuid.ToString(),
-                    Summary = ToItem(doc.Summary),
-                    Users = doc.ByUser?.Select(ToUser).ToList()
+                    SegmentCount = counts.SegmentCount,
+                    SourceAsianCharCount = counts.SourceAsianCharCount,
+                    SourceCharCount = counts.SourceCharCount,
+                    SourceNonAsianWordCount = counts.SourceNonAsianWordCount,
+                    SourceTagCount = counts.SourceTagCount,
+                    SourceWordCount = counts.SourceWordCount
+                };
+
+            PostTranslationAnalysisItemDto? ToItem(PostTransAnalysisReportItem? item) =>
+                item == null ? null : new PostTranslationAnalysisItemDto
+                {
+                    All = ToCounts(item.All),
+                    AutoPropagated = ToCounts(item.AutoPropagated),
+                    Fragments = ToCounts(item.Fragments),
+                    Hit100 = ToCounts(item.Hit100),
+                    Hit101 = ToCounts(item.Hit101),
+                    Hit50_74 = ToCounts(item.Hit50_74),
+                    Hit75_84 = ToCounts(item.Hit75_84),
+                    Hit85_94 = ToCounts(item.Hit85_94),
+                    Hit95_99 = ToCounts(item.Hit95_99),
+                    NoMatch = ToCounts(item.NoMatch),
+                    XTranslated = ToCounts(item.XTranslated)
+                };
+
+            PostTranslationAnalysisUserDto ToUser(PostTransAnalysisReportForUser user) =>
+                new()
+                {
+                    Username = user.Username,
+                    All = ToCounts(user.All),
+                    AutoPropagated = ToCounts(user.AutoPropagated),
+                    Fragments = ToCounts(user.Fragments),
+                    Hit100 = ToCounts(user.Hit100),
+                    Hit101 = ToCounts(user.Hit101),
+                    Hit50_74 = ToCounts(user.Hit50_74),
+                    Hit75_84 = ToCounts(user.Hit75_84),
+                    Hit85_94 = ToCounts(user.Hit85_94),
+                    Hit95_99 = ToCounts(user.Hit95_99),
+                    NoMatch = ToCounts(user.NoMatch),
+                    XTranslated = ToCounts(user.XTranslated)
+                };
+
+            return new PostTranslationAnalysisRunResponse
+            {
+                ResultStatus = result.ResultStatus,
+                MainMessage = result.MainMessage,
+                DetailedMessage = result.DetailedMessage,
+                ByLanguage = result.ResultsForTargetLangs?.Select(lang => new PostTranslationAnalysisLanguageDto
+                {
+                    LanguageCode = lang.TargetLangCode,
+                    Summary = ToItem(lang.Summary),
+                    Documents = lang.ByDocument?.Select(doc => new PostTranslationAnalysisDocumentDto
+                    {
+                        DocumentId = doc.DocumentGuid.ToString(),
+                        Summary = ToItem(doc.Summary),
+                        Users = doc.ByUser?.Select(ToUser).ToList()
+                    }).ToList(),
+                    Users = lang.ByUser?.Select(ToUser).ToList()
                 }).ToList(),
-                Users = lang.ByUser?.Select(ToUser).ToList()
-            }).ToList()
-        };
+            };
+        }
+        catch (Exception ex)
+        {
+            invocationContext.Logger?.LogError(
+                JsonConvert.SerializeObject(ex, Formatting.Indented), null);
+            throw;
+        }
     }
 
     [Action("Get project custom fields", Description = "Get project custom metadata fields")]
