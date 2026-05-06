@@ -5,7 +5,7 @@
 		<Nullable>enable</Nullable>
 		<Product>memoQ</Product>
 		<Description>Computer-assisted translation</Description>
-		<Version>1.5.2</Version>
+		<Version>1.5.3</Version>
 		<AssemblyName>Apps.MemoQ</AssemblyName>
 		<LangVersion>12</LangVersion>
 	</PropertyGroup>
@@ -39,5 +39,11 @@
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Remove="artifacts\**\*.cs" />
+		<EmbeddedResource Remove="artifacts\**\*" />
+		<None Remove="artifacts\**\*" />
+		<Content Remove="artifacts\**\*" />
 	</ItemGroup>
 </Project>
