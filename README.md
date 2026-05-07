@@ -45,6 +45,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **Upload/Download file** uploads/downloads file to the project. Make sure your file name contains extension, otherwise the action will fail. Also has optional inputs for external file ID, filter config, preview creation and importing embedded images and objects.
 - **Apply translated content to updated source**.
 - **File exists** checks if a file with provided properties exists in the project.
+- **Export project analysis** gets raw and normalized project analysis JSON output. The output of this action can be used by another app that supports importing analysis data
 
 ### XLIFFs
 

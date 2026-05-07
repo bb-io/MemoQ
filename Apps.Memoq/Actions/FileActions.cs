@@ -22,11 +22,13 @@ using MQS.FileManager;
 using MQS.ServerProject;
 using MQS.TasksService;
 using Newtonsoft.Json;
-using System.Diagnostics;
 using System.Net.Mime;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using Apps.MemoQ.Utils.Analysis;
+using Apps.MemoQ.Utils.Locale;
+using Blackbird.Filters.Analysis.Models;
 
 namespace Apps.Memoq.Actions;
 
@@ -642,11 +644,11 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
     public async Task<GetAnalysesForAllDocumentsResponse> GetAnalysesForAllDocuments(
         [ActionParameter] GetAnalysisForProjectRequest input)
     {
+        var resultFormat = EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format)) ?? default;
         var task = await ExecuteWithHandling(() => ProjectService.Service.StartStatisticsOnProjectTask2Async(new()
         {
             ProjectGuid = GuidExtensions.ParseWithErrorHandling(input.ProjectGuid),
-            ResultFormat =
-                EnumParser.Parse<StatisticsResultFormat>(input.Format, nameof(input.Format)) ?? default,
+            ResultFormat = resultFormat,
             Options = new()
             {
                 Algorithm = EnumParser.Parse<StatisticsAlgorithm>(input.Algorithm, nameof(input.Algorithm)) ?? default,
@@ -666,10 +668,22 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
             }
         }));
 
+        string fileFormat = "csv";
+        string mediaType = MediaTypeNames.Text.Csv;
+
+        if (resultFormat == 0)
+        {
+            fileFormat = "html";
+            mediaType = MediaTypeNames.Text.Html;
+        }
+
         var taskResult = (StatisticsTaskResult) await WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
         var analysis = taskResult.ResultsForTargetLangs
-            .Select(x => new GetAnalysisResponse(x, fileManagementClient, $"Analysis_{x.TargetLangCode}.html",
-                MediaTypeNames.Text.Html))
+            .Select(x => new GetAnalysisResponse(
+                x, 
+                fileManagementClient, 
+                $"Analysis_{x.TargetLangCode}.{fileFormat}",
+                mediaType))
             .ToList();
 
         return new()
@@ -678,6 +692,62 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
         };
     }
 
+    [Action("Export project analysis", 
+        Description = 
+            "Get raw and normalized project analysis JSON output. " +
+            "The output of this action can be used by another app that supports importing analysis data")]
+    public async Task<ExportProjectAnalysisResponse> ExportProjectAnalysis(
+        [ActionParameter] ProjectRequest projectInput,
+        [ActionParameter] ExportProjectAnalysisRequest input)
+    {
+        var request = new GetAnalysisForProjectRequest
+        {
+            Format = "CSV_MemoQ",
+            ProjectGuid = projectInput.ProjectGuid,
+            ShowCounts = true,
+            AnalysisProjectTMs = true,
+            ShowResultsPerFile = false,
+            AnalysisDetailsByTm = false,
+            ShowCountsStatusReport = false,
+            ShowCountsIncludeTargetCount = false,
+            Algorithm = input.Algorithm,
+            AnalysisHomogenity = input.AnalysisHomogeneity,
+            DisableCrossFileRepetition = input.DisableCrossFileRepetition,
+            IncludeLockedRows = input.IncludeLockedRows,
+            RepetitionPreferenceOver100 = input.RepetitionPreferenceOver100,
+            ShowCountsIncludeWhitespacesInCharCount = input.ShowCountsIncludeWhitespacesInCharCount,
+            TagCharWeight = input.TagCharWeight,
+            TagWordWeight = input.TagWordWeight
+        };
+        
+        var analysisFiles = await GetAnalysesForAllDocuments(request);
+
+        var analysisResults = new List<Analysis>();
+        foreach (var analysis in analysisFiles.Analyses)
+        {
+            string locale = LocaleMapper.ToBcp47(analysis.TargetLangCode);
+            await using var stream = await fileManagementClient.DownloadAsync(analysis.ResultData);
+            using var reader = new StreamReader(stream);
+            string csvContent = await reader.ReadToEndAsync();
+
+            var rawMemoqMetrics = MemoQ.Utils.Csv.CsvHelper.MemoQCsvToDictionary(csvContent);
+            var flatMetrics = rawMemoqMetrics
+                .SelectMany(cat => cat.Value.Select(sub => new { Key = $"{cat.Key} {sub.Key}", Val = sub.Value }))
+                .ToDictionary(x => x.Key, x => x.Val);
+            
+            var mappedAnalysis = Analysis.Map(locale, flatMetrics, AnalysisHelper.AnalysisMap);
+            analysisResults.Add(mappedAnalysis);
+        }
+        
+        string jsonString = JsonConvert.SerializeObject(analysisResults, Formatting.Indented);
+        using var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(jsonString));
+    
+        var fileName = $"analysis_{projectInput.ProjectGuid}.json";
+        var fileReference = await fileManagementClient.UploadAsync(jsonStream, "application/json", fileName);
+
+        return new(fileReference);
+    }
+    
     [Action("Apply translated content to updated source", Description = "Apply translated content to updated source")]
     public async Task<ApplyTranslatedContentToUpdatedSourceResponse> ApplyTranslatedContentToUpdatedSource(
         [ActionParameter] ApplyTranslatedContentToUpdatedSourceRequest input)
