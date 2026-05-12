@@ -13,7 +13,7 @@ public class TermBaseTests : TestBase
     {
 		// Arrange
 		var action = new TermBaseActions(InvocationContext, FileManager);
-        var request = new TermbaseRequest { TermbaseId = "95028f79-3304-4b8b-8be1-8a9b68224458" };
+        var request = new TermbaseRequest { TermbaseId = "f4ffb6df-6279-4afc-8e01-31dccd0f08f4" };
 
         // Act
         var result = await action.ExportTermbase(request, false, null, null);

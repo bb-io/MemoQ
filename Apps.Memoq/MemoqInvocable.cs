@@ -156,6 +156,9 @@ public class MemoqInvocable : BaseInvocable
         {
             if (ex.Message.Contains("cannot start because there is another operation", StringComparison.OrdinalIgnoreCase))
                 return true;
+            
+            if (ex.Message.Contains("other modifying or query operation in progress", StringComparison.OrdinalIgnoreCase))
+                return true;
 
             ex = ex.InnerException;
         }

@@ -846,8 +846,20 @@ public class TermBaseActions(InvocationContext invocationContext, IFileManagemen
                             continue;
                     }
 
-                    var language = languageNode!.SelectSingleNode("language")!.Attributes!["lang"]!.Value.ToLower();
-                    var term = languageNode.SelectSingleNode("termGrp/term")!.InnerText;
+                    var language = languageNode
+                        .SelectSingleNode("language")
+                        ?.Attributes?["lang"]?.Value?
+                        .ToLowerInvariant();
+                    var term = languageNode.SelectSingleNode("termGrp/term")?.InnerText;
+
+                    if (string.IsNullOrWhiteSpace(language) || string.IsNullOrWhiteSpace(term))
+                    {
+                        InvocationContext.Logger?.LogWarning(
+                            "[MemoQ ConvertXmlTermbaseToGlossary] Skipping language group with missing language code or term.",
+                            Array.Empty<object>());
+                        continue;
+                    }
+
                     var termSection = new GlossaryTermSection(term);
                     languageSections.Add(new(language, new List<GlossaryTermSection> { termSection }));
                 }
@@ -859,33 +871,29 @@ public class TermBaseActions(InvocationContext invocationContext, IFileManagemen
                         .Cast<XmlElement>()
                         .ToArray();
                     var id = conceptDescriptionNodes
-                        .First(descriptionNode => descriptionNode.Attributes["type"]?.Value == "ID").InnerText;
+                        .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "ID")
+                        ?.InnerText;
                     var subject = conceptDescriptionNodes
                         .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Subject")
                         ?.InnerText;
                     var note = conceptDescriptionNodes
                         .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Note")?.InnerText;
 
+                    if (string.IsNullOrWhiteSpace(id))
+                        id = Guid.NewGuid().ToString();
+
                     var definition = languageGroupNodes.Cast<XmlElement>()
-                        .FirstOrDefault(node =>
-                        {
-                            var descriptionWithDefinition = node
-                                .SelectNodes("descripGrp/descrip")?
-                                .Cast<XmlElement>()
-                                .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Definition");
-
-                            if (descriptionWithDefinition == null)
-                                return false;
-
-                            return true;
-                        })?
-                        .SelectSingleNode("descripGrp/descrip")!.InnerText;
+                        .SelectMany(node => node
+                            .SelectNodes("descripGrp/descrip")?
+                            .Cast<XmlElement>() ?? Enumerable.Empty<XmlElement>())
+                        .FirstOrDefault(descriptionNode => descriptionNode.Attributes["type"]?.Value == "Definition")
+                        ?.InnerText;
 
                     var entry = new GlossaryConceptEntry(id, languageSections)
                     {
                         SubjectField = subject,
                         Definition = definition,
-                        Notes = new List<string> { note }
+                        Notes = string.IsNullOrWhiteSpace(note) ? new List<string>() : new List<string> { note }
                     };
 
                     conceptEntries.Add(entry);
