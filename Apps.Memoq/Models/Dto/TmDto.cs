@@ -1,5 +1,4 @@
 using Blackbird.Applications.Sdk.Common;
-using MQS.TM;
 
 namespace Apps.Memoq.Models.Dto;
 
@@ -7,7 +6,7 @@ public class TmDto
 {
     [Display("TM ID")]
     public string Guid { get; set; }
-    
+
     public string Client { get; set; }
 
     public string Domain { get; set; }
@@ -30,11 +29,27 @@ public class TmDto
 
     [Display("TM engine type")]
     public string TmEngineType { get; set; }
-    
+
     [Display("Optimization preference")]
     public string OptimizationPreference { get; set; }
 
-    public TmDto(TMInfo tm)
+    // Constructor existente para MQS.TM.TMInfo
+    public TmDto(MQS.TM.TMInfo tm)
+    {
+        Guid = tm.Guid.ToString();
+        Client = tm.Client;
+        Domain = tm.Domain;
+        Subject = tm.Subject;
+        LastModified = tm.LastModified;
+        Project = tm.Project;
+        NumOfEntries = tm.NumOfEntries;
+        SourceLanguageCode = tm.SourceLanguageCode;
+        TargetLanguageCode = tm.TargetLanguageCode;
+        TmEngineType = tm.TMEngineType.ToString();
+        OptimizationPreference = tm.OptimizationPreference.ToString();
+    }
+
+    public TmDto(MQS.ServerProject.TMInfo tm)
     {
         Guid = tm.Guid.ToString();
         Client = tm.Client;

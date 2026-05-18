@@ -771,6 +771,31 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
         };
     }
 
+    [Action("Get translation memories assigned to project",
+    Description = "Get a list of translation memories assigned to a project for a target language.")]
+    public async Task<TranslationMemoryResponse> GetTranslationMemoriesFromProject(
+    [ActionParameter] ProjectRequest project,
+    [ActionParameter][Display("Target language"), StaticDataSource(typeof(TargetLanguageDataHandler))] string targetLanguage)
+    {
+        var result = await ExecuteWithHandling(() =>
+            ProjectService.Service.ListProjectTMs2Async(
+                GuidExtensions.ParseWithErrorHandling(project.ProjectGuid),
+                new[] { targetLanguage }
+            )
+        );
+
+        var assignmentDetails = result?.FirstOrDefault();
+        var tms = assignmentDetails?.TMs?.Select(tm => new TmDto(tm)).ToList() ?? new List<TmDto>();
+
+        return new TranslationMemoryResponse
+        {
+            TranslationMemories = tms,
+            TranslationMemoryIds = assignmentDetails.TMs.Select(x => x.Guid.ToString()).ToList(),
+            PrimaryTmId = assignmentDetails != null ? assignmentDetails.PrimaryTMGuid.ToString() : null,
+            MasterTmId = assignmentDetails != null ? assignmentDetails.MasterTMGuid.ToString() : null
+        };
+    }
+
     [Action("Pretranslate files", Description = "Pretranslate files if file IDs are provided, otherwise pretranslate the whole project with all files")]
     public async Task<PretranslateDocumentsResponse> PretranslateDocuments(
         [ActionParameter] ProjectRequest projectRequest,
