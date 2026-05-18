@@ -13,13 +13,13 @@ public class TranslationMemoryResponse
     [Display("Primary TM ID")]
     public string PrimaryTmId { get; set; }
 
-    [Display("Primary TM Name")]
+    [Display("Primary TM name")]
     public string PrimaryTmName { get; set; }
 
     [Display("Master TM ID")]
     public string MasterTmId { get; set; }
 
-    [Display("Master TM Name")]
+    [Display("Master TM name")]
     public string MasterTmName { get; set; }
 
 
