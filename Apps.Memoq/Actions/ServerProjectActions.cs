@@ -21,7 +21,6 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using DocumentFormat.OpenXml.Bibliography;
 using MQS.ServerProject;
 using Newtonsoft.Json;
 using System.Text;

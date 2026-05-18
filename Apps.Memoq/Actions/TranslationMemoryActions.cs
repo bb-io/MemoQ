@@ -3,7 +3,6 @@ using Apps.Memoq.Models.Dto;
 using Apps.Memoq.Models.ServerProjects.Requests;
 using Apps.Memoq.Models.TranslationMemories.Requests;
 using Apps.Memoq.Models.TranslationMemories.Responses;
-using Apps.Memoq.Utils.FileUploader;
 using Apps.MemoQ;
 using Apps.MemoQ.Extensions;
 using Apps.MemoQ.Models.TranslationMemories.Requests;

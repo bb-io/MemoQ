@@ -33,7 +33,6 @@ public class TmDto
     [Display("Optimization preference")]
     public string OptimizationPreference { get; set; }
 
-    // Constructor existente para MQS.TM.TMInfo
     public TmDto(MQS.TM.TMInfo tm)
     {
         Guid = tm.Guid.ToString();
