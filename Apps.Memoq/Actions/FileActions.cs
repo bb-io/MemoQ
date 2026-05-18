@@ -725,7 +725,8 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
         var analysisResults = new List<Analysis>();
         foreach (var analysis in analysisFiles.Analyses)
         {
-            string locale = LocaleMapper.ToBcp47(analysis.TargetLangCode);
+            string originalLocale = analysis.TargetLangCode;
+            string normalizedLocale = LocaleMapper.ToBcp47(analysis.TargetLangCode);
             await using var stream = await fileManagementClient.DownloadAsync(analysis.ResultData);
             using var reader = new StreamReader(stream);
             string csvContent = await reader.ReadToEndAsync();
@@ -735,7 +736,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
                 .SelectMany(cat => cat.Value.Select(sub => new { Key = $"{cat.Key} {sub.Key}", Val = sub.Value }))
                 .ToDictionary(x => x.Key, x => x.Val);
             
-            var mappedAnalysis = Analysis.Map(locale, flatMetrics, AnalysisHelper.AnalysisMap);
+            var mappedAnalysis = Analysis.Map(normalizedLocale, originalLocale, flatMetrics, AnalysisHelper.AnalysisMap);
             analysisResults.Add(mappedAnalysis);
         }
         
