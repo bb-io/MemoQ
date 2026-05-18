@@ -21,7 +21,6 @@ using Blackbird.Applications.Sdk.Common.Files;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Utils.Extensions.String;
 using Blackbird.Applications.SDK.Extensions.FileManagement.Interfaces;
-using DocumentFormat.OpenXml.Bibliography;
 using MQS.ServerProject;
 using Newtonsoft.Json;
 using System.Text;
@@ -768,6 +767,31 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
         return new TermbaseResponse
         {
             TermbaseIds = termbaseIds,
+        };
+    }
+
+    [Action("Get translation memories assigned to project",
+    Description = "Get a list of translation memories assigned to a project for a target language.")]
+    public async Task<TranslationMemoryResponse> GetTranslationMemoriesFromProject(
+    [ActionParameter] ProjectRequest project,
+    [ActionParameter][Display("Target language"), StaticDataSource(typeof(TargetLanguageDataHandler))] string targetLanguage)
+    {
+        var result = await ExecuteWithHandling(() =>
+            ProjectService.Service.ListProjectTMs2Async(
+                GuidExtensions.ParseWithErrorHandling(project.ProjectGuid),
+                new[] { targetLanguage }
+            )
+        );
+
+        var assignmentDetails = result?.FirstOrDefault();
+        var tms = assignmentDetails?.TMs?.Select(tm => new TmDto(tm)).ToList() ?? new List<TmDto>();
+
+        return new TranslationMemoryResponse
+        {
+            TranslationMemories = tms,
+            TranslationMemoryIds = assignmentDetails.TMs.Select(x => x.Guid.ToString()).ToList(),
+            PrimaryTmId = assignmentDetails != null ? assignmentDetails.PrimaryTMGuid.ToString() : null,
+            MasterTmId = assignmentDetails != null ? assignmentDetails.MasterTMGuid.ToString() : null
         };
     }
 

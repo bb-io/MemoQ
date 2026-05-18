@@ -112,6 +112,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 - **Import TMX file** imports TMX file to the translation memory.
 - **Import translation memory scheme from XML** imports translation memory metadata scheme from an XML file.
 - **Export translation memory** exports an existing translation memory.
+- **Get translation memories assigned to project** Gets a list of translation memories assigned to a project for a specific target language.
 
 ### Term bases
 
