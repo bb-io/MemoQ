@@ -787,6 +787,7 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
         var tms = assignmentDetails?.TMs?.Select(tm => new TmDto(tm)).ToList() ?? new List<TmDto>();
         var primaryTmName = assignmentDetails?.TMs?.FirstOrDefault(x => x.Guid == assignmentDetails.PrimaryTMGuid && x.Guid != Guid.Empty)?.Name;
         var masterTmName = assignmentDetails?.TMs?.FirstOrDefault(x => x.Guid == assignmentDetails.MasterTMGuid && x.Guid != Guid.Empty)?.Name;
+        var referenceTmNames = assignmentDetails?.TMs?.Where(x => x.Guid != assignmentDetails.PrimaryTMGuid && x.Guid != assignmentDetails.MasterTMGuid).Select(x => x.Name).ToList() ?? new List<string>();
 
         return new TranslationMemoryResponse
         {
@@ -795,7 +796,8 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
             PrimaryTmId = assignmentDetails != null ? assignmentDetails.PrimaryTMGuid.ToString() : null,
             PrimaryTmName = primaryTmName,
             MasterTmId = assignmentDetails != null ? assignmentDetails.MasterTMGuid.ToString() : null,
-            MasterTmName = masterTmName
+            MasterTmName = masterTmName,
+            ReferenceTMnames = referenceTmNames
         };
     }
 

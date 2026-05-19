@@ -22,5 +22,6 @@ public class TranslationMemoryResponse
     [Display("Master TM name")]
     public string MasterTmName { get; set; }
 
-
+    [Display("Reference TM names")]
+    public List<string> ReferenceTMnames { get; set; } = new List<string>();
 }
