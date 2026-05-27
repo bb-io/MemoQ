@@ -239,11 +239,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
         }
 
         var fileStream = await fileManagementClient.DownloadAsync(request.File);
-        var file = new MemoryStream();
-        await fileStream.CopyToAsync(file);
-
-        file.Position = 0;
-        var fileBytes = await file.GetByteData();
+        var fileBytes = await fileStream.GetByteData();
 
         var uploadFileResult = FileUploader.UploadFile(fileBytes, FileUploadManager, request.File.Name);
 
@@ -265,11 +261,10 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
         }
         else if (request.File.Name.EndsWith(".xliff"))
         {
-            file.Position = 0;
-            var reader = new StreamReader(file);
-            options.ImportSettingsXML = reader.ReadToEnd();
+            using var memoryStream = new MemoryStream(fileBytes);
+            using var reader = new StreamReader(memoryStream);
+            options.ImportSettingsXML = await reader.ReadToEndAsync();
         }
-
 
         var results = await ExecuteWithHandling(() => ProjectService.Service.ImportTranslationDocumentsWithOptionsAsync(
             GuidExtensions.ParseWithErrorHandling(request.ProjectGuid),
