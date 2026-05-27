@@ -1,15 +1,12 @@
-﻿using Apps.Memoq.Callbacks.Handlers;
+﻿using System.Net;
+using Apps.Memoq.Callbacks.Handlers;
 using Apps.Memoq.Callbacks.Models.Payload.Base;
 using Apps.Memoq.Callbacks.Models.Response;
 using Apps.MemoQ;
-using Apps.MemoQ.Callbacks.Handlers;
-using Apps.MemoQ.Callbacks.Models.Request;
-using Apps.MemoQ.Callbacks.Models.Response;
-using Apps.MemoQ.Extensions;
 using Blackbird.Applications.Sdk.Common.Invocation;
 using Blackbird.Applications.Sdk.Common.Webhooks;
-using System.Net;
 using System.Xml.Serialization;
+using Apps.MemoQ.Callbacks.Models.Request;
 
 namespace Apps.Memoq.Callbacks;
 
@@ -19,17 +16,26 @@ public class CallbacksList(InvocationContext invocationContext) : MemoqInvocable
     #region Deliver callbacks
 
     [Webhook("On file delivered (manual)", Description = "On a specific file delivered (manual)")]
-    public Task<WebhookResponse<DocumentDeliveredResponse>> OnDocumentDeliveredManual(WebhookRequest webhookRequest)
-        => HandleCallback(webhookRequest);
+    public Task<WebhookResponse<DocumentDeliveredResponse>> OnDocumentDeliveredManual(
+        WebhookRequest webhookRequest, 
+        [WebhookParameter] OnFileDeliveredRequest input)
+    {
+        return HandleCallback(webhookRequest, input);
+    }
 
-    [Webhook("On file delivered", typeof(DocumentDeliveredHandler),
-        Description = "On a specific file delivered")]
-    public Task<WebhookResponse<DocumentDeliveredResponse>> OnDocumentDelivered(WebhookRequest webhookRequest)
-        => HandleCallback(webhookRequest);
+    [Webhook("On file delivered", typeof(DocumentDeliveredHandler), Description = "On a specific file delivered")]
+    public Task<WebhookResponse<DocumentDeliveredResponse>> OnDocumentDelivered(
+        WebhookRequest webhookRequest,
+        [WebhookParameter] OnFileDeliveredRequest input)
+    {
+        return HandleCallback(webhookRequest, input);
+    }
 
     #endregion
-
-    private Task<WebhookResponse<DocumentDeliveredResponse>> HandleCallback(WebhookRequest webhookRequest)
+    
+    private Task<WebhookResponse<DocumentDeliveredResponse>> HandleCallback(
+        WebhookRequest webhookRequest,
+        OnFileDeliveredRequest input)
     {
         try
         {
@@ -40,6 +46,24 @@ public class CallbacksList(InvocationContext invocationContext) : MemoqInvocable
 
             var envelope = (Envelope)serializer.Deserialize(reader)!;
             var result = new DocumentDeliveredResponse(envelope.Body.DocumentDelivery);
+
+            if (!string.IsNullOrEmpty(input.ProjectNameContains))
+            {
+                bool nameContains = result.ProjectName?
+                    .Contains(input.ProjectNameContains, StringComparison.OrdinalIgnoreCase) == true;
+                
+                if (!nameContains)
+                    return Preflight();
+            }
+
+            if (!string.IsNullOrEmpty(input.TargetLanguage))
+            {
+                bool targetLangMatches = result.TargetLanguageCode?
+                    .Equals(input.TargetLanguage, StringComparison.OrdinalIgnoreCase) == true;
+                
+                if (!targetLangMatches)
+                    return Preflight();
+            }
 
             return Task.FromResult(new WebhookResponse<DocumentDeliveredResponse>
             {
@@ -57,6 +81,14 @@ public class CallbacksList(InvocationContext invocationContext) : MemoqInvocable
             InvocationContext.Logger?.LogError(errorMessage, [ex.Message]);
             throw;
         }
+    }
 
+    private static Task<WebhookResponse<DocumentDeliveredResponse>> Preflight()
+    {
+        return Task.FromResult(new WebhookResponse<DocumentDeliveredResponse>
+        {
+            HttpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK),
+            ReceivedWebhookRequestType = WebhookRequestType.Preflight
+        });
     }
 }
