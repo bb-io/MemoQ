@@ -9,6 +9,7 @@ namespace Apps.Memoq.Contracts;
 public sealed class MemoqServiceFactory<T> : IDisposable
 {
     private readonly ChannelFactory<T> _channelFactory;
+    private const int TimeoutMinutes = 3;
 
     public MemoqServiceFactory(string serviceUrl,
         IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
@@ -19,8 +20,8 @@ public sealed class MemoqServiceFactory<T> : IDisposable
         var binding = new BasicHttpBinding(url.StartsWith("https") ? BasicHttpSecurityMode.Transport : BasicHttpSecurityMode.None)
         {
             MaxReceivedMessageSize = int.MaxValue,
-            SendTimeout = TimeSpan.FromMinutes(25),
-            ReceiveTimeout = TimeSpan.FromMinutes(25),
+            SendTimeout = TimeSpan.FromMinutes(TimeoutMinutes),
+            ReceiveTimeout = TimeSpan.FromMinutes(TimeoutMinutes),
         };
 
         var header = apiKey == "NONE" 
@@ -38,7 +39,7 @@ public sealed class MemoqServiceFactory<T> : IDisposable
             };
 
         var channel = _channelFactory.CreateChannel();
-        ((IClientChannel)channel).OperationTimeout = TimeSpan.FromMinutes(25);
+        ((IClientChannel)channel).OperationTimeout = TimeSpan.FromMinutes(TimeoutMinutes);
         Service = channel;
     }
 
