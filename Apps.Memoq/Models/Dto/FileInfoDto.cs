@@ -54,6 +54,9 @@ namespace Apps.MemoQ.Models.Dto
         [Display("Total word count")]
         public int TotalWordCount { get; set; }
 
+        [Display("User assignments")]
+        public IEnumerable<UserAssignmentDto>? UserAssignments { get; set; }
+
         public FileInfoDto(ServerProjectTranslationDocInfo2 file)
         {
             Guid = file.DocumentGuid.ToString();
@@ -75,6 +78,11 @@ namespace Apps.MemoQ.Models.Dto
             TotalCharacterCount = file.TotalCharacterCount;
             TotalSegmentCount = file.TotalSegmentCount;
             TotalWordCount = file.TotalWordCount;
+            UserAssignments = file.UserAssignments?
+                .OfType<TranslationDocumentDetailedSingleUserAssignmentInfo>()
+                .Where(x => x.User is not null)
+                .Select(x => new UserAssignmentDto(x))
+                .ToArray();
         }
 
         public FileInfoDto(FileInfoDto file)
@@ -99,6 +107,7 @@ namespace Apps.MemoQ.Models.Dto
             TotalCharacterCount = file.TotalCharacterCount;
             TotalSegmentCount = file.TotalSegmentCount;
             TotalWordCount = file.TotalWordCount;
+            UserAssignments = file.UserAssignments?.ToArray();
         }
     }
 }
