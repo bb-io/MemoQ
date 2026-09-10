@@ -41,6 +41,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource CopyToOutputDirectory="Always" Include="image\icon.png" />
+		<EmbeddedResource CopyToOutputDirectory="Always" Include="..\README.md"/>
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Remove="artifacts\**\*.cs" />
