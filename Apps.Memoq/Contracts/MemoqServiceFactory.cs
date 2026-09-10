@@ -9,7 +9,7 @@ namespace Apps.Memoq.Contracts;
 public sealed class MemoqServiceFactory<T> : IDisposable
 {
     private readonly ChannelFactory<T> _channelFactory;
-    private const int TimeoutMinutes = 3;
+    private const int TimeoutMinutes = 18;
 
     public MemoqServiceFactory(string serviceUrl,
         IEnumerable<AuthenticationCredentialsProvider> authenticationCredentialsProviders)
