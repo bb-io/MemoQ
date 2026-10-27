@@ -59,7 +59,10 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
     [Action("Get project", Description = "Get project by UId")]
     public async Task<ProjectDto> GetProject([ActionParameter] ProjectRequest project)
     {
-        var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(GuidExtensions.ParseWithErrorHandling(project.ProjectGuid)));
+        var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+        var response = await ExecuteWithHandling(() => ProjectService.Service.GetProjectAsync(projectId)) ?? 
+                       throw new PluginApplicationException("MemoQ returned empty project data. Please check your inputs");
+        
         return new(response);
     }
 
