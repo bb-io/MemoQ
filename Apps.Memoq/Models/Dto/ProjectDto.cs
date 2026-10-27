@@ -3,54 +3,37 @@ using MQS.ServerProject;
 
 namespace Apps.Memoq.Models.Dto;
 
-public class ProjectDto
+public class ProjectDto(ServerProjectInfo project)
 {
     [Display("Project ID")]
-    public string Guid { get; set; }
-    public string Name { get; set; }
+    public string Guid { get; set; } = project.ServerProjectGuid.ToString();
 
-    public string? Description { get; set; }
+    public string Name { get; set; } = project.Name;
 
-    public string? Client { get; set; }
+    public string? Description { get; set; } = project.Description;
 
-    public string? Domain { get; set; }
+    public string? Client { get; set; } = project.Client;
 
-    public string? Subject { get; set; }
-    
-    public string Status { get; set; }
+    public string? Domain { get; set; } = project.Domain;
 
-    public DateTime Deadline { get; set; }
+    public string? Subject { get; set; } = project.Subject;
+
+    public string Status { get; set; } = project.ProjectStatus.ToString();
+
+    public DateTime Deadline { get; set; } = project.Deadline;
 
     [Display("Last time changed")]
-    public DateTime LastChanged { get; set; }
+    public DateTime LastChanged { get; set; } = project.LastChanged;
 
     [Display("Created at")]
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = project.CreationTime;
 
     [Display("Source language code")]
-    public string SourceLanguageCode { get; set; }
+    public string SourceLanguageCode { get; set; } = project.SourceLanguageCode;
 
     [Display("Target language codes")]
-    public List<string> TargetLanguageCodes { get; set; }
+    public List<string> TargetLanguageCodes { get; set; } = project.TargetLanguageCodes.ToList();
 
     [Display("Total word count")]
-    public double? TotalWordCount { get; set; }
-
-    public ProjectDto(ServerProjectInfo project)
-    {
-        Guid = project.ServerProjectGuid.ToString();
-        Name = project.Name;
-        Description = project.Description;
-        Client = project.Client;
-        Domain = project.Domain;
-        Subject = project.Subject;
-        Deadline = project.Deadline;
-        LastChanged = project.LastChanged;
-        SourceLanguageCode = project.SourceLanguageCode;
-        TargetLanguageCodes = project.TargetLanguageCodes.ToList();
-        TargetLanguageCodes = project.TargetLanguageCodes.ToList();
-        CreatedAt = project.CreationTime;
-        Status = project.ProjectStatus.ToString();
-        TotalWordCount = project.TotalWordCount;
-    }
+    public double? TotalWordCount { get; set; } = project.TotalWordCount;
 }
