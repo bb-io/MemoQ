@@ -71,15 +71,44 @@ public class MqXliffTargetUpdaterTests
         }
     }
 
-    private static XDocument UpdateMqXliffWith(string uploadedMqXliff)
+    [TestMethod]
+    [DataRow("ManuallyConfirmed")]
+    [DataRow("Reviewer1Confirmed")]
+    [DataRow("Proofread")]
+    public void UpdateTargets_ConfirmedSegmentWithUpdateConfirmedDisabled_KeepsSegment(string confirmedStatus)
+    {
+        var downloadedMqXliff = MqXliff.Replace("""id="2" mq:status="PreTranslated" """,
+            $"""id="2" mq:status="{confirmedStatus}" """);
+        var uploadedMqXliff = downloadedMqXliff.Replace("Texto plano", "Texto cambiado");
+
+        var updatedDocument = UpdateMqXliffWith(uploadedMqXliff, downloadedMqXliff, updateConfirmed: false);
+
+        Assert.AreEqual(confirmedStatus, GetStatuses(updatedDocument)[1]);
+        Assert.AreEqual("Texto plano", GetTarget(updatedDocument, "2").Value);
+    }
+
+    [TestMethod]
+    public void UpdateTargets_UnconfirmedSegmentWithUpdateConfirmedDisabled_UpdatesSegment()
+    {
+        var uploadedMqXliff = MqXliff.Replace("Texto plano", "Texto cambiado");
+
+        var updatedDocument = UpdateMqXliffWith(uploadedMqXliff, MqXliff, updateConfirmed: false);
+
+        Assert.AreEqual("Edited", GetStatuses(updatedDocument)[1]);
+        Assert.AreEqual("Texto cambiado", GetTarget(updatedDocument, "2").Value);
+    }
+
+    private static XDocument UpdateMqXliffWith(string uploadedMqXliff, string downloadedMqXliff = MqXliff,
+        bool updateConfirmed = true)
     {
         var uploadedAsXliff21 = new MemoryStream();
         XDocument.Parse(uploadedMqXliff).ConvertToTwoPointOne().Save(uploadedAsXliff21);
         uploadedAsXliff21.Position = 0;
 
-        var downloadedMqXliff = new MemoryStream(Encoding.UTF8.GetBytes(MqXliff));
+        var downloadedMqXliffStream = new MemoryStream(Encoding.UTF8.GetBytes(downloadedMqXliff));
 
-        var updated = MqXliffTargetUpdater.UpdateTargets(downloadedMqXliff, uploadedAsXliff21);
+        var updated = MqXliffTargetUpdater.UpdateTargets(downloadedMqXliffStream, uploadedAsXliff21,
+            updateConfirmed: updateConfirmed);
         return XDocument.Load(updated, LoadOptions.PreserveWhitespace);
     }
 

@@ -10,6 +10,11 @@ public static class MqXliffTargetUpdater
     private static readonly XNamespace Xliff21Ns = "urn:oasis:names:tc:xliff:document:2.0";
     private static readonly XNamespace MqNs = "MQXliff";
 
+    private static readonly HashSet<string> ConfirmedStatuses = new()
+    {
+        "ManuallyConfirmed", "Reviewer1Confirmed", "Proofread"
+    };
+
     public static Stream UpdateTargets(Stream mqXliffFile, Stream xliffFile, bool updateLocked = true,
         bool updateConfirmed = true)
     {
@@ -37,7 +42,7 @@ public static class MqXliffTargetUpdater
                     continue;
                 }
 
-                if (!updateConfirmed && mqTransUnit.Attribute(MqNs + "status")?.Value == "Proofread")
+                if (!updateConfirmed && ConfirmedStatuses.Contains(mqTransUnit.Attribute(MqNs + "status")?.Value ?? string.Empty))
                 {
                     continue;
                 }
