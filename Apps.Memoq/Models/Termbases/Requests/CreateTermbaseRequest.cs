@@ -42,6 +42,11 @@ public class CreateTermbaseRequest
     [Display("Overwrite entries with same ID", Description = "Overwrite entries with the same ID during the update.")]
     public bool? OverwriteEntriesWithSameId { get; set; }
 
+    [Display("Replace existing entries", Description = "Delete all entries of the existing termbase before importing, " +
+                                                      "so the termbase contains only the imported entries. Applies only " +
+                                                      "when 'Existing termbase ID' is provided. This cannot be undone.")]
+    public bool? ReplaceExistingEntries { get; set; }
+
     [Display("Late disclosure", Description = "Can be applied only when 'Is moderated' parameter set to 'True'. When set " +
                                               "to 'False', entries appear immediately in a moderated term base. If the " +
                                               "terminologist rejects one later, it will be removed from the term base.")]

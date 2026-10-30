@@ -117,7 +117,7 @@ You can read more about how to set up your WS API [here](https://docs.memoq.com/
 ### Term bases
 
 - **Get term bases assigned to project** Gets a list of term bases assigned to a project for a specific target language.
-- **Import or update glossary** This action allows importing a '.tbx' file to update or create the termbase. In case of creating termbase the following fields are required: `Glossary file`, `Glossary name`. In case of updating the termbase the following fields are required: `Glossary file`, `Existing termbase ID`.
+- **Import or update glossary** This action allows importing a '.tbx' file to update or create the termbase. In case of creating termbase the following fields are required: `Glossary file`, `Glossary name`. In case of updating the termbase the following fields are required: `Glossary file`, `Existing termbase ID`. Set `Replace existing entries` to `true` to delete all entries of the existing termbase before the import, so it contains only the imported entries (same as recreating a QTerm term base on TBX import). Set `Overwrite entries with same ID` to `true` to update existing entries that have the same ID instead of adding duplicates.
 - **Export glossary** exports an existing term base. This action accepts an optional input parameter called _Include forbidden terms_ which defaults to _False_. When set to _False_, terms with _Forbidden_ status are excluded from the resulting export.
 - **Update existing glossary** updates an existing termbase with a new. There are optional inputs `AllowAddNewLanguages`(where you can give permission to add new languages by deafault is `true`) and `OverwriteEntiesWithSameId`(where you can overwrite enties with same ID by default is `false`) 
 

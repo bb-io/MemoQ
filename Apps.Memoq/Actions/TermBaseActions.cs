@@ -22,6 +22,8 @@ namespace Apps.Memoq.Actions;
 [ActionList("Terms")]
 public class TermBaseActions(InvocationContext invocationContext, IFileManagementClient fileManagementClient) : MemoqInvocable(invocationContext)
 {
+    protected virtual ITBService TermbaseService => TbService.Service;
+
     #region Import
 
     private const string EntryId = "Entry_ID";
@@ -676,12 +678,12 @@ public class TermBaseActions(InvocationContext invocationContext, IFileManagemen
         {
             var termbaseName = input.Name ?? glossary.Title;
 
-            var termbases = await ExecuteWithHandling(() => TbService.Service.ListTBs2Async(new TBFilter()));
+            var termbases = await ExecuteWithHandling(() => TermbaseService.ListTBs2Async(new TBFilter()));
 
             if (termbases.Any(tb => tb.Name.Equals(termbaseName, StringComparison.OrdinalIgnoreCase)))
                 termbaseName += $" {DateTime.Now.ToString("D")}";
 
-            termbaseGuid = await ExecuteWithHandling(() => TbService.Service.CreateAndPublishAsync(new TBInfo
+            termbaseGuid = await ExecuteWithHandling(() => TermbaseService.CreateAndPublishAsync(new TBInfo
             {
                 IsQTerm = input.IsQTerm ?? false,
                 Name = termbaseName,
@@ -737,28 +739,37 @@ public class TermBaseActions(InvocationContext invocationContext, IFileManagemen
 
         await using var csvStream = await rowsToAdd.ConvertToCsv(Encoding.UTF8, ';');
 
-        var sessionId = await ExecuteWithHandling(() => TbService.Service.BeginChunkedCSVImportAsync(termbaseGuid, new CSVImportSettings()));
+        var shouldReplaceExistingEntries = input.ReplaceExistingEntries == true
+                                           && !string.IsNullOrWhiteSpace(input.ExistingTermbaseId);
+        if (shouldReplaceExistingEntries)
+            await ExecuteWithHandling(() => TermbaseService.PurgeTBAsync(termbaseGuid));
+
+        var importSettings = new CSVImportSettings { UpdateBasedOnEntryIDs = input.OverwriteEntriesWithSameId ?? false };
+        await ImportCsvInChunks(termbaseGuid, csvStream, importSettings);
+
+        return new() { TermbaseGuid = termbaseGuid.ToString() };
+    }
+
+    private async Task ImportCsvInChunks(Guid termbaseGuid, Stream csvStream, CSVImportSettings importSettings)
+    {
+        const int chunkSize = 500000;
+
+        var sessionId = await ExecuteWithHandling(() => TermbaseService.BeginChunkedCSVImportAsync(termbaseGuid, importSettings));
         try
         {
-            const int chunkSize = 500000;
-
             int bytesRead;
             var buffer = new byte[chunkSize];
 
-            while ((bytesRead = csvStream.Read(buffer, 0, buffer.Length)) > 0)
+            while ((bytesRead = await csvStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
             {
-                var chunk = new byte[bytesRead];
-                Array.Copy(buffer, chunk, bytesRead);
-
-                await ExecuteWithHandling(() => TbService.Service.AddNextCSVChunkAsync(sessionId, chunk));
+                var chunk = buffer[..bytesRead];
+                await ExecuteWithHandling(() => TermbaseService.AddNextCSVChunkAsync(sessionId, chunk));
             }
         }
         finally
         {
-            await ExecuteWithHandling(() => TbService.Service.EndChunkedCSVImportAsync(sessionId));
+            await ExecuteWithHandling(() => TermbaseService.EndChunkedCSVImportAsync(sessionId));
         }
-
-        return new() { TermbaseGuid = termbaseGuid.ToString() };
     }
 
     #endregion
@@ -773,20 +784,20 @@ public class TermBaseActions(InvocationContext invocationContext, IFileManagemen
     {
         var termbaseGuid = GuidExtensions.ParseWithErrorHandling(termbaseRequest.TermbaseId);    
 
-        var termbase = await ExecuteWithHandling(() => TbService.Service.GetTBInfoAsync(termbaseGuid));
+        var termbase = await ExecuteWithHandling(() => TermbaseService.GetTBInfoAsync(termbaseGuid));
 
         var xmlFileBytes = new List<byte>();
-        var sessionId = (await ExecuteWithHandling(() => TbService.Service.BeginChunkedMultiTermExportAsync(new() { tbGuid = termbaseGuid })))
+        var sessionId = (await ExecuteWithHandling(() => TermbaseService.BeginChunkedMultiTermExportAsync(new() { tbGuid = termbaseGuid })))
             .BeginChunkedMultiTermExportResult;
 
         try
         {
-            var chunk = await ExecuteWithHandling(() => TbService.Service.GetNextExportChunkAsync(sessionId));
+            var chunk = await ExecuteWithHandling(() => TermbaseService.GetNextExportChunkAsync(sessionId));
 
             while (chunk != null && chunk.Length != 0)
             {
                 xmlFileBytes.AddRange(chunk);
-                chunk = await ExecuteWithHandling(() => TbService.Service.GetNextExportChunkAsync(sessionId));
+                chunk = await ExecuteWithHandling(() => TermbaseService.GetNextExportChunkAsync(sessionId));
             }
 
             var glossary = ConvertXmlTermbaseToGlossary(xmlFileBytes.ToArray(), includeForbiddenTerms ?? false,
@@ -801,7 +812,7 @@ public class TermBaseActions(InvocationContext invocationContext, IFileManagemen
         }
         finally
         {
-            await ExecuteWithHandling(() => TbService.Service.EndChunkedExportAsync(sessionId));
+            await ExecuteWithHandling(() => TermbaseService.EndChunkedExportAsync(sessionId));
         }
     }
 
