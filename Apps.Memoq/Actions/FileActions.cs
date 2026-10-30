@@ -24,7 +24,6 @@ using MQS.TasksService;
 using Newtonsoft.Json;
 using System.Net.Mime;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Apps.MemoQ.Utils.Analysis;
 using Apps.MemoQ.Utils.Locale;
@@ -356,7 +355,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
 
         var mqXliffFile = await fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
 
-        var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, new MemoryStream(fileBytes),
+        var updatedMqXliffFile = MqXliffTargetUpdater.UpdateTargets(mqXliffFile, new MemoryStream(fileBytes),
             XliffRequest.UpdateLocked.GetValueOrDefault(true), XliffRequest.UpdateConfirmed.GetValueOrDefault(true));
         string mqXliffFileName = request.File.Name + ".mqxliff";
 
@@ -933,7 +932,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
             var mqXliffFile = await fileManagementClient.DownloadAsync(mqXliffFileResponse.File);
             var fileStream = await fileManagementClient.DownloadAsync(fileReference);
 
-            var updatedMqXliffFile = UpdateMqxliffFile(mqXliffFile, fileStream);
+            var updatedMqXliffFile = MqXliffTargetUpdater.UpdateTargets(mqXliffFile, fileStream);
             string mqXliffFileName = request.File.Name + ".mqxliff";
             fileReference = await fileManagementClient.UploadAsync(updatedMqXliffFile, MediaTypeNames.Application.Xml,
                 mqXliffFileName);
@@ -950,51 +949,6 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
             KeepUserAssignments = importDocumentAsXliffRequest.KeepUserAssignments,
             PathToSetAsImportPath = importDocumentAsXliffRequest.PathToSetAsImportPath
         });
-    }
-
-    private Stream UpdateMqxliffFile(Stream mqXliffFile, Stream xliffFile, bool locked = true, bool confirmed = true)
-    {
-        XNamespace nsXliff = "urn:oasis:names:tc:xliff:document:1.2";
-        XNamespace nsXliff21 = "urn:oasis:names:tc:xliff:document:2.0";
-
-        var xliffDoc = XDocument.Load(xliffFile);
-        var mqXliffDoc = XDocument.Load(mqXliffFile);
-
-        var xliffUnits = xliffDoc.Descendants(nsXliff21 + "unit");
-
-        foreach (var mqTransUnit in mqXliffDoc.Descendants(nsXliff + "trans-unit"))
-        {
-            var id = mqTransUnit.Attribute("id")?.Value;
-            var mqTarget = mqTransUnit.Elements(nsXliff + "target").FirstOrDefault();
-
-            var xliffUnit = xliffUnits.FirstOrDefault(x => x.Attribute("id")?.Value == id);
-            var xliffTargetNodes = xliffUnit?.Elements(nsXliff21 + "segment").Elements(nsXliff21 + "target").Nodes();
-
-            if (mqTarget != null && xliffTargetNodes != null &&
-                !mqTarget.Nodes().SequenceEqual(xliffTargetNodes, new XNodeEqualityComparer()))
-            {
-                if (!locked && mqTransUnit.Attribute(XNamespace.Get("MQXliff") + "locked")?.Value == "locked")
-                {
-                    continue;
-                }
-
-                if (!confirmed && mqTransUnit.Attribute(XNamespace.Get("MQXliff") + "status")?.Value == "Proofread")
-                {
-                    continue;
-                }
-
-                mqTarget.RemoveAll();
-                mqTarget.Add(xliffTargetNodes);
-                mqTransUnit.SetAttributeValue(XNamespace.Get("MQXliff") + "status", "Edited");
-            }
-        }
-
-        var updatedString = Regex.Replace(mqXliffDoc.ToString(),
-                "(<(source(.*?)|\\/bpt|\\/ph|target(.*?))>)\\r?\\n\\s+(?!\\s?(<target|<\\/trans-unit>))", "${1}");
-        updatedString = Regex.Replace(updatedString,"&(?!(\\w+|#\\d+);)", "&amp;");
-        var updatedMqXliffStream = new MemoryStream(Encoding.UTF8.GetBytes(updatedString));
-        updatedMqXliffStream.Position = 0;
-        return updatedMqXliffStream;
     }
 
     private async Task<Dictionary<string, string>> GetExistingDocumentGuidsByLanguageCode(
