@@ -623,7 +623,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }));
 
-        var taskResult = (StatisticsTaskResult) await WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
+            var taskResult = (MQS.TasksService.StatisticsTaskResult) await WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
         var document = await GetFile(input, input.DocumentGuid);
         var statistics = taskResult.ResultsForTargetLangs.First();
 
@@ -671,7 +671,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
             mediaType = MediaTypeNames.Text.Html;
         }
 
-        var taskResult = (StatisticsTaskResult) await WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
+            var taskResult = (MQS.TasksService.StatisticsTaskResult) await WaitForAsyncTaskToFinishAndGetResult(task.TaskId);
         var analysis = taskResult.ResultsForTargetLangs
             .Select(x => new GetAnalysisResponse(
                 x, 
@@ -773,7 +773,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
                 }
             }));
 
-        var taskResult = (XTranslateTaskResult) await WaitForAsyncTaskToFinishAndGetResult(taskInfo.TaskId);
+            var taskResult = (MQS.TasksService.XTranslateTaskResult) await WaitForAsyncTaskToFinishAndGetResult(taskInfo.TaskId);
         var documents = taskResult.DocumentResults
             .Select(x => new XTranslateDocumentDto(x))
             .ToArray();
@@ -842,7 +842,7 @@ public class FileActions(InvocationContext invocationContext, IFileManagementCli
         }        
     }
 
-    private async Task<TaskResult> WaitForAsyncTaskToFinishAndGetResult(Guid taskId)
+    private async Task<MQS.TasksService.TaskResult> WaitForAsyncTaskToFinishAndGetResult(Guid taskId)
     {
         var task = await ExecuteWithHandling(() => TaskService.Service.GetTaskStatusAsync(taskId));
         var i = 1;
