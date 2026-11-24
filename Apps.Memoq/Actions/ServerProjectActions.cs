@@ -180,6 +180,103 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
         };
     }
 
+    [Action("Generate LQA statistics report",
+        Description = "Generates LQA statistics for the selected project documents and optionally exports the report as CSV or HTML.")]
+    public async Task<LqaStatisticsReportResponse> GenerateLqaStatisticsReport(
+        [ActionParameter] ProjectRequest project,
+        [ActionParameter] LqaReportRequest inputOptions)
+    {
+        var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+        var options = BuildLqaStatisticsOptions(inputOptions);
+
+        var result = await ExecuteWithHandling(() =>
+            ProjectService.Service.RunLqaStatisticsGenerationAsync(projectId, options));
+
+        var report = result.Report;
+        var modelNames = report?.ModelNames;
+        var exportedReport = await UploadLqaExportAsync(
+            result.ExportData,
+            options.ExportFormat,
+            $"LqaStatisticsReport_{projectId}");
+
+        return new LqaStatisticsReportResponse
+        {
+            ExportedReport = exportedReport,
+            ProjectStatistics = report?.ProjectLqaStatistics == null
+                ? null
+                : new LqaProjectStatisticsDto
+                {
+                    ProjectName = report.ProjectLqaStatistics.ProjectName,
+                    NumberOfFiles = report.ProjectLqaStatistics.NumberOfFiles,
+                    NumberOfReviewedFiles = report.ProjectLqaStatistics.NumberOfReviewedFiles,
+                    NumberOfPassedFiles = report.ProjectLqaStatistics.NumberOfPassedFiles,
+                    NumberOfFailedFiles = report.ProjectLqaStatistics.NumberOfFailedFiles,
+                    NumberOfLqaModels = report.ProjectLqaStatistics.NumberOfLQAModels
+                },
+            DocumentStatistics = report?.DocumentsLqaStatistics?.Select(document =>
+                MapDocumentLqaStatistics(document, GetLqaModelName(modelNames, document.ModelGuid))) ?? [],
+            ModelStatistics = report?.AggregatedLqaStatisticsByModels?.Select(item =>
+                MapAggregatedLqaStatistics(item.Value, GetLqaModelName(modelNames, item.Key))) ?? []
+        };
+    }
+
+    [Action("Generate LQA rejected segments report",
+        Description = "Collects rejected LQA segments for the selected project documents and optionally exports the report as CSV or HTML.")]
+    public async Task<LqaRejectedSegmentsReportResponse> GenerateLqaRejectedSegmentsReport(
+        [ActionParameter] ProjectRequest project,
+        [ActionParameter] LqaReportRequest inputOptions)
+    {
+        var projectId = GuidExtensions.ParseWithErrorHandling(project.ProjectGuid);
+        var options = BuildLqaRejectedSegmentsOptions(inputOptions);
+
+        var result = await ExecuteWithHandling(() =>
+            ProjectService.Service.RunLqaRejectedSegmentsCollectionAsync(projectId, options));
+
+        var exportedReport = await UploadLqaExportAsync(
+            result.ExportData,
+            options.ExportFormat,
+            $"LqaRejectedSegmentsReport_{projectId}");
+
+        return new LqaRejectedSegmentsReportResponse
+        {
+            ExportedReport = exportedReport,
+            Documents = result.Report?.DocumentsRejectedSegments?.Select(document => new LqaRejectedDocumentDto
+            {
+                DocumentId = document.DocumentGuid.ToString(),
+                DocumentName = document.DocumentName,
+                LqaModelName = document.LQAModelName,
+                Date = document.Date,
+                Reviewer = document.Reviewer,
+                Translator = document.Translator,
+                Result = document.Result.ToString(),
+                RejectedSegments = document.RejectedSegments?.Select(segment => new LqaRejectedSegmentDto
+                {
+                    RowNumber = segment.RowNumber,
+                    SourceSegment = segment.SourceSegment,
+                    TargetSegment = segment.TargetSegment,
+                    Rejections = segment.Rejections?.Select(rejection => new LqaRejectionDto
+                    {
+                        Comment = rejection.Comment,
+                        Category = rejection.RejectionType?.Category,
+                        Subcategory = rejection.RejectionType?.Subcategory,
+                        Severity = rejection.RejectionType?.Severity,
+                        Original = rejection.Correction?.Original,
+                        Suggestion = rejection.Correction?.Suggestion
+                    }) ?? []
+                }) ?? []
+            }) ?? [],
+            ModelSummaries = result.Report?.LqaModelStatisticsSummaries?.Select(summary => new LqaModelSummaryDto
+            {
+                ModelId = summary.Model.ToString(),
+                PassCriteria = summary.PassCriteria,
+                Documents = summary.Documents ?? [],
+                Statistics = summary.AggregatedLqaStatistics == null
+                    ? null
+                    : MapAggregatedLqaStatistics(summary.AggregatedLqaStatistics)
+            }) ?? []
+        };
+    }
+
     [Action("Search post translation analysis reports",
         Description = "Lists post translation analysis reports created earlier.")]
     public async Task<PostTranslationAnalysisReportsResponse> SearchPostTranslationAnalysisReports(
@@ -989,6 +1086,152 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
 
         return assignments;
     }
+
+    private async Task<FileReference?> UploadLqaExportAsync(
+        byte[]? exportData,
+        LqaStatisticsExportFormat exportFormat,
+        string filenameWithoutExtension)
+    {
+        if (exportFormat == LqaStatisticsExportFormat.None || exportData is not { Length: > 0 })
+            return null;
+
+        var extension = exportFormat == LqaStatisticsExportFormat.Html ? "html" : "csv";
+        var filename = $"{filenameWithoutExtension}.{extension}";
+        using var stream = new MemoryStream(exportData);
+        return await fileManagementClient.UploadAsync(stream, MimeTypes.GetMimeType(filename), filename);
+    }
+
+    private static LqaStatisticsGenerationOptions BuildLqaStatisticsOptions(LqaReportRequest? input)
+    {
+        var settings = ParseLqaReportSettings(input);
+        return new LqaStatisticsGenerationOptions
+        {
+            DocumentGuids = settings.DocumentIds,
+            ExportFormat = settings.ExportFormat,
+            CsvSeparator = settings.CsvSeparator
+        };
+    }
+
+    private static LqaRejectedSegmentsOptions BuildLqaRejectedSegmentsOptions(LqaReportRequest? input)
+    {
+        var settings = ParseLqaReportSettings(input);
+        return new LqaRejectedSegmentsOptions
+        {
+            DocumentGuids = settings.DocumentIds,
+            ExportFormat = settings.ExportFormat,
+            CsvSeparator = settings.CsvSeparator
+        };
+    }
+
+    private static (Guid[]? DocumentIds, LqaStatisticsExportFormat ExportFormat, CsvSeparator CsvSeparator)
+        ParseLqaReportSettings(LqaReportRequest? input)
+    {
+        var documentIds = input?.DocumentIds is { Count: > 0 }
+            ? input.DocumentIds
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => GuidExtensions.ParseWithErrorHandling(value))
+                .ToArray()
+            : null;
+
+        var exportFormat = ParseLqaEnum(
+            input?.ExportFormat,
+            LqaStatisticsExportFormat.None,
+            "export format");
+        var csvSeparator = ParseLqaEnum(
+            input?.CsvSeparator,
+            CsvSeparator.Semicolon,
+            "CSV separator");
+
+        return (documentIds, exportFormat, csvSeparator);
+    }
+
+    private static TEnum ParseLqaEnum<TEnum>(string? value, TEnum defaultValue, string displayName)
+        where TEnum : struct, Enum
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return defaultValue;
+
+        if (Enum.TryParse<TEnum>(value.Trim(), true, out var parsed))
+            return parsed;
+
+        throw new PluginMisconfigurationException(
+            $"Unsupported LQA {displayName}: '{value}'. Available values: {string.Join(", ", Enum.GetNames<TEnum>())}.");
+    }
+
+    private static string? GetLqaModelName(
+        IDictionary<Guid, string>? modelNames,
+        Guid modelId) =>
+        modelNames != null && modelNames.TryGetValue(modelId, out var modelName)
+            ? modelName
+            : null;
+
+    private static LqaDocumentStatisticsDto MapDocumentLqaStatistics(
+        DocumentLqaStatistics statistics,
+        string? modelName)
+    {
+        return new LqaDocumentStatisticsDto
+        {
+            DocumentName = statistics.DocumentName,
+            Passed = statistics.Passed,
+            ModelId = statistics.ModelGuid.ToString(),
+            ModelName = modelName,
+            NumberOfSegments = statistics.NumberOfSegments,
+            NumberOfWords = statistics.NumberOfWords,
+            NumberOfRejectedSegments = statistics.NumberOfRejectedSegments,
+            TotalNumberOfErrors = statistics.TotalNumberOfErrors,
+            TotalPenaltyPoints = statistics.TotalPenaltyPoints,
+            NormalizedPenaltyPoint = statistics.NormalizedPenaltyPoint,
+            ErrorsByCategory = MapNamedValues(statistics.TotalNumberOfErrorsByCategories),
+            ErrorsBySeverity = MapNamedValues(statistics.TotalNumberOfErrorsBySeverities),
+            NormalizedPenaltyPointsBySeverity = MapNamedValues(statistics.NormalizedPenaltyPointsBySeverities),
+            PenaltyPointsByCategory = statistics.PenaltyPointsPerCategories?.Select(category =>
+                new LqaPenaltyCategoryDto
+                {
+                    Category = category.CategoryName,
+                    TotalPenalty = category.TotalPenalty,
+                    PenaltyPointsBySubcategory = MapNamedValues(category.PenaltyPointsBySubCategories)
+                }) ?? []
+        };
+    }
+
+    private static LqaAggregatedStatisticsDto MapAggregatedLqaStatistics(
+        AggregatedLqaStatistics statistics,
+        string? modelName = null) =>
+        new()
+        {
+            ModelId = statistics.ModelGuid.ToString(),
+            ModelName = modelName,
+            NumberOfSegments = statistics.NumberOfSegments,
+            NumberOfWords = statistics.NumberOfWords,
+            NumberOfRejectedSegments = statistics.NumberOfRejectedSegments,
+            TotalNumberOfErrors = statistics.TotalNumberOfErrors,
+            TotalPenaltyPoints = statistics.TotalPenaltyPoints,
+            NormalizedPenaltyPoint = statistics.NormalizedPenaltyPoint,
+            ErrorsByCategory = MapNamedValues(statistics.TotalNumberOfErrorsByCategories),
+            ErrorsBySeverity = MapNamedValues(statistics.TotalNumberOfErrorsBySeverities),
+            NormalizedPenaltyPointsBySeverity = MapNamedValues(statistics.NormalizedPenaltyPointsBySeverities),
+            PenaltyPointsByCategory = statistics.PenaltyPointsPerCategories?.Select(category =>
+                new LqaPenaltyCategoryDto
+                {
+                    Category = category.CategoryName,
+                    TotalPenalty = category.TotalPenalty,
+                    PenaltyPointsBySubcategory = MapNamedValues(category.PenaltyPointsBySubCategories)
+                }) ?? []
+        };
+
+    private static IEnumerable<LqaNamedIntValueDto> MapNamedValues(IDictionary<string, int>? values) =>
+        values?.Select(item => new LqaNamedIntValueDto
+        {
+            Name = item.Key,
+            Value = item.Value
+        }) ?? [];
+
+    private static IEnumerable<LqaNamedDoubleValueDto> MapNamedValues(IDictionary<string, double>? values) =>
+        values?.Select(item => new LqaNamedDoubleValueDto
+        {
+            Name = item.Key,
+            Value = item.Value
+        }) ?? [];
 
     private static EditDistanceStatisticsOptions BuildEditDistanceOptions(EditDistanceStatisticsRequest? input)
     {
