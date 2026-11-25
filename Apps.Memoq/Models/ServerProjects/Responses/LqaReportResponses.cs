@@ -84,7 +84,7 @@ public class LqaAggregatedStatisticsDto
     public int TotalPenaltyPoints { get; set; }
 
     [Display("Normalized penalty point")]
-    public double NormalizedPenaltyPoint { get; set; }
+    public double? NormalizedPenaltyPoint { get; set; }
 
     [Display("Errors by category")]
     public IEnumerable<LqaNamedIntValueDto> ErrorsByCategory { get; set; } = [];
@@ -126,7 +126,7 @@ public class LqaNamedDoubleValueDto
     public string Name { get; set; } = string.Empty;
 
     [Display("Value")]
-    public double Value { get; set; }
+    public double? Value { get; set; }
 }
 
 public class LqaRejectedDocumentDto

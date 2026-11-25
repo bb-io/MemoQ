@@ -1180,7 +1180,7 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
             NumberOfRejectedSegments = statistics.NumberOfRejectedSegments,
             TotalNumberOfErrors = statistics.TotalNumberOfErrors,
             TotalPenaltyPoints = statistics.TotalPenaltyPoints,
-            NormalizedPenaltyPoint = statistics.NormalizedPenaltyPoint,
+            NormalizedPenaltyPoint = ToFiniteDouble(statistics.NormalizedPenaltyPoint),
             ErrorsByCategory = MapNamedValues(statistics.TotalNumberOfErrorsByCategories),
             ErrorsBySeverity = MapNamedValues(statistics.TotalNumberOfErrorsBySeverities),
             NormalizedPenaltyPointsBySeverity = MapNamedValues(statistics.NormalizedPenaltyPointsBySeverities),
@@ -1206,7 +1206,7 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
             NumberOfRejectedSegments = statistics.NumberOfRejectedSegments,
             TotalNumberOfErrors = statistics.TotalNumberOfErrors,
             TotalPenaltyPoints = statistics.TotalPenaltyPoints,
-            NormalizedPenaltyPoint = statistics.NormalizedPenaltyPoint,
+            NormalizedPenaltyPoint = ToFiniteDouble(statistics.NormalizedPenaltyPoint),
             ErrorsByCategory = MapNamedValues(statistics.TotalNumberOfErrorsByCategories),
             ErrorsBySeverity = MapNamedValues(statistics.TotalNumberOfErrorsBySeverities),
             NormalizedPenaltyPointsBySeverity = MapNamedValues(statistics.NormalizedPenaltyPointsBySeverities),
@@ -1230,8 +1230,11 @@ public class ServerProjectActions(InvocationContext invocationContext, IFileMana
         values?.Select(item => new LqaNamedDoubleValueDto
         {
             Name = item.Key,
-            Value = item.Value
+            Value = ToFiniteDouble(item.Value)
         }) ?? [];
+
+    private static double? ToFiniteDouble(double value) =>
+        double.IsFinite(value) ? value : null;
 
     private static EditDistanceStatisticsOptions BuildEditDistanceOptions(EditDistanceStatisticsRequest? input)
     {

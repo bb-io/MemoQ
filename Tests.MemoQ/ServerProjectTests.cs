@@ -10,6 +10,7 @@ namespace Tests.MemoQ;
 public class ServerProjectTests : TestBase
 {
     private const string PostTranslationProjectGuid = "ec423da3-ecef-ed11-85f6-d05099f919f4";
+    private const string LqaProjectGuid = "275b8794-c7e8-f111-8765-a8a15994f72e";
 
     [TestMethod]
     public async Task Projects_returns_report_values()
@@ -76,6 +77,51 @@ public class ServerProjectTests : TestBase
 
         Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
         Assert.IsNotNull(result);
+    }
+
+    [TestMethod]
+    public async Task GenerateLqaStatisticsReport_IsSuccess()
+    {
+        var actions = new ServerProjectActions(InvocationContext, FileManager);
+        var project = new ProjectRequest { ProjectGuid = LqaProjectGuid };
+        var input = new LqaReportRequest
+        {
+            DocumentIds = [],
+            ExportFormat = "None",
+            CsvSeparator = "Semicolon"
+        };
+
+        var result = await actions.GenerateLqaStatisticsReport(project, input);
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+        Assert.IsNotNull(result.ProjectStatistics);
+        Assert.IsTrue(result.DocumentStatistics.Any());
+        Assert.IsTrue(result.ModelStatistics.Any());
+        Assert.IsTrue(result.DocumentStatistics.All(statistics =>
+            !statistics.NormalizedPenaltyPoint.HasValue || double.IsFinite(statistics.NormalizedPenaltyPoint.Value)));
+        Assert.IsTrue(result.ModelStatistics.All(statistics =>
+            !statistics.NormalizedPenaltyPoint.HasValue || double.IsFinite(statistics.NormalizedPenaltyPoint.Value)));
+    }
+
+    [TestMethod]
+    public async Task GenerateLqaRejectedSegmentsReport_IsSuccess()
+    {
+        var actions = new ServerProjectActions(InvocationContext, FileManager);
+        var project = new ProjectRequest { ProjectGuid = LqaProjectGuid };
+        var input = new LqaReportRequest
+        {
+            DocumentIds = [],
+            ExportFormat = "None",
+            CsvSeparator = "Semicolon"
+        };
+
+        var result = await actions.GenerateLqaRejectedSegmentsReport(project, input);
+
+        Console.WriteLine(JsonConvert.SerializeObject(result, Formatting.Indented));
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.Documents.Any());
+        Assert.IsTrue(result.Documents.SelectMany(document => document.RejectedSegments).Any());
     }
 
     [TestMethod]
